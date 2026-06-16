@@ -10,7 +10,1002 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="w<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CRM · Petra Zábranská — Century 21</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="icon-512.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Petra CRM" />
+<meta name="theme-color" content="#16151a" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16151a; --bg-2:#1c1b21; --surface:#212026; --surface-2:#2a2830;
+    --line:#33313b; --line-soft:#2b2932;
+    --gold:#c9a14a; --gold-bright:#e0bd6b; --gold-dim:#6f5c2e;
+    --text:#ece9e2; --muted:#969089; --danger:#cf6b63;
+    --s-novy:#7e8ea3; --s-kontaktovan:#c9a14a; --s-schuzka:#a888c4;
+    --s-nabidka:#5fb0a9; --s-uzavreno:#74b86f; --s-ztraceno:#bd7068;
+    --display:'Inter',system-ui,-apple-system,sans-serif;
+    --accent:'Inter',system-ui,-apple-system,sans-serif;
+    --ui:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  button{font-family:var(--ui);cursor:pointer}
+  input,textarea,select{font-family:var(--ui)}
+  ::selection{background:rgba(201,161,74,.35);color:#fff}
+
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:40px 34px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+  .brand-mark{color:var(--gold);letter-spacing:.16em;text-transform:uppercase;font-size:11px;font-weight:700}
+  .login-card h1{font-weight:700;font-size:26px;letter-spacing:-.01em;margin:10px 0 4px}
+  .login-card h1 b{color:var(--gold);font-weight:700}
+  .tagline{color:var(--muted);font-size:14px;margin-bottom:28px}
+  label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 7px 2px;font-weight:500}
+  .field{margin-bottom:16px}
+  input[type=email],input[type=password],input[type=text],input[type=search],input[type=number],input[type=date],input[type=datetime-local],textarea,select{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:11px 13px;font-size:14px;transition:border-color .15s,box-shadow .15s}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(176,138,55,.14)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:8px;padding:11px 18px;font-size:13px;font-weight:600;transition:background .15s,border-color .15s,opacity .15s}
+  .btn:active{opacity:.85}
+  .btn-gold{width:100%;background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#2a2008;border-color:var(--gold)}
+  .btn-gold:hover{filter:brightness(1.06)}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+  .msg{font-size:13px;margin-top:14px;min-height:18px}
+  .msg.error{color:var(--danger)}
+
+  #app{display:none;min-height:100vh;flex-direction:column}
+  header.topbar{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--line);background:rgba(22,21,26,.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+  .topbar .id{display:flex;flex-direction:column;line-height:1.2}
+  .topbar .id .name{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .topbar .id .name b{color:var(--gold);font-weight:700}
+  .topbar .id .sub{color:var(--muted);font-size:12px}
+  .viewseg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:8px;background:var(--surface)}
+  .viewseg button{background:transparent;border:none;color:var(--muted);padding:9px 16px;font-size:13px;font-weight:600;border-right:1px solid var(--line)}
+  .viewseg button:last-child{border-right:none}
+  .viewseg button.active{background:var(--gold);color:#2a2008}
+  .topbar .spacer{flex:1}
+  .topbar .who{color:var(--muted);font-size:12px;margin-right:4px}
+  .icon-btn{background:var(--surface);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 11px;font-size:12px;font-weight:500}
+  .icon-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 24px 4px}
+  .toolbar input[type=search]{max-width:220px}
+  .toolbar select{width:auto;padding:9px 12px;font-size:13px}
+  .price-filter{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:12px}
+  .price-filter input{width:84px;padding:9px 10px;font-size:13px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+  .seg button{background:transparent;border:none;color:var(--muted);padding:9px 13px;font-size:12.5px;font-weight:500;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button.active{background:var(--gold);color:#2a2008}
+  .seg button:hover:not(.active){color:var(--text)}
+  .stat-wrap{display:flex;align-items:center;gap:16px;margin-left:auto;flex-wrap:wrap}
+  .stat{display:flex;align-items:baseline;gap:6px;color:var(--muted);font-size:12px}
+  .stat b{color:var(--text);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat .val{color:var(--gold);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .overdue-pill{display:none;align-items:center;gap:7px;background:rgba(207,107,99,.12);border:1px solid rgba(207,107,99,.38);color:#e3a39d;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer}
+
+  .board{display:flex;gap:14px;padding:14px 24px 40px;overflow-x:auto;align-items:flex-start;flex:1}
+  .col{flex:0 0 270px;background:var(--bg-2);border:1px solid var(--line-soft);border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 210px)}
+  .col.drop-target{border-color:var(--gold);box-shadow:0 0 0 2px rgba(176,138,55,.15) inset}
+  .col-head{display:flex;align-items:center;gap:9px;padding:13px 14px 10px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .col-title{font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:700}
+  .col-count{margin-left:auto;color:var(--muted);font-size:12px;font-weight:600;background:var(--surface-2);border-radius:6px;padding:1px 8px}
+  .col-val{flex-basis:100%;color:var(--gold);font-size:12px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+  .col-body{padding:10px;display:flex;flex-direction:column;gap:9px;overflow-y:auto}
+  .col-empty{color:#5f5a51;font-size:13px;text-align:center;padding:16px 6px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:10px;padding:12px 13px;cursor:grab;transition:border-color .15s,box-shadow .15s}
+  .card:hover{border-color:var(--gold-dim);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+  .card:active{cursor:grabbing}
+  .card.dragging{opacity:.4}
+  .card.valuation{background:#241f17}
+  .card .cname{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:3px}
+  .card .cmeta{color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:4px 10px;margin-bottom:9px}
+  .badges{display:flex;flex-wrap:wrap;gap:6px}
+  .badge{font-size:10.5px;letter-spacing:.02em;text-transform:uppercase;font-weight:600;border-radius:5px;padding:3px 7px;border:1px solid transparent}
+  .badge.buyer{color:#8fc7c0;background:rgba(95,176,169,.12);border-color:rgba(95,176,169,.32)}
+  .badge.seller{color:#e0bd6b;background:rgba(201,161,74,.14);border-color:rgba(201,161,74,.34)}
+  .badge.deal{color:#e7d2a0;background:rgba(201,161,74,.16);border-color:rgba(201,161,74,.4)}
+  .badge.prop{color:#6f685c;background:var(--surface-2);border-color:var(--line)}
+  .tagrow{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .tag{font-size:10.5px;color:#d3bd86;background:rgba(201,161,74,.08);border:1px solid var(--gold-dim);border-radius:6px;padding:2px 8px}
+  .card .priceline{margin-top:9px;color:var(--text);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .card .followline{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:var(--muted)}
+  .card .followline.due{color:var(--danger)}
+  .card .notepeek{margin-top:8px;color:#b8b2a8;font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .srcline{margin-top:8px;color:#6f685c;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+  .qa{display:flex;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line-soft)}
+  .qa a,.qa button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:6px 4px;font-size:11.5px;text-decoration:none;transition:.12s}
+  .qa a:hover,.qa button:hover{border-color:var(--gold);color:var(--gold)}
+
+  .dash{display:none;flex-direction:column;gap:20px;padding:20px 24px 50px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:17px 18px}
+  .kpi .k-label{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .kpi .k-val{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:7px;font-variant-numeric:tabular-nums}
+  .kpi .k-val.gold{color:var(--gold)}
+  .kpi .k-sub{color:var(--muted);font-size:12px;margin-top:3px}
+  .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .panel{background:var(--bg-2);border:1px solid var(--line-soft);border-radius:12px;padding:18px 20px}
+  .panel h3{font-size:16px;font-weight:700;letter-spacing:-.01em;margin-bottom:14px}
+  .panel h3 .small{font-size:12px;color:var(--muted);font-weight:400;margin-left:8px}
+  .agenda-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-soft);cursor:pointer}
+  .agenda-item:last-child{border-bottom:none}
+  .agenda-item:hover{color:var(--gold)}
+  .agenda-item .ai-name{font-weight:500;font-size:13.5px}
+  .agenda-item .ai-meta{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
+  .agenda-item.due .ai-meta{color:var(--danger)}
+  .panel .empty{color:#5f5a51;font-size:13px;padding:6px 0}
+  .barline{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .barline .bl-label{width:96px;font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:7px}
+  .barline .bl-track{flex:1;height:8px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+  .barline .bl-fill{height:100%;border-radius:6px}
+  .barline .bl-num{width:34px;text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;font-weight:600}
+  .ics-btn{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:5px 9px;font-size:11px;font-weight:500}
+  .ics-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+  .scrim{display:none;position:fixed;inset:0;background:rgba(35,33,29,.35);z-index:40}
+  .scrim.open{display:block}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:440px;max-width:94vw;z-index:50;background:var(--surface);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.5)}
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{padding:22px 24px 16px;border-bottom:1px solid var(--line)}
+  .drawer-head .ey{color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .drawer-head h2{font-size:23px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
+  .drawer-body{padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:18px}
+  .contact-row{display:flex;gap:10px;flex-wrap:wrap}
+  .contact-row a{flex:1;min-width:130px;text-decoration:none}
+  .contact-chip{display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;transition:border-color .15s}
+  .contact-chip:hover{border-color:var(--gold)}
+  .contact-chip .ico{color:var(--gold);font-size:14px}
+  .contact-chip .val{color:var(--text);font-size:13px;word-break:break-all}
+  .block-label{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;font-weight:600}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stage-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stage-opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:9px 11px;font-size:12.5px;color:var(--muted);transition:.12s}
+  .stage-opt:hover{border-color:var(--gold-dim);color:var(--text)}
+  .stage-opt.active{border-color:var(--gold);color:var(--text);background:rgba(201,161,74,.12);font-weight:600}
+  .stage-opt .dot{width:8px;height:8px}
+  textarea#noteInput{min-height:88px;resize:vertical;line-height:1.55;font-size:14px}
+  .msgbox{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:12px 13px;color:#cfcabf;white-space:pre-wrap;font-size:13.5px;line-height:1.5}
+  .gdpr-box{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:12px 13px;display:flex;align-items:center;gap:12px}
+  .switch{position:relative;width:42px;height:24px;flex:0 0 auto}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch .track{position:absolute;inset:0;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;transition:.15s}
+  .switch .thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);transition:.15s}
+  .switch input:checked + .track{background:rgba(116,184,111,.28);border-color:var(--s-uzavreno)}
+  .switch input:checked + .track + .thumb{transform:translateX(18px);background:var(--s-uzavreno)}
+  .gdpr-box .lbl{font-size:13px}
+  .gdpr-box .when{color:var(--muted);font-size:12px;margin-top:1px}
+  .tl{display:flex;flex-direction:column;gap:0}
+  .tl-item{position:relative;padding:0 0 16px 22px;border-left:1px solid var(--line)}
+  .tl-item:last-child{border-left-color:transparent;padding-bottom:0}
+  .tl-item::before{content:"";position:absolute;left:-5px;top:3px;width:9px;height:9px;border-radius:50%;background:var(--gold);border:2px solid var(--surface)}
+  .tl-item.system::before{background:var(--muted)}
+  .tl-top{display:flex;align-items:baseline;gap:8px}
+  .tl-kind{font-size:12px;font-weight:600;color:var(--gold)}
+  .tl-item.system .tl-kind{color:var(--muted)}
+  .tl-when{color:var(--muted);font-size:11.5px}
+  .tl-del{margin-left:auto;background:none;border:none;color:#b3ab9c;font-size:14px;line-height:1;padding:0 2px}
+  .tl-del:hover{color:var(--danger)}
+  .tl-note{color:#d6d1c7;font-size:13.5px;margin-top:3px;white-space:pre-wrap}
+  .tl-item.system .tl-note{color:var(--muted);font-size:12.5px}
+  .tl-empty{color:#5f5a51;font-size:13px}
+  .act-add{display:flex;flex-direction:column;gap:9px;background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .act-add .row{display:flex;gap:9px}
+  .act-add select{width:auto;flex:0 0 130px}
+  .act-add textarea{min-height:46px;resize:vertical;flex:1}
+  .act-add .btn{align-self:flex-end;padding:9px 16px}
+  .drawer-foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .drawer-foot .btn-gold{width:auto;flex:1;min-width:120px}
+  .mini-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 12px;font-size:12px;font-weight:500}
+  .mini-btn:hover{border-color:var(--gold);color:var(--gold)}
+  .link-danger{background:transparent;border:1px solid transparent;color:#9a615c;font-size:12px;padding:8px}
+  .link-danger:hover{color:var(--danger)}
+  .meta-foot{color:#6f685c;font-size:11px;padding:0 24px 16px}
+
+  .modal-scrim{display:none;position:fixed;inset:0;background:rgba(35,33,29,.4);z-index:55;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow:auto}
+  .modal-scrim.open{display:flex}
+  .modal{width:100%;max-width:480px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden}
+  .modal-head{padding:22px 24px 4px}
+  .modal-head .ey{color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .modal-head h2{font-size:23px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
+  .modal-body{padding:18px 24px;display:flex;flex-direction:column;gap:14px}
+  .modal-body .field{margin:0}
+  .modal-body select{width:100%}
+  .modal-foot{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:10px}
+  .modal-foot .btn-gold{flex:1;width:auto}
+
+  .center-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--muted);padding:60px}
+  .center-state .big{font-size:19px;font-weight:700;color:var(--text)}
+  .spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface);border:1px solid var(--gold-dim);color:var(--text);padding:11px 20px;border-radius:9px;font-size:13px;opacity:0;pointer-events:none;transition:.22s;z-index:60;box-shadow:0 10px 30px rgba(35,33,29,.25)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (max-width:760px){ .dash-grid{grid-template-columns:1fr} }
+  @media (max-width:640px){
+    header.topbar{padding:12px 14px;gap:9px}
+    .topbar .id .name{font-size:15px}
+    .topbar .id .sub{font-size:12px}
+    .topbar .spacer{display:none}
+    .topbar .who{display:none}
+    .viewseg{margin-left:0}
+    .viewseg button{padding:9px 18px}
+    .icon-btn .t{display:none}
+    .icon-btn{padding:9px 12px;font-size:15px}
+    .toolbar{padding:12px 14px 4px;gap:8px}
+    #newBtn{width:100%!important;order:-1}
+    .toolbar input[type=search]{max-width:none;flex:1 1 100%}
+    .toolbar select{flex:1 1 calc(50% - 4px);width:auto}
+    .price-filter{flex:1 1 100%}
+    .price-filter input{flex:1;width:auto}
+    #agendaSeg{flex:1 1 100%;display:flex}
+    #agendaSeg button{flex:1}
+    .stat-wrap{flex:1 1 100%;justify-content:space-between;gap:10px;margin-left:0}
+    .board{padding:10px 12px 36px;gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+    .col{flex:0 0 86vw;scroll-snap-align:center;max-height:calc(100dvh - 250px)}
+    .col-body{-webkit-overflow-scrolling:touch}
+    .qa a,.qa button{padding:9px 4px;font-size:12.5px}
+    .dash{padding:16px 14px 50px;gap:14px}
+    .kpis{grid-template-columns:1fr 1fr;gap:10px}
+    .kpi{padding:14px 14px}
+    .kpi .k-val{font-size:23px}
+    .row2{grid-template-columns:1fr}
+    .stage-picker{grid-template-columns:1fr 1fr}
+    .drawer{width:100%;max-width:100%}
+    .drawer-head{padding:18px 16px 14px}
+    .drawer-head h2{font-size:21px}
+    .drawer-body{padding:16px;gap:15px}
+    .drawer-foot{padding:12px 16px}
+    .meta-foot{padding:0 16px 14px}
+    .modal-scrim{padding:3vh 10px}
+    .modal-head{padding:18px 18px 4px}
+    .modal-body{padding:16px 18px}
+    .modal-foot{padding:14px 18px}
+    input,select,textarea{font-size:16px}
+  }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-card">
+    <div class="brand-mark">Century 21</div>
+    <h1>Petra <b>Zábranská</b> · CRM</h1>
+    <div class="tagline">Váš domov, moje priorita</div>
+    <div class="field"><label for="email">E-mail</label><input type="email" id="email" autocomplete="username" placeholder="vas@email.cz" /></div>
+    <div class="field"><label for="password">Heslo</label><input type="password" id="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" /></div>
+    <button class="btn btn-gold" id="loginBtn">Přihlásit se</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div class="id"><div class="name">Petra <b>Zábranská</b></div><div class="sub">Realitní CRM · Century 21</div></div>
+    <span class="viewseg" id="viewSeg"><button data-v="board" class="active">Pipeline</button><button data-v="dash">Přehled</button></span>
+    <div class="spacer"></div>
+    <span class="who" id="whoami"></span>
+    <button class="icon-btn" id="notifyBtn" title="Zapnout upozornění na dnešní úkoly">🔔</button>
+    <button class="icon-btn" id="emailBtn" title="Rozeslat e-mail">✉ <span class="t">Rozeslat e-mail</span></button>
+    <button class="icon-btn" id="backupBtn" title="Stáhnout zálohu všech dat">💾 <span class="t">Záloha</span></button>
+    <button class="icon-btn" id="restoreBtn" title="Obnovit data ze zálohy">⤓ <span class="t">Obnovit</span></button>
+    <button class="icon-btn" id="exportBtn" title="Export do CSV">⬇ <span class="t">CSV</span></button>
+    <button class="icon-btn" id="refreshBtn" title="Načíst znovu ze serveru">↻ <span class="t">Obnovit</span></button>
+    <button class="icon-btn" id="logoutBtn" title="Odhlásit">🚪 <span class="t">Odhlásit</span></button>
+    <input type="file" id="restoreFile" accept="application/json" style="display:none" />
+  </header>
+  <div class="toolbar" id="toolbar">
+    <button class="btn btn-gold" id="newBtn" style="width:auto;padding:9px 16px">+ Nový kontakt</button>
+    <span id="boardFilters" style="display:contents">
+      <input type="search" id="search" placeholder="Hledat jméno, e-mail, štítek…" />
+      <select id="filterLead"><option value="">Klient: vše</option><option value="buyer">Kupující</option><option value="seller">Prodávající</option></select>
+      <select id="filterDeal"><option value="">Obchod: vše</option><option value="prodej">Prodej</option><option value="pronajem">Pronájem</option></select>
+      <select id="filterProp"><option value="">Nemovitost: vše</option><option value="house">Dům</option><option value="apartment">Byt</option><option value="commercial">Komerční</option><option value="land">Pozemek</option></select>
+      <select id="filterSource"><option value="">Druh: vše</option><option value="lead">Jen leady</option><option value="valuation">Jen odhady</option></select>
+      <span class="price-filter">Cena <input type="number" id="priceMin" min="0" placeholder="od" /> – <input type="number" id="priceMax" min="0" placeholder="do" /></span>
+      <span class="seg" id="agendaSeg"><button data-a="" class="active">Vše</button><button data-a="dnes">Dnes</button><button data-a="tyden">Tento týden</button><button data-a="po">Po termínu</button></span>
+    </span>
+    <div class="stat-wrap">
+      <span class="overdue-pill" id="overduePill"></span>
+      <span class="stat"><b id="totalCount">0</b><span>leadů</span></span>
+      <span class="stat"><span class="val" id="totalValue">0 Kč</span><span>v pipeline</span></span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;flex:1">
+    <div class="board" id="board"></div>
+    <div class="dash" id="dash"></div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head"><div class="ey" id="dEyebrow">Lead</div><h2 id="dName">—</h2></div>
+  <div class="drawer-body">
+    <div><div class="block-label">Kontakt</div>
+      <div class="contact-row">
+        <a id="dPhoneLink" href="#"><div class="contact-chip"><span class="ico">☎</span><span class="val" id="dPhone">—</span></div></a>
+        <a id="dEmailLink" href="#"><div class="contact-chip"><span class="ico">✉</span><span class="val" id="dEmail">—</span></div></a>
+        <a id="dWaLink" href="#" target="_blank" rel="noopener"><div class="contact-chip"><span class="ico">🟢</span><span class="val">WhatsApp</span></div></a>
+      </div>
+    </div>
+    <div id="dMsgWrap"><div class="block-label">Zpráva z webu</div><div class="msgbox" id="dMessage">—</div></div>
+    <div><div class="block-label">Fáze obchodu</div><div class="stage-picker" id="stagePicker"></div></div>
+    <div><div class="block-label">Obchod a cena</div><div class="row2"><select id="dDeal"><option value="">— nevybráno —</option><option value="prodej">Prodej</option><option value="pronajem">Pronájem</option></select><input type="number" id="dPrice" min="0" placeholder="Cena v Kč" /></div></div>
+    <div><div class="block-label">Nemovitost a odhad</div>
+      <div class="row2"><select id="dLeadType"><option value="">Typ klienta —</option><option value="buyer">Kupující</option><option value="seller">Prodávající</option></select><select id="dPropType"><option value="">Nemovitost —</option><option value="house">Dům</option><option value="apartment">Byt</option><option value="commercial">Komerční</option><option value="land">Pozemek</option></select></div>
+      <input type="text" id="dAddress" placeholder="Přesná adresa nemovitosti" style="margin-top:12px" />
+      <input type="text" id="dPriceEst" placeholder="Cenová představa klienta (např. 9 500 000 Kč)" style="margin-top:12px" />
+      <div class="gdpr-box" style="margin-top:12px"><label class="switch"><input type="checkbox" id="dSell12m" /><span class="track"></span><span class="thumb"></span></label><div class="lbl">Plánuje prodej do 12 měsíců</div></div>
+    </div>
+    <div><div class="block-label">Lokalita</div><div style="display:flex;gap:9px"><input type="text" id="dLoc" placeholder="Praha 6 – Dejvice, Na Hutích 12" style="flex:1" /><a id="dMapLink" class="mini-btn" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap">📍 Mapa</a></div></div>
+    <div><div class="block-label">Zdroj &amp; štítky</div><div class="row2"><select id="dSource"></select><input type="text" id="dTags" placeholder="investor, spěchá…" /></div></div>
+    <div><div class="block-label">Schůzka / prohlídka</div><div style="display:flex;gap:9px"><input type="datetime-local" id="dMeeting" style="flex:1" /><button class="mini-btn" id="dIcsBtn" title="Stáhnout pro kalendář (.ics)" style="white-space:nowrap">📅 Kalendář</button></div></div>
+    <div><div class="block-label">Zavolat zpět (follow-up)</div><input type="date" id="followInput" /></div>
+    <div><div class="block-label">Obecná poznámka</div><textarea id="noteInput" placeholder="Krátká poznámka ke klientovi…"></textarea></div>
+    <div><div class="block-label">Souhlas se zpracováním údajů (GDPR)</div><div class="gdpr-box"><label class="switch"><input type="checkbox" id="dGdpr" /><span class="track"></span><span class="thumb"></span></label><div><div class="lbl" id="dGdprLbl">Souhlas neudělen</div><div class="when" id="dGdprWhen"></div></div></div></div>
+    <div><div class="block-label">Historie komunikace</div>
+      <div class="act-add"><div class="row"><select id="actKind"><option value="hovor">Hovor</option><option value="email">E-mail</option><option value="schuzka">Schůzka</option><option value="poznamka" selected>Poznámka</option><option value="jine">Jiné</option></select><textarea id="actNote" placeholder="Co se dělo…"></textarea></div><button class="btn btn-ghost" id="actAddBtn">Přidat záznam</button></div>
+      <div class="tl" id="timeline" style="margin-top:14px"></div>
+    </div>
+  </div>
+  <div class="meta-foot" id="dMeta"></div>
+  <div class="drawer-foot"><button class="btn btn-gold" id="saveBtn">Uložit změny</button><button class="mini-btn" id="closeBtn">Zavřít</button><button class="mini-btn" id="exportClientBtn" title="Stáhnout všechna data klienta (GDPR)">Data klienta</button><button class="link-danger" id="deleteBtn" title="Smazat lead a jeho historii">Smazat</button></div>
+</aside>
+
+<div class="modal-scrim" id="createScrim">
+  <div class="modal">
+    <div class="modal-head"><div class="ey">Ručně přidaný kontakt</div><h2>Nový kontakt</h2></div>
+    <div class="modal-body">
+      <div class="field"><label>Jméno a příjmení *</label><input type="text" id="nName" placeholder="Jan Novák" /></div>
+      <div class="row2"><div class="field"><label>Telefon</label><input type="text" id="nPhone" placeholder="+420…" /></div><div class="field"><label>E-mail</label><input type="email" id="nEmail" placeholder="jan@email.cz" /></div></div>
+      <div class="row2"><div class="field"><label>Typ klienta</label><select id="nLead"><option value="">— nevybráno —</option><option value="buyer">Kupující</option><option value="seller">Prodávající</option></select></div><div class="field"><label>Typ nemovitosti</label><select id="nProp"><option value="">— nevybráno —</option><option value="house">Dům</option><option value="apartment">Byt</option><option value="commercial">Komerční</option><option value="land">Pozemek</option></select></div></div>
+      <div class="row2"><div class="field"><label>Obchod</label><select id="nDeal"><option value="">— nevybráno —</option><option value="prodej">Prodej</option><option value="pronajem">Pronájem</option></select></div><div class="field"><label>Cena (Kč)</label><input type="number" id="nPrice" min="0" placeholder="např. 4 500 000" /></div></div>
+      <div class="row2"><div class="field"><label>Zdroj</label><select id="nSource"></select></div><div class="field"><label>Štítky (oddělené čárkou)</label><input type="text" id="nTags" placeholder="investor, spěchá" /></div></div>
+      <div class="field"><label>Lokalita</label><input type="text" id="nLoc" placeholder="Praha 6 – Dejvice, Na Hutích 12" /></div>
+      <div class="field"><label>Přesná adresa nemovitosti</label><input type="text" id="nAddress" placeholder="Korunní 100, Praha 2" /></div>
+      <div class="row2"><div class="field"><label>Cenová představa klienta</label><input type="text" id="nPriceEst" placeholder="9 500 000 Kč" /></div><div class="field"><label>Plán prodeje</label><label class="switch" style="display:inline-flex;align-items:center;gap:10px;width:auto;margin-top:6px"><input type="checkbox" id="nSell12m" /><span class="track"></span><span class="thumb"></span><span style="font-size:13px;color:var(--text);text-transform:none;letter-spacing:0">Do 12 měsíců</span></label></div></div>
+      <div class="row2"><div class="field"><label>Počáteční fáze</label><select id="nStage"></select></div><div class="field"><label>Zavolat zpět</label><input type="date" id="nFollow" /></div></div>
+      <div class="field"><label>Poznámka</label><textarea id="nNote" style="min-height:80px" placeholder="Odkud kontakt je, co poptává…"></textarea></div>
+      <label class="switch" style="display:inline-flex;align-items:center;gap:10px;width:auto"><input type="checkbox" id="nGdpr" /><span class="track"></span><span class="thumb"></span><span style="font-size:13px;color:var(--text);text-transform:none;letter-spacing:0">Klient udělil souhlas GDPR</span></label>
+      <div class="msg error" id="nMsg"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-gold" id="nSave">Přidat kontakt</button><button class="btn btn-ghost" id="nCancel">Zrušit</button></div>
+  </div>
+</div>
+
+<div class="modal-scrim" id="emailScrim">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head"><div class="ey">Hromadný e-mail</div><h2>Rozeslat e-mail</h2></div>
+    <div class="modal-body">
+      <div class="field"><label>Šablona</label><div style="display:flex;gap:9px;flex-wrap:wrap"><select id="tplSelect" style="flex:1;min-width:170px"></select><input type="text" id="tplName" placeholder="Název šablony" style="flex:1;min-width:150px" /><button class="mini-btn" id="tplSave">Uložit šablonu</button><button class="mini-btn" id="tplDel">Smazat</button></div></div>
+      <div class="field"><label>Předmět</label><input type="text" id="emSubject" placeholder="Předmět e-mailu" /></div>
+      <div class="field"><label>Text</label><textarea id="emBody" style="min-height:150px" placeholder="Dobrý den, {{jmeno}},&#10;&#10;…&#10;&#10;S pozdravem,&#10;{{makler}}"></textarea><div style="color:var(--muted);font-size:11.5px;margin-top:6px">Zástupné značky: {{jmeno}}, {{lokalita}}, {{cena}}, {{telefon}}, {{email}}, {{makler}}</div></div>
+      <div class="field"><label>Příjemci</label>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px"><label class="switch" style="display:inline-flex;align-items:center;gap:8px;width:auto"><input type="checkbox" id="emOnlyConsent" checked /><span class="track"></span><span class="thumb"></span><span style="font-size:12.5px;color:var(--text);text-transform:none;letter-spacing:0">Jen se souhlasem GDPR</span></label><span style="color:var(--muted);font-size:12px" id="emCount">0 vybráno</span><button class="mini-btn" id="emAll">Vybrat vše</button><button class="mini-btn" id="emNone">Zrušit výběr</button></div>
+        <div id="emList" style="max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;display:flex;flex-direction:column;gap:2px"></div>
+      </div>
+      <div class="field"><label>Způsob odeslání</label><span class="seg" id="emMode"><button data-m="perso" class="active">Personalizovaně (po jednom)</button><button data-m="bcc">Najednou (skrytá kopie)</button></span></div>
+      <label class="switch" style="display:inline-flex;align-items:center;gap:10px;width:auto"><input type="checkbox" id="emLog" checked /><span class="track"></span><span class="thumb"></span><span style="font-size:13px;color:var(--text);text-transform:none;letter-spacing:0">Zaznamenat do historie kontaktů</span></label>
+      <div id="emStepper" style="display:none"></div>
+      <div class="msg error" id="emMsg"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-gold" id="emSend">Rozeslat</button><button class="btn btn-ghost" id="emClose">Zavřít</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL="https://rhdxopvennrbkhkqeqvb.supabase.co";
+const SUPABASE_KEY="sb_publishable_jBA-d9GAB0DeKckQSroAWQ_puCwes1b";
+function safeStorage(){
+  try{ const t="__probe__"+Math.random(); window.localStorage.setItem(t,"1"); window.localStorage.removeItem(t); return window.localStorage; }
+  catch(e){ const m={}; return { getItem:k=>(k in m?m[k]:null), setItem:(k,v)=>{m[k]=String(v);}, removeItem:k=>{delete m[k];} }; }
+}
+let sb=null, sbInitError=null;
+try{
+  if(!window.supabase||!window.supabase.createClient) throw new Error("Knihovna serveru se nenačetla (Supabase JS).");
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"petra-crm-auth",storage:safeStorage()}});
+}catch(e){ sbInitError=e; }
+const STAGES=[{key:"novy",label:"Nový",color:"#6b7a8f"},{key:"kontaktovan",label:"Kontaktován",color:"#c9a14a"},{key:"schuzka",label:"Schůzka",color:"#9b7bb8"},{key:"nabidka",label:"Nabídka",color:"#5aa6a0"},{key:"uzavreno",label:"Uzavřeno",color:"#6fae6b"},{key:"ztraceno",label:"Ztracený",color:"#9a5f5a"}];
+const STAGE_MAP=Object.fromEntries(STAGES.map(s=>[s.key,s]));
+const STAGE_ORDER=STAGES.map(s=>s.key);
+const LEAD_LABEL={buyer:"Kupující",seller:"Prodávající"};
+const PROP_LABEL={house:"Dům",apartment:"Byt",commercial:"Komerční",land:"Pozemek"};
+const DEAL_LABEL={prodej:"Prodej",pronajem:"Pronájem"};
+const SOURCE_OPTS=[["web","Web (kontakt)"],["valuation","Odhad zdarma"],["sreality","Sreality"],["doporuceni","Doporučení"],["inzerat","Inzerát"],["rucne","Ruční zápis"],["jine","Jiné"]];
+const SOURCE_LABEL=Object.fromEntries(SOURCE_OPTS);
+const KIND_LABEL={hovor:"Hovor",email:"E-mail",schuzka:"Schůzka",poznamka:"Poznámka",jine:"Jiné",system:"Změna"};
+const CLOSED=new Set(["uzavreno","ztraceno"]);
+const MAKLER="Petra Zábranská";
+let leads=[], selectedId=null, activities=[], templates=[], currentView="board";
+let emailMode="perso", emailSel=new Set(), stepQueue=[], stepIdx=0, stepSubject="", stepBody="";
+const filters={q:"",lead:"",deal:"",prop:"",pmin:null,pmax:null,agenda:"",kind:""};
+const $=s=>document.querySelector(s);
+const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
+const esc=s=>(s??"").toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate=d=>d?new Date(d).toLocaleDateString("cs-CZ",{day:"numeric",month:"short",year:"numeric"}):"";
+const fmtDateTime=d=>d?new Date(d).toLocaleString("cs-CZ",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+const fmtPrice=(v,deal)=>{if(v==null||v==="")return "";const n=Number(v);if(isNaN(n))return "";const s=n.toLocaleString("cs-CZ")+" Kč";return deal==="pronajem"?s+"/měs":s;};
+const toInputDate=d=>{if(!d)return "";const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;};
+const toInputDT=d=>{if(!d)return "";const x=new Date(d);const p=n=>String(n).padStart(2,"0");return `${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}T${p(x.getHours())}:${p(x.getMinutes())}`;};
+const startOfToday=()=>new Date(new Date().toDateString());
+function isOverdue(l){return l.follow_up_at && !CLOSED.has(l.crm_status) && new Date(l.follow_up_at)<startOfToday();}
+function isToday(d){if(!d)return false;const x=new Date(d),t=startOfToday(),tm=new Date(t);tm.setDate(tm.getDate()+1);return x>=t&&x<tm;}
+function parseTags(str){return (str||"").split(",").map(t=>t.trim()).filter(Boolean);}
+const mapsUrl=loc=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(loc||"");
+const waDigits=p=>(p||"").replace(/[^\d]/g,"");
+let toastTimer=null;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2800);}
+function download(filename,text,mime){const blob=new Blob([text],{type:mime||"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);}
+function fillSourceSelect(sel){sel.innerHTML="";SOURCE_OPTS.forEach(([v,l])=>{const o=document.createElement("option");o.value=v;o.textContent=l;sel.append(o);});}
+</script>
+<script>
+async function init(){
+  if(!sb){ showLogin(); return; }
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session){ showApp(session); } else { showLogin(); }
+  }catch(e){ showLogin(); }
+  sb.auth.onAuthStateChange((_e,s)=>{ if(s){ showApp(s); } else { showLogin(); } });
+}
+async function diagnose(){
+  const m=$("#loginMsg");
+  if(sbInitError||!sb){ m.className="msg error"; m.textContent="⚠ "+(sbInitError?sbInitError.message:"Server se nenačetl")+" Otevři appku v Safari přes internet, ne jako náhled souboru."; return; }
+  try{
+    const r=await fetch(SUPABASE_URL+"/auth/v1/health",{headers:{apikey:SUPABASE_KEY}});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+  }catch(e){
+    m.className="msg error";
+    m.textContent="⚠ Z tohoto otevření se nelze spojit se serverem (typické omezení Safari u souboru otevřeného přímo z telefonu). Appku je potřeba otevřít přes webovou adresu https://. Detail: "+(e.message||e);
+  }
+}
+function showLogin(){ $("#app").style.display="none"; $("#login").style.display="flex"; diagnose(); }
+function showApp(session){
+  $("#login").style.display="none"; $("#app").style.display="flex";
+  $("#whoami").textContent=session.user?.email||"";
+  fillSourceSelect($("#dSource")); fillSourceSelect($("#nSource"));
+  loadLeads(); loadTemplates();
+}
+$("#loginBtn").addEventListener("click", doLogin);
+$("#password").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+$("#email").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#password").focus(); });
+async function doLogin(){
+  const email=$("#email").value.trim(), password=$("#password").value;
+  const msg=$("#loginMsg"); msg.className="msg"; msg.textContent="";
+  if(!sb){ msg.className="msg error"; msg.textContent="Spojení se serverem není dostupné. Otevři appku přes webovou adresu https://."; return; }
+  if(!email||!password){ msg.className="msg error"; msg.textContent="Vyplňte e-mail i heslo."; return; }
+  $("#loginBtn").textContent="Přihlašuji…"; $("#loginBtn").disabled=true;
+  try{
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ msg.className="msg error"; msg.textContent="Nesprávný e-mail nebo heslo."; }
+    else { $("#password").value=""; }
+  }catch(err){
+    msg.className="msg error"; msg.textContent="Přihlášení selhalo: "+(err&&err.message?err.message:err);
+  }finally{
+    $("#loginBtn").textContent="Přihlásit se"; $("#loginBtn").disabled=false;
+  }
+}
+$("#logoutBtn").addEventListener("click", ()=> sb.auth.signOut());
+
+let summaryShown=false;
+async function loadLeads(){
+  renderLoading();
+  const { data, error } = await sb.from("leady").select("*").order("crm_updated_at",{ascending:false});
+  if(error){ renderError(error.message); return; }
+  leads=data||[]; render();
+  if(!summaryShown){ summaryShown=true; setTimeout(dailySummary,600); }
+}
+$("#refreshBtn").addEventListener("click", loadLeads);
+async function logSystem(leadId,note){ await sb.from("leady_aktivity").insert({lead_id:leadId,kind:"system",note}); }
+async function saveLead(){
+  if(!selectedId) return;
+  const cur=leads.find(x=>x.id===selectedId)||{};
+  const stage=document.querySelector(".stage-opt.active")?.dataset.key;
+  const followVal=$("#followInput").value, meetVal=$("#dMeeting").value, priceRaw=$("#dPrice").value;
+  const price=priceRaw===""?null:parseInt(priceRaw,10);
+  const gdpr=$("#dGdpr").checked;
+  const patch={ crm_status:stage, crm_note:$("#noteInput").value||null,
+    follow_up_at:followVal?new Date(followVal+"T09:00:00").toISOString():null,
+    meeting_at:meetVal?new Date(meetVal).toISOString():null,
+    deal_type:$("#dDeal").value||null, price, location:$("#dLoc").value.trim()||null,
+    lead_type:$("#dLeadType").value||null, property_type:$("#dPropType").value||null,
+    address:$("#dAddress").value.trim()||null, price_estimate:$("#dPriceEst").value.trim()||null,
+    sell_within_12m:$("#dSell12m").checked,
+    source:$("#dSource").value||null, tags:parseTags($("#dTags").value),
+    gdpr_consent:gdpr, gdpr_consent_at:gdpr?(cur.gdpr_consent_at||new Date().toISOString()):null,
+    crm_updated_at:new Date().toISOString() };
+  const audits=[];
+  if(cur.crm_status!==stage) audits.push(`Fáze: ${STAGE_MAP[cur.crm_status]?.label||"—"} → ${STAGE_MAP[stage]?.label||"—"}`);
+  if((cur.price??null)!==(price??null)) audits.push(`Cena: ${cur.price?fmtPrice(cur.price,cur.deal_type):"—"} → ${price?fmtPrice(price,patch.deal_type):"—"}`);
+  $("#saveBtn").disabled=true; $("#saveBtn").textContent="Ukládám…";
+  const { error } = await sb.from("leady").update(patch).eq("id",selectedId);
+  $("#saveBtn").disabled=false; $("#saveBtn").textContent="Uložit změny";
+  if(error){ toast("Uložení selhalo: "+error.message); return; }
+  for(const a of audits){ await logSystem(selectedId,a); }
+  Object.assign(cur,patch); closeDrawer(); render(); toast("Změny uloženy");
+}
+$("#saveBtn").addEventListener("click", saveLead);
+async function deleteLead(){
+  if(!selectedId) return;
+  const l=leads.find(x=>x.id===selectedId);
+  if(!confirm(`Opravdu smazat lead „${l?.name||""}" včetně celé historie? Tuto akci nelze vrátit.`)) return;
+  const { error } = await sb.from("leady").delete().eq("id",selectedId);
+  if(error){ toast("Smazání selhalo: "+error.message); return; }
+  leads=leads.filter(x=>x.id!==selectedId); closeDrawer(); render(); toast("Lead smazán");
+}
+$("#deleteBtn").addEventListener("click", deleteLead);
+async function moveStage(id,stage){
+  const l=leads.find(x=>x.id===id); if(!l||l.crm_status===stage) return;
+  const prev=l.crm_status, prevLabel=STAGE_MAP[prev]?.label||"—";
+  l.crm_status=stage; l.crm_updated_at=new Date().toISOString(); render();
+  const { error } = await sb.from("leady").update({crm_status:stage,crm_updated_at:l.crm_updated_at}).eq("id",id);
+  if(error){ l.crm_status=prev; render(); toast("Změna fáze selhala"); }
+  else { logSystem(id,`Fáze: ${prevLabel} → ${STAGE_MAP[stage].label}`); toast(`Přesunuto do „${STAGE_MAP[stage].label}"`); }
+}
+function advanceStage(id){
+  const l=leads.find(x=>x.id===id); if(!l) return;
+  const i=STAGE_ORDER.indexOf(l.crm_status);
+  const next=STAGE_ORDER[Math.min(i+1,STAGE_ORDER.indexOf("uzavreno"))];
+  if(next&&next!==l.crm_status) moveStage(id,next);
+}
+async function loadActivities(leadId){
+  activities=[]; renderTimeline();
+  const { data, error } = await sb.from("leady_aktivity").select("*").eq("lead_id",leadId).order("created_at",{ascending:false});
+  if(!error){ activities=data||[]; renderTimeline(); }
+}
+async function addActivity(){
+  if(!selectedId) return;
+  const note=$("#actNote").value.trim(); if(!note){ toast("Napište, co se dělo."); return; }
+  const kind=$("#actKind").value;
+  const { data, error } = await sb.from("leady_aktivity").insert({lead_id:selectedId,kind,note}).select().single();
+  if(error){ toast("Záznam se nepodařilo uložit."); return; }
+  activities.unshift(data); $("#actNote").value=""; renderTimeline();
+  const l=leads.find(x=>x.id===selectedId);
+  if(l){ const ts=new Date().toISOString(); l.crm_updated_at=ts; sb.from("leady").update({crm_updated_at:ts}).eq("id",selectedId); }
+}
+async function delActivity(id){
+  const { error } = await sb.from("leady_aktivity").delete().eq("id",id);
+  if(error){ toast("Smazání záznamu selhalo."); return; }
+  activities=activities.filter(a=>a.id!==id); renderTimeline();
+}
+$("#actAddBtn").addEventListener("click", addActivity);
+
+$("#search").addEventListener("input", e=>{ filters.q=e.target.value.toLowerCase(); render(); });
+$("#filterLead").addEventListener("change", e=>{ filters.lead=e.target.value; render(); });
+$("#filterDeal").addEventListener("change", e=>{ filters.deal=e.target.value; render(); });
+$("#filterProp").addEventListener("change", e=>{ filters.prop=e.target.value; render(); });
+$("#filterSource").addEventListener("change", e=>{ filters.kind=e.target.value; render(); });
+$("#priceMin").addEventListener("input", e=>{ filters.pmin=e.target.value===""?null:Number(e.target.value); render(); });
+$("#priceMax").addEventListener("input", e=>{ filters.pmax=e.target.value===""?null:Number(e.target.value); render(); });
+$("#agendaSeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; filters.agenda=b.dataset.a; $("#agendaSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); render(); });
+$("#overduePill").addEventListener("click", ()=>{ if(currentView!=="board") switchView("board"); filters.agenda="po"; $("#agendaSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.a==="po")); render(); });
+function agendaMatch(l){
+  if(!filters.agenda) return true;
+  if(!l.follow_up_at||CLOSED.has(l.crm_status)) return false;
+  const d=new Date(l.follow_up_at), t=startOfToday();
+  if(filters.agenda==="po") return d<t;
+  if(filters.agenda==="dnes"){ const tm=new Date(t); tm.setDate(tm.getDate()+1); return d>=t&&d<tm; }
+  if(filters.agenda==="tyden"){ const wk=new Date(t); wk.setDate(wk.getDate()+7); return d>=t&&d<wk; }
+  return true;
+}
+function visibleLeads(){
+  return leads.filter(l=>{
+    if(filters.lead&&l.lead_type!==filters.lead) return false;
+    if(filters.deal&&l.deal_type!==filters.deal) return false;
+    if(filters.prop&&l.property_type!==filters.prop) return false;
+    if(filters.kind==='valuation'&&l.source!=='valuation') return false;
+    if(filters.kind==='lead'&&l.source==='valuation') return false;
+    if(filters.pmin!=null&&(l.price==null||l.price<filters.pmin)) return false;
+    if(filters.pmax!=null&&(l.price==null||l.price>filters.pmax)) return false;
+    if(!agendaMatch(l)) return false;
+    if(filters.q){ const hay=`${l.name||""} ${l.email||""} ${l.phone||""} ${l.location||""} ${l.crm_note||""} ${(l.tags||[]).join(" ")}`.toLowerCase(); if(!hay.includes(filters.q)) return false; }
+    return true;
+  });
+}
+const sumPrice=list=>list.filter(l=>!CLOSED.has(l.crm_status)).reduce((s,l)=>s+(Number(l.price)||0),0);
+
+$("#viewSeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) switchView(b.dataset.v); });
+function switchView(v){
+  currentView=v;
+  $("#viewSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.v===v));
+  const board=v==="board";
+  $("#board").style.display=board?"flex":"none";
+  $("#dash").style.display=board?"none":"flex";
+  $("#boardFilters").style.display=board?"contents":"none";
+  if(board) render(); else renderDashboard();
+}
+function renderLoading(){ $("#board").innerHTML=`<div class="center-state" style="width:100%"><div class="spinner"></div><div>Načítám leady…</div></div>`; }
+function renderError(m){ $("#board").innerHTML=`<div class="center-state" style="width:100%"><div class="big">Data se nepodařilo načíst</div><div>${esc(m)}</div><button class="btn btn-ghost" onclick="loadLeads()">Zkusit znovu</button></div>`; }
+function render(){
+  if(currentView!=="board"){ renderDashboard(); }
+  const vis=visibleLeads();
+  $("#totalCount").textContent=vis.length;
+  $("#totalValue").textContent=fmtPrice(sumPrice(vis))||"0 Kč";
+  const overdue=leads.filter(isOverdue).length;
+  const pill=$("#overduePill");
+  if(overdue>0){ pill.style.display="inline-flex"; pill.textContent=`⏱ ${overdue} po termínu`; } else pill.style.display="none";
+  const board=$("#board"); board.innerHTML="";
+  for(const st of STAGES){
+    const items=vis.filter(l=>l.crm_status===st.key);
+    const col=el("div","col"); col.dataset.stage=st.key;
+    const head=el("div","col-head");
+    const dot=el("span","dot"); dot.style.background=st.color;
+    const title=el("span","col-title"); title.textContent=st.label;
+    const cnt=el("span","col-count"); cnt.textContent=items.length;
+    head.append(dot,title,cnt);
+    const sval=sumPrice(items);
+    if(sval>0&&!CLOSED.has(st.key)){ const v=el("span","col-val"); v.textContent=fmtPrice(sval); head.append(v); }
+    col.append(head);
+    const body=el("div","col-body");
+    if(items.length===0){ const e=el("div","col-empty"); e.textContent="Prázdné"; body.append(e); }
+    else items.forEach(l=>body.append(makeCard(l)));
+    col.append(body);
+    col.addEventListener("dragover", e=>{ e.preventDefault(); col.classList.add("drop-target"); });
+    col.addEventListener("dragleave", ()=>col.classList.remove("drop-target"));
+    col.addEventListener("drop", e=>{ e.preventDefault(); col.classList.remove("drop-target"); const id=e.dataTransfer.getData("text/plain"); if(id) moveStage(id,st.key); });
+    board.append(col);
+  }
+}
+function makeCard(l){
+  const c=el("div","card"); c.draggable=true; c.dataset.id=l.id;
+  if(l.source==='valuation') c.classList.add('valuation');
+  c.style.borderLeftColor=STAGE_MAP[l.crm_status]?.color||"var(--line)";
+  const overdue=isOverdue(l);
+  let badges="";
+  if(l.lead_type) badges+=`<span class="badge ${l.lead_type==='buyer'?'buyer':'seller'}">${LEAD_LABEL[l.lead_type]||l.lead_type}</span>`;
+  if(l.deal_type) badges+=`<span class="badge deal">${DEAL_LABEL[l.deal_type]||l.deal_type}</span>`;
+  if(l.property_type) badges+=`<span class="badge prop">${PROP_LABEL[l.property_type]||l.property_type}</span>`;
+  if(l.source==='valuation') badges='<span class="badge deal">Odhad zdarma</span>'+badges;
+  const tags=(l.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
+  const wa=waDigits(l.phone);
+  let qa="";
+  if(l.phone) qa+=`<a href="tel:${esc(l.phone.replace(/\s/g,''))}" onclick="event.stopPropagation()" title="Zavolat">☎</a>`;
+  if(wa) qa+=`<a href="https://wa.me/${wa}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="WhatsApp">🟢</a>`;
+  if(l.email) qa+=`<button onclick="event.stopPropagation();openEmailFor('${l.id}')" title="Napsat e-mail">✉</button>`;
+  if(!CLOSED.has(l.crm_status)&&l.crm_status!=="uzavreno") qa+=`<button onclick="event.stopPropagation();advanceStage('${l.id}')" title="Posunout o fázi">→</button>`;
+  c.innerHTML=`
+    <div class="cname">${esc(l.name)||"Bez jména"}</div>
+    <div class="cmeta">${l.phone?`<span>☎ ${esc(l.phone)}</span>`:""}${l.email?`<span>✉ ${esc(l.email)}</span>`:""}</div>
+    <div class="badges">${badges}</div>
+    ${tags?`<div class="tagrow">${tags}</div>`:""}
+    ${l.price?`<div class="priceline">${fmtPrice(l.price,l.deal_type)}</div>`:""}
+    ${l.price_estimate?`<div class="priceline" style="font-size:14px;font-weight:500">Představa: ${esc(l.price_estimate)}</div>`:""}
+    ${(l.location||l.address)?`<div class="followline"><a href="${mapsUrl(l.location||l.address)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--gold);text-decoration:none">📍 ${esc(l.location||l.address)}</a></div>`:""}
+    ${l.sell_within_12m?`<div class="followline">⏳ Plánuje prodej do 12 měsíců</div>`:""}
+    ${l.meeting_at?`<div class="followline">🗓 Schůzka: ${fmtDateTime(l.meeting_at)}</div>`:""}
+    ${l.crm_note?`<div class="notepeek">${esc(l.crm_note)}</div>`:""}
+    ${l.follow_up_at?`<div class="followline ${overdue?'due':''}">${overdue?'⏱':'📅'} ${overdue?'Zmeškáno: ':'Zavolat: '}${fmtDate(l.follow_up_at)}</div>`:""}
+    ${l.source?`<div class="srcline">${SOURCE_LABEL[l.source]||l.source}</div>`:""}
+    ${qa?`<div class="qa">${qa}</div>`:""}`;
+  c.addEventListener("click", ()=>openDrawer(l.id));
+  c.addEventListener("dragstart", e=>{ e.dataTransfer.setData("text/plain",l.id); c.classList.add("dragging"); });
+  c.addEventListener("dragend", ()=>c.classList.remove("dragging"));
+  return c;
+}
+</script>
+<script>
+function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+function renderDashboard(){
+  const dash=$("#dash"); dash.innerHTML="";
+  const now=new Date(), monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  const total=leads.length;
+  const thisMonth=leads.filter(l=>new Date(l.created_at)>=monthStart).length;
+  const active=leads.filter(l=>!CLOSED.has(l.crm_status));
+  const openValue=active.reduce((s,l)=>s+(Number(l.price)||0),0);
+  const won=leads.filter(l=>l.crm_status==="uzavreno");
+  const lost=leads.filter(l=>l.crm_status==="ztraceno").length;
+  const wonValue=won.reduce((s,l)=>s+(Number(l.price)||0),0);
+  const decided=won.length+lost;
+  const conv=decided>0?Math.round(won.length/decided*100):null;
+  const ages=active.map(l=>daysBetween(new Date(l.created_at),now));
+  const avgAge=ages.length?Math.round(ages.reduce((a,b)=>a+b,0)/ages.length):0;
+  const valuations=leads.filter(l=>l.source==='valuation');
+  const sell12=valuations.filter(l=>l.sell_within_12m).length;
+  const kpi=(label,val,sub,gold)=>`<div class="kpi"><div class="k-label">${label}</div><div class="k-val ${gold?'gold':''}">${val}</div>${sub?`<div class="k-sub">${sub}</div>`:""}</div>`;
+  const kpis=el("div","kpis");
+  kpis.innerHTML=kpi("Leadů celkem",total,`${thisMonth} nových tento měsíc`)
+    +kpi("Aktivní v pipeline",active.length,`průměrné stáří ${avgAge} dní`)
+    +kpi("Hodnota pipeline",fmtPrice(openValue)||"0 Kč","otevřené obchody",true)
+    +kpi("Uzavřeno",won.length,fmtPrice(wonValue)||"0 Kč",true)
+    +kpi("Konverze",conv==null?"—":conv+" %",`${won.length} z ${decided} rozhodnutých`)
+    +kpi("Odhady",valuations.length,`${sell12} chce prodat do 12 měs.`);
+  dash.append(kpis);
+  const grid=el("div","dash-grid");
+  const followToday=leads.filter(l=>isToday(l.follow_up_at)&&!CLOSED.has(l.crm_status));
+  const meetingsToday=leads.filter(l=>isToday(l.meeting_at));
+  const overdue=leads.filter(isOverdue);
+  const todayPanel=el("div","panel");
+  const lineItem=(l,meta,due)=>`<div class="agenda-item ${due?'due':''}" onclick="openDrawer('${l.id}')"><span class="ai-name">${esc(l.name||'Bez jména')}</span><span class="ai-meta">${meta}</span></div>`;
+  let body=`<h3>Dnes <span class="small">${fmtDate(now)}</span></h3>`;
+  if(overdue.length) body+=`<div class="block-label" style="margin-top:4px">Po termínu (${overdue.length})</div>`+overdue.slice(0,6).map(l=>lineItem(l,"⏱ "+fmtDate(l.follow_up_at),true)).join("");
+  body+=`<div class="block-label" style="margin-top:12px">Telefony dnes (${followToday.length})</div>`+(followToday.length?followToday.map(l=>lineItem(l,"☎ "+(l.phone||""))).join(""):`<div class="empty">Žádné hovory na dnešek.</div>`);
+  body+=`<div class="block-label" style="margin-top:12px">Schůzky dnes (${meetingsToday.length})</div>`+(meetingsToday.length?meetingsToday.map(l=>lineItem(l,"🗓 "+new Date(l.meeting_at).toLocaleTimeString("cs-CZ",{hour:'2-digit',minute:'2-digit'}))).join(""):`<div class="empty">Žádné schůzky na dnešek.</div>`);
+  todayPanel.innerHTML=body; grid.append(todayPanel);
+  const upMeetings=leads.filter(l=>l.meeting_at&&new Date(l.meeting_at)>=startOfToday()).sort((a,b)=>new Date(a.meeting_at)-new Date(b.meeting_at));
+  const meetPanel=el("div","panel"); meetPanel.innerHTML=`<h3>Nadcházející schůzky</h3>`;
+  if(upMeetings.length===0) meetPanel.innerHTML+=`<div class="empty">Žádné naplánované schůzky. Termín přidáš v detailu leadu.</div>`;
+  else upMeetings.slice(0,8).forEach(l=>{
+    const row=el("div","agenda-item");
+    row.innerHTML=`<span class="ai-name" onclick="openDrawer('${l.id}')" style="cursor:pointer">${esc(l.name||'Bez jména')}${l.location?` <span style="color:var(--muted)">· ${esc(l.location)}</span>`:""}</span><span class="ai-meta">${fmtDateTime(l.meeting_at)}</span>`;
+    const ics=el("button","ics-btn"); ics.textContent=".ics"; ics.title="Stáhnout pro kalendář";
+    ics.addEventListener("click", ()=>downloadIcs(l));
+    row.append(ics); meetPanel.append(row);
+  });
+  grid.append(meetPanel); dash.append(grid);
+  const grid2=el("div","dash-grid");
+  const stagePanel=el("div","panel"); stagePanel.innerHTML=`<h3>Leady podle fáze</h3>`;
+  const maxStage=Math.max(1,...STAGES.map(st=>leads.filter(l=>l.crm_status===st.key).length));
+  STAGES.forEach(st=>{
+    const n=leads.filter(l=>l.crm_status===st.key).length;
+    const bl=el("div","barline");
+    bl.innerHTML=`<span class="bl-label"><span class="dot" style="background:${st.color}"></span>${st.label}</span><span class="bl-track"><span class="bl-fill" style="width:${n/maxStage*100}%;background:${st.color}"></span></span><span class="bl-num">${n}</span>`;
+    stagePanel.append(bl);
+  });
+  grid2.append(stagePanel);
+  const srcPanel=el("div","panel"); srcPanel.innerHTML=`<h3>Leady podle zdroje</h3>`;
+  const srcCounts=SOURCE_OPTS.map(([k,lab])=>[lab,leads.filter(l=>(l.source||"web")===k).length]).filter(x=>x[1]>0);
+  const maxSrc=Math.max(1,...srcCounts.map(x=>x[1]));
+  if(srcCounts.length===0) srcPanel.innerHTML+=`<div class="empty">Zatím žádná data.</div>`;
+  else srcCounts.forEach(([lab,n])=>{
+    const bl=el("div","barline");
+    bl.innerHTML=`<span class="bl-label">${lab}</span><span class="bl-track"><span class="bl-fill" style="width:${n/maxSrc*100}%;background:var(--gold)"></span></span><span class="bl-num">${n}</span>`;
+    srcPanel.append(bl);
+  });
+  grid2.append(srcPanel); dash.append(grid2);
+}
+function renderTimeline(){
+  const tl=$("#timeline"); tl.innerHTML="";
+  if(activities.length===0){ tl.innerHTML=`<div class="tl-empty">Zatím žádné záznamy.</div>`; return; }
+  activities.forEach(a=>{
+    const it=el("div","tl-item"+(a.kind==="system"?" system":""));
+    it.innerHTML=`<div class="tl-top"><span class="tl-kind">${KIND_LABEL[a.kind]||a.kind}</span><span class="tl-when">${fmtDateTime(a.created_at)}</span><button class="tl-del" title="Smazat záznam">✕</button></div><div class="tl-note">${esc(a.note)}</div>`;
+    it.querySelector(".tl-del").addEventListener("click", ()=>delActivity(a.id));
+    tl.append(it);
+  });
+}
+function icsStamp(d){ const x=new Date(d); const p=n=>String(n).padStart(2,"0"); return `${x.getUTCFullYear()}${p(x.getUTCMonth()+1)}${p(x.getUTCDate())}T${p(x.getUTCHours())}${p(x.getUTCMinutes())}${p(x.getUTCSeconds())}Z`; }
+function downloadIcs(l){
+  if(!l.meeting_at){ toast("Nejdřív nastav termín schůzky."); return; }
+  const start=new Date(l.meeting_at); const end=new Date(start.getTime()+60*60000);
+  const desc=[`Klient: ${l.name||""}`,l.phone?`Tel: ${l.phone}`:"",l.email?`E-mail: ${l.email}`:"",l.price?`Cena: ${fmtPrice(l.price,l.deal_type)}`:""].filter(Boolean).join("\\n");
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Petra CRM//CZ","BEGIN:VEVENT",
+    `UID:${l.id}-${Date.now()}@petra-crm`,`DTSTAMP:${icsStamp(new Date())}`,`DTSTART:${icsStamp(start)}`,`DTEND:${icsStamp(end)}`,
+    `SUMMARY:Prohlídka / schůzka: ${(l.name||"klient").replace(/[,;\\]/g," ")}`,
+    l.location?`LOCATION:${l.location.replace(/[,;\\]/g," ")}`:"",`DESCRIPTION:${desc}`,"END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n");
+  const safe=(l.name||"schuzka").replace(/[^\p{L}\p{N}]+/gu,"_");
+  download(`schuzka-${safe}.ics`,ics,"text/calendar;charset=utf-8"); toast("Schůzka stažena do kalendáře");
+}
+$("#dIcsBtn").addEventListener("click", ()=>{ let l=leads.find(x=>x.id===selectedId); if(!l) return; if($("#dMeeting").value){ l={...l,meeting_at:new Date($("#dMeeting").value).toISOString()}; } downloadIcs(l); });
+
+async function openDrawer(id){
+  const l=leads.find(x=>x.id===id); if(!l) return; selectedId=id;
+  let eb=[LEAD_LABEL[l.lead_type],DEAL_LABEL[l.deal_type],PROP_LABEL[l.property_type]].filter(Boolean).join(" · ");
+  if(l.source==='valuation') eb="Odhad zdarma"+(eb?" · "+eb:"");
+  $("#dEyebrow").textContent=eb||"Lead";
+  $("#dName").textContent=l.name||"Bez jména";
+  if(l.phone){ $("#dPhone").textContent=l.phone; $("#dPhoneLink").href="tel:"+l.phone.replace(/\s/g,""); $("#dPhoneLink").style.display=""; } else $("#dPhoneLink").style.display="none";
+  if(l.email){ $("#dEmail").textContent=l.email; $("#dEmailLink").href="mailto:"+l.email; $("#dEmailLink").style.display=""; } else $("#dEmailLink").style.display="none";
+  const wa=waDigits(l.phone);
+  if(wa){ $("#dWaLink").href="https://wa.me/"+wa; $("#dWaLink").style.display=""; } else $("#dWaLink").style.display="none";
+  if(l.message){ $("#dMsgWrap").style.display=""; $("#dMessage").textContent=l.message; } else $("#dMsgWrap").style.display="none";
+  const picker=$("#stagePicker"); picker.innerHTML="";
+  STAGES.forEach(st=>{
+    const o=el("div","stage-opt"+(st.key===l.crm_status?" active":"")); o.dataset.key=st.key;
+    const d=el("span","dot"); d.style.background=st.color; o.append(d,document.createTextNode(st.label));
+    o.addEventListener("click", ()=>{ picker.querySelectorAll(".stage-opt").forEach(x=>x.classList.remove("active")); o.classList.add("active"); });
+    picker.append(o);
+  });
+  $("#dDeal").value=l.deal_type||""; $("#dPrice").value=l.price??"";
+  $("#dLeadType").value=l.lead_type||""; $("#dPropType").value=l.property_type||"";
+  $("#dAddress").value=l.address||""; $("#dPriceEst").value=l.price_estimate||"";
+  $("#dSell12m").checked=!!l.sell_within_12m;
+  $("#dLoc").value=l.location||""; updateMapLink();
+  $("#dSource").value=l.source||"web"; $("#dTags").value=(l.tags||[]).join(", ");
+  $("#dMeeting").value=toInputDT(l.meeting_at);
+  $("#followInput").value=toInputDate(l.follow_up_at);
+  $("#noteInput").value=l.crm_note||"";
+  setGdprUI(!!l.gdpr_consent,l.gdpr_consent_at);
+  $("#dGdpr").onchange=()=>setGdprUI($("#dGdpr").checked,l.gdpr_consent_at);
+  $("#dMeta").textContent=`Poptávka přijata: ${fmtDateTime(l.created_at)}  ·  Zdroj: ${SOURCE_LABEL[l.source]||l.source||"—"}`;
+  $("#actNote").value="";
+  $("#scrim").classList.add("open"); $("#drawer").classList.add("open"); $("#drawer").setAttribute("aria-hidden","false");
+  loadActivities(id);
+}
+function setGdprUI(on,at){ $("#dGdpr").checked=on; $("#dGdprLbl").textContent=on?"Souhlas udělen":"Souhlas neudělen"; $("#dGdprWhen").textContent=on?(at?"Od "+fmtDate(at):"Datum se uloží při uložení změn"):""; }
+function updateMapLink(){ const loc=$("#dLoc").value.trim()||($("#dAddress")?$("#dAddress").value.trim():""); const a=$("#dMapLink"); if(loc){ a.href=mapsUrl(loc); a.style.opacity="1"; a.style.pointerEvents="auto"; } else { a.href="#"; a.style.opacity=".4"; a.style.pointerEvents="none"; } }
+$("#dLoc").addEventListener("input", updateMapLink);
+function closeDrawer(){ selectedId=null; activities=[]; $("#scrim").classList.remove("open"); $("#drawer").classList.remove("open"); $("#drawer").setAttribute("aria-hidden","true"); }
+$("#closeBtn").addEventListener("click", closeDrawer);
+$("#scrim").addEventListener("click", closeDrawer);
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeDrawer(); closeCreate(); closeEmail(); } });
+$("#exportClientBtn").addEventListener("click", ()=>{
+  if(!selectedId) return; const l=leads.find(x=>x.id===selectedId); if(!l) return;
+  const payload={ kontakt:l, historie_komunikace:activities, exportovano:new Date().toISOString() };
+  const safe=(l.name||"klient").replace(/[^\p{L}\p{N}]+/gu,"_");
+  download(`klient-${safe}.json`,JSON.stringify(payload,null,2),"application/json"); toast("Data klienta stažena");
+});
+
+function fillStageSelect(){ const s=$("#nStage"); s.innerHTML=""; STAGES.forEach(st=>{ const o=document.createElement("option"); o.value=st.key; o.textContent=st.label; s.append(o); }); }
+function openCreate(){
+  ["nName","nPhone","nEmail","nFollow","nNote","nPrice","nTags","nLoc","nAddress","nPriceEst"].forEach(id=>$("#"+id).value="");
+  $("#nLead").value=""; $("#nProp").value=""; $("#nDeal").value=""; $("#nMsg").textContent=""; $("#nGdpr").checked=false; $("#nSell12m").checked=false;
+  fillStageSelect(); $("#nStage").value="novy"; $("#nSource").value="rucne";
+  $("#createScrim").classList.add("open"); setTimeout(()=>$("#nName").focus(),50);
+}
+function closeCreate(){ $("#createScrim").classList.remove("open"); }
+$("#newBtn").addEventListener("click", openCreate);
+$("#nCancel").addEventListener("click", closeCreate);
+$("#createScrim").addEventListener("click", e=>{ if(e.target===$("#createScrim")) closeCreate(); });
+async function saveCreate(){
+  const name=$("#nName").value.trim(), phone=$("#nPhone").value.trim(), email=$("#nEmail").value.trim();
+  const msg=$("#nMsg");
+  if(!name){ msg.textContent="Zadejte jméno klienta."; return; }
+  if(!phone&&!email){ msg.textContent="Zadejte aspoň telefon nebo e-mail."; return; }
+  const np=phone.replace(/\s/g,""), ne=email.toLowerCase();
+  const dup=leads.find(l=>(np&&(l.phone||"").replace(/\s/g,"")===np)||(ne&&(l.email||"").toLowerCase()===ne));
+  if(dup&&!confirm(`Kontakt s tímto telefonem nebo e-mailem už existuje: „${dup.name}". Přidat i tak?`)) return;
+  const followVal=$("#nFollow").value, gdpr=$("#nGdpr").checked;
+  const rec={ name, phone:phone||null, email:email||null, lead_type:$("#nLead").value||null, property_type:$("#nProp").value||null,
+    deal_type:$("#nDeal").value||null, price:$("#nPrice").value===""?null:parseInt($("#nPrice").value,10),
+    source:$("#nSource").value||"rucne", tags:parseTags($("#nTags").value), location:$("#nLoc").value.trim()||null,
+    address:$("#nAddress").value.trim()||null, price_estimate:$("#nPriceEst").value.trim()||null, sell_within_12m:$("#nSell12m").checked,
+    crm_status:$("#nStage").value, crm_note:$("#nNote").value||null,
+    follow_up_at:followVal?new Date(followVal+"T09:00:00").toISOString():null,
+    gdpr_consent:gdpr, gdpr_consent_at:gdpr?new Date().toISOString():null, crm_updated_at:new Date().toISOString() };
+  $("#nSave").disabled=true; $("#nSave").textContent="Přidávám…";
+  const { data, error } = await sb.from("leady").insert(rec).select().single();
+  $("#nSave").disabled=false; $("#nSave").textContent="Přidat kontakt";
+  if(error){ msg.textContent="Uložení selhalo: "+error.message; return; }
+  leads.unshift(data); closeCreate(); render(); toast("Kontakt přidán");
+}
+$("#nSave").addEventListener("click", saveCreate);
+
+async function loadTemplates(){ const { data, error } = await sb.from("email_sablony").select("*").order("name"); if(!error) templates=data||[]; fillTplSelect(); }
+function fillTplSelect(){ const s=$("#tplSelect"); s.innerHTML='<option value="">— nová zpráva —</option>'; templates.forEach(t=>{ const o=document.createElement("option"); o.value=t.id; o.textContent=t.name; s.append(o); }); }
+$("#tplSelect").addEventListener("change", ()=>{ const t=templates.find(x=>x.id===$("#tplSelect").value); if(t){ $("#tplName").value=t.name; $("#emSubject").value=t.subject; $("#emBody").value=t.body; } });
+async function saveTemplate(){
+  const name=$("#tplName").value.trim(); if(!name){ $("#emMsg").textContent="Zadejte název šablony."; return; }
+  const rec={ name, subject:$("#emSubject").value, body:$("#emBody").value, updated_at:new Date().toISOString() };
+  const id=$("#tplSelect").value;
+  const res=id?await sb.from("email_sablony").update(rec).eq("id",id).select().single():await sb.from("email_sablony").insert(rec).select().single();
+  if(res.error){ $("#emMsg").textContent="Uložení šablony selhalo."; return; }
+  await loadTemplates(); $("#tplSelect").value=res.data.id; $("#emMsg").textContent=""; toast("Šablona uložena");
+}
+async function delTemplate(){
+  const id=$("#tplSelect").value; if(!id){ $("#emMsg").textContent="Vyberte šablonu k smazání."; return; }
+  if(!confirm("Smazat tuto šablonu?")) return;
+  const { error } = await sb.from("email_sablony").delete().eq("id",id);
+  if(error){ toast("Smazání selhalo"); return; }
+  await loadTemplates(); $("#tplName").value=""; toast("Šablona smazána");
+}
+$("#tplSave").addEventListener("click", saveTemplate);
+$("#tplDel").addEventListener("click", delTemplate);
+function emailCandidates(){ const oc=$("#emOnlyConsent").checked; return leads.filter(l=>l.email&&(!oc||l.gdpr_consent)); }
+function updateEmCount(){ const ids=new Set(emailCandidates().map(l=>l.id)); [...emailSel].forEach(id=>{ if(!ids.has(id)) emailSel.delete(id); }); $("#emCount").textContent=emailSel.size+" vybráno"; }
+function renderRecipients(){
+  const list=$("#emList"); list.innerHTML="";
+  const cands=emailCandidates();
+  if(cands.length===0){ list.innerHTML=`<div class="tl-empty">Žádné kontakty s e-mailem${$("#emOnlyConsent").checked?" a souhlasem GDPR.":"."}</div>`; updateEmCount(); return; }
+  cands.forEach(l=>{
+    const row=el("label"); row.style.cssText="display:flex;align-items:center;gap:9px;padding:5px 4px;cursor:pointer";
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.style.width="auto"; cb.checked=emailSel.has(l.id);
+    cb.addEventListener("change", ()=>{ if(cb.checked) emailSel.add(l.id); else emailSel.delete(l.id); updateEmCount(); });
+    const txt=el("span"); txt.style.cssText="font-size:13px";
+    txt.innerHTML=`${esc(l.name||"Bez jména")} <span style="color:var(--muted)">&lt;${esc(l.email)}&gt;</span>`+(l.gdpr_consent?"":` <span class="badge" style="color:#e0a09a;border-color:rgba(181,86,79,.4)">bez souhlasu</span>`);
+    row.append(cb,txt); list.append(row);
+  });
+  updateEmCount();
+}
+$("#emOnlyConsent").addEventListener("change", renderRecipients);
+$("#emAll").addEventListener("click", ()=>{ emailCandidates().forEach(l=>emailSel.add(l.id)); renderRecipients(); });
+$("#emNone").addEventListener("click", ()=>{ emailSel.clear(); renderRecipients(); });
+$("#emMode").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; emailMode=b.dataset.m; $("#emMode").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); });
+function openEmail(){
+  emailSel.clear(); emailMode="perso"; $("#emMsg").textContent=""; $("#emStepper").style.display="none"; $("#emStepper").innerHTML="";
+  $("#emMode").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.m==="perso"));
+  $("#tplName").value=""; $("#emSubject").value=""; $("#emBody").value=""; $("#tplSelect").value=""; $("#emOnlyConsent").checked=true;
+  fillTplSelect(); renderRecipients(); $("#emailScrim").classList.add("open");
+}
+function openEmailFor(id){
+  const l=leads.find(x=>x.id===id); if(!l||!l.email) return;
+  openEmail(); $("#emOnlyConsent").checked=!!l.gdpr_consent; emailSel.clear(); emailSel.add(id); renderRecipients();
+}
+function closeEmail(){ $("#emailScrim").classList.remove("open"); }
+$("#emailBtn").addEventListener("click", openEmail);
+$("#emClose").addEventListener("click", closeEmail);
+$("#emailScrim").addEventListener("click", e=>{ if(e.target===$("#emailScrim")) closeEmail(); });
+function fillTpl(text,l){
+  const map={ "{{jmeno}}":l.name||"","{{lokalita}}":l.location||"","{{cena}}":l.price?fmtPrice(l.price,l.deal_type):"","{{telefon}}":l.phone||"","{{email}}":l.email||"","{{makler}}":MAKLER };
+  return (text||"").replace(/\{\{(jmeno|lokalita|cena|telefon|email|makler)\}\}/g, m=>map[m]??"");
+}
+function buildMailto({to,bcc,subject,body}){ let u="mailto:"+(to?encodeURIComponent(to):""); const p=[]; if(bcc) p.push("bcc="+encodeURIComponent(bcc)); if(subject) p.push("subject="+encodeURIComponent(subject)); if(body) p.push("body="+encodeURIComponent(body)); if(p.length) u+="?"+p.join("&"); return u; }
+async function logEmail(ids,subject){ if(!$("#emLog").checked||ids.length===0) return; await sb.from("leady_aktivity").insert(ids.map(id=>({lead_id:id,kind:"email",note:"Připraven e-mail: "+(subject||"(bez předmětu)")}))); }
+function sendEmail(){
+  const ids=[...emailSel], recips=leads.filter(l=>ids.includes(l.id)&&l.email);
+  if(recips.length===0){ $("#emMsg").textContent="Vyberte aspoň jednoho příjemce."; return; }
+  const subject=$("#emSubject").value, body=$("#emBody").value; $("#emMsg").textContent="";
+  if(emailMode==="bcc"){
+    if(recips.length>40) toast("Pozor: u velkého počtu příjemců nemusí poštovní klient zvládnout celý seznam.");
+    const g={name:"",location:"",price:null,deal_type:null,phone:"",email:""};
+    window.location.href=buildMailto({ bcc:recips.map(l=>l.email).join(","), subject:fillTpl(subject,g), body:fillTpl(body,g) });
+    logEmail(recips.map(l=>l.id),subject); toast("E-mail otevřen v poštovním klientovi"); setTimeout(closeEmail,400);
+  } else { stepQueue=recips; stepIdx=0; stepSubject=subject; stepBody=body; $("#emStepper").style.display="block"; renderStepper(); logEmail(recips.map(l=>l.id),subject); }
+}
+$("#emSend").addEventListener("click", sendEmail);
+function renderStepper(){
+  const box=$("#emStepper");
+  if(stepIdx>=stepQueue.length){ box.innerHTML=`<div class="act-add"><div style="color:var(--s-uzavreno)">Hotovo — připraveno všech ${stepQueue.length} e-mailů.</div></div>`; return; }
+  const l=stepQueue[stepIdx];
+  box.innerHTML=`<div class="act-add"><div>Příjemce <b>${stepIdx+1} / ${stepQueue.length}</b>: ${esc(l.name||"")} &lt;${esc(l.email)}&gt;</div><button class="btn btn-gold" id="stepOpen">Otevřít v poště a pokračovat →</button></div>`;
+  $("#stepOpen").addEventListener("click", ()=>{ window.location.href=buildMailto({ to:l.email, subject:fillTpl(stepSubject,l), body:fillTpl(stepBody,l) }); stepIdx++; setTimeout(renderStepper,300); });
+}
+
+function csvCell(v){ const s=(v==null?"":String(v)); return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+$("#exportBtn").addEventListener("click", ()=>{
+  const cols=[["Jméno",l=>l.name],["Telefon",l=>l.phone],["E-mail",l=>l.email],["Klient",l=>LEAD_LABEL[l.lead_type]||""],["Obchod",l=>DEAL_LABEL[l.deal_type]||""],["Nemovitost",l=>PROP_LABEL[l.property_type]||""],["Cena",l=>l.price??""],["Lokalita",l=>l.location||""],["Adresa nemovitosti",l=>l.address||""],["Cenová představa",l=>l.price_estimate||""],["Prodej do 12m",l=>l.sell_within_12m?"ano":(l.sell_within_12m===false?"ne":"")],["Fáze",l=>STAGE_MAP[l.crm_status]?.label||l.crm_status],["Zdroj",l=>SOURCE_LABEL[l.source]||l.source||""],["Štítky",l=>(l.tags||[]).join(", ")],["Schůzka",l=>l.meeting_at?fmtDateTime(l.meeting_at):""],["Follow-up",l=>l.follow_up_at?fmtDate(l.follow_up_at):""],["GDPR souhlas",l=>l.gdpr_consent?"ano":"ne"],["GDPR od",l=>l.gdpr_consent_at?fmtDate(l.gdpr_consent_at):""],["Poznámka",l=>l.crm_note||""],["Přijato",l=>fmtDateTime(l.created_at)]];
+  const rows=[cols.map(c=>c[0]).join(";")];
+  visibleLeads().forEach(l=>rows.push(cols.map(c=>csvCell(c[1](l))).join(";")));
+  download(`crm-leady-${toInputDate(new Date().toISOString())}.csv`,"\uFEFF"+rows.join("\r\n"),"text/csv;charset=utf-8");
+  toast("Export stažen ("+visibleLeads().length+" leadů)");
+});
+
+$("#backupBtn").addEventListener("click", async ()=>{
+  toast("Připravuji zálohu…");
+  const [a,s]=await Promise.all([ sb.from("leady_aktivity").select("*"), sb.from("email_sablony").select("*") ]);
+  const payload={ verze:1, exportovano:new Date().toISOString(), leady:leads, aktivity:a.data||[], sablony:s.data||[] };
+  download(`crm-zaloha-${toInputDate(new Date().toISOString())}.json`,JSON.stringify(payload,null,2),"application/json"); toast("Záloha stažena");
+});
+$("#restoreBtn").addEventListener("click", ()=>$("#restoreFile").click());
+$("#restoreFile").addEventListener("change", async e=>{
+  const file=e.target.files[0]; if(!file) return; e.target.value="";
+  if(!confirm("Obnova přepíše/doplní záznamy podle zálohy (podle ID). Pokračovat?")) return;
+  let data; try{ data=JSON.parse(await file.text()); }catch{ toast("Soubor není platná záloha (JSON)."); return; }
+  try{
+    if(data.leady?.length){ const r=await sb.from("leady").upsert(data.leady,{onConflict:"id"}); if(r.error) throw r.error; }
+    if(data.aktivity?.length){ const r=await sb.from("leady_aktivity").upsert(data.aktivity,{onConflict:"id"}); if(r.error) throw r.error; }
+    if(data.sablony?.length){ const r=await sb.from("email_sablony").upsert(data.sablony,{onConflict:"id"}); if(r.error) throw r.error; }
+    toast("Data obnovena"); await loadLeads(); await loadTemplates();
+  }catch(err){ toast("Obnova selhala: "+(err.message||err)); }
+});
+
+function todayTaskCount(){
+  const f=leads.filter(l=>isToday(l.follow_up_at)&&!CLOSED.has(l.crm_status)).length;
+  const m=leads.filter(l=>isToday(l.meeting_at)).length;
+  const o=leads.filter(isOverdue).length;
+  return {f,m,o,total:f+m+o};
+}
+function dailySummary(){
+  const t=todayTaskCount(); if(t.total===0) return;
+  toast(`Dnes: ${t.f} hovorů, ${t.m} schůzek${t.o?`, ${t.o} po termínu`:""}`);
+  if("Notification" in window && Notification.permission==="granted") notifyToday(t);
+}
+function notifyToday(t){ try{ new Notification("CRM · dnešní úkoly",{ body:`${t.f} hovorů, ${t.m} schůzek${t.o?`, ${t.o} po termínu`:""}` }); }catch(e){} }
+$("#notifyBtn").addEventListener("click", ()=>{
+  if(!("Notification" in window)){ toast("Tento prohlížeč upozornění nepodporuje."); return; }
+  Notification.requestPermission().then(p=>{ if(p==="granted"){ notifyToday(todayTaskCount()); toast("Upozornění zapnuta"); } else toast("Upozornění nebyla povolena."); });
+});
+
+init();
+window.openDrawer=openDrawer; window.openEmailFor=openEmailFor; window.advanceStage=advanceStage; window.loadLeads=loadLeads;
+</script>
+</body>
+</html>
+idth=device-width, initial-scale=1.0" />
 <title>CRM · Petra Zábranská — Century 21</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <link rel="icon" type="image/png" href="icon-512.png" />
