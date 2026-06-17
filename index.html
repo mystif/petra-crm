@@ -222,6 +222,14 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface);border:1px solid var(--gold-dim);color:var(--text);padding:11px 20px;border-radius:9px;font-size:13px;opacity:0;pointer-events:none;transition:.22s;z-index:60;box-shadow:0 10px 30px rgba(35,33,29,.25)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Utility overflow menu — desktop default */
+  #moreBtn{display:none}
+  .util-btns{display:contents}
+  /* Filter panel — desktop default */
+  .filter-toggle-btn{display:none}
+  .filter-panel{display:contents}
+
   @media (max-width:760px){ .dash-grid{grid-template-columns:1fr} }
   @media (max-width:640px){
     header.topbar{padding:12px 14px;gap:9px}
@@ -233,17 +241,35 @@
     .viewseg button{padding:9px 18px}
     .icon-btn .t{display:none}
     .icon-btn{padding:9px 12px;font-size:15px}
-    .toolbar{padding:12px 14px 4px;gap:8px}
+
+    /* Topbar overflow menu */
+    #moreBtn{display:inline-flex;letter-spacing:.1em;font-size:17px}
+    .util-btns{
+      display:none;position:fixed;top:54px;right:8px;z-index:35;
+      background:var(--surface);border:1px solid var(--line);border-radius:12px;
+      padding:6px;box-shadow:0 12px 36px rgba(0,0,0,.6);min-width:210px
+    }
+    .util-btns.open{display:flex;flex-direction:column;gap:2px}
+    .util-btns .icon-btn{width:100%;justify-content:flex-start;padding:12px 14px;gap:10px;border-radius:8px}
+    .util-btns .icon-btn .t{display:inline!important}
+
+    /* Filter toggle */
+    .filter-toggle-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 13px;font-size:13px;font-weight:600;flex-shrink:0;border-radius:8px}
+    .filter-toggle-btn.active{border-color:var(--gold)!important;color:var(--gold)!important}
+    .filter-panel{display:none;flex-wrap:wrap;gap:8px;width:100%;padding-top:2px}
+    .filter-panel.open{display:flex}
+    .filter-panel select{flex:1 1 calc(50% - 4px);width:auto}
+    .filter-panel .price-filter{flex:1 1 100%}
+    .filter-panel .price-filter input{flex:1;width:auto}
+    .filter-panel #agendaSeg{flex:1 1 100%;display:flex}
+    .filter-panel #agendaSeg button{flex:1}
+
+    .toolbar{padding:12px 14px 8px;gap:8px}
     #newBtn{width:100%!important;order:-1}
-    .toolbar input[type=search]{max-width:none;flex:1 1 100%}
-    .toolbar select{flex:1 1 calc(50% - 4px);width:auto}
-    .price-filter{flex:1 1 100%}
-    .price-filter input{flex:1;width:auto}
-    #agendaSeg{flex:1 1 100%;display:flex}
-    #agendaSeg button{flex:1}
+    .toolbar input[type=search]{max-width:none;flex:1}
     .stat-wrap{flex:1 1 100%;justify-content:space-between;gap:10px;margin-left:0}
     .board{padding:10px 12px 36px;gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
-    .col{flex:0 0 86vw;scroll-snap-align:center;max-height:calc(100dvh - 250px)}
+    .col{flex:0 0 88vw;scroll-snap-align:center;max-height:calc(100dvh - 130px)}
     .col-body{-webkit-overflow-scrolling:touch}
     .qa a,.qa button{padding:9px 4px;font-size:12.5px}
     .dash{padding:16px 14px 50px;gap:14px}
@@ -256,7 +282,8 @@
     .drawer-head{padding:18px 16px 14px}
     .drawer-head h2{font-size:21px}
     .drawer-body{padding:16px;gap:15px}
-    .drawer-foot{padding:12px 16px}
+    .drawer-foot{padding:12px 16px;flex-wrap:wrap}
+    .drawer-foot .btn-gold{min-width:unset;flex:1 1 100%}
     .meta-foot{padding:0 16px 14px}
     .modal-scrim{padding:3vh 10px}
     .modal-head{padding:18px 18px 4px}
@@ -286,12 +313,15 @@
     <span class="viewseg" id="viewSeg"><button data-v="board" class="active">Pipeline</button><button data-v="dash">Přehled</button></span>
     <div class="spacer"></div>
     <span class="who" id="whoami"></span>
-    <button class="icon-btn" id="notifyBtn" title="Zapnout upozornění na dnešní úkoly">🔔</button>
-    <button class="icon-btn" id="emailBtn" title="Rozeslat e-mail">✉ <span class="t">Rozeslat e-mail</span></button>
-    <button class="icon-btn" id="backupBtn" title="Stáhnout zálohu všech dat">💾 <span class="t">Záloha</span></button>
-    <button class="icon-btn" id="restoreBtn" title="Obnovit data ze zálohy">⤓ <span class="t">Obnovit</span></button>
-    <button class="icon-btn" id="exportBtn" title="Export do CSV">⬇ <span class="t">CSV</span></button>
-    <button class="icon-btn" id="refreshBtn" title="Načíst znovu ze serveru">↻ <span class="t">Obnovit</span></button>
+    <div class="util-btns" id="utilBtns">
+      <button class="icon-btn" id="notifyBtn" title="Zapnout upozornění na dnešní úkoly">🔔 <span class="t">Upozornění</span></button>
+      <button class="icon-btn" id="emailBtn" title="Rozeslat e-mail">✉ <span class="t">Rozeslat e-mail</span></button>
+      <button class="icon-btn" id="backupBtn" title="Stáhnout zálohu všech dat">💾 <span class="t">Záloha</span></button>
+      <button class="icon-btn" id="restoreBtn" title="Obnovit data ze zálohy">⤓ <span class="t">Obnovit ze zálohy</span></button>
+      <button class="icon-btn" id="exportBtn" title="Export do CSV">⬇ <span class="t">Export CSV</span></button>
+      <button class="icon-btn" id="refreshBtn" title="Načíst znovu ze serveru">↻ <span class="t">Obnovit data</span></button>
+    </div>
+    <button class="icon-btn" id="moreBtn" title="Více možností">⋯</button>
     <button class="icon-btn" id="logoutBtn" title="Odhlásit">🚪 <span class="t">Odhlásit</span></button>
     <input type="file" id="restoreFile" accept="application/json" style="display:none" />
   </header>
@@ -299,12 +329,15 @@
     <button class="btn btn-gold" id="newBtn" style="width:auto;padding:9px 16px">+ Nový kontakt</button>
     <span id="boardFilters" style="display:contents">
       <input type="search" id="search" placeholder="Hledat jméno, e-mail, štítek…" />
-      <select id="filterLead"><option value="">Klient: vše</option><option value="buyer">Kupující</option><option value="seller">Prodávající</option></select>
-      <select id="filterDeal"><option value="">Obchod: vše</option><option value="prodej">Prodej</option><option value="pronajem">Pronájem</option></select>
-      <select id="filterProp"><option value="">Nemovitost: vše</option><option value="house">Dům</option><option value="apartment">Byt</option><option value="commercial">Komerční</option><option value="land">Pozemek</option></select>
-      <select id="filterSource"><option value="">Druh: vše</option><option value="lead">Jen leady</option><option value="valuation">Jen odhady</option></select>
-      <span class="price-filter">Cena <input type="number" id="priceMin" min="0" placeholder="od" /> – <input type="number" id="priceMax" min="0" placeholder="do" /></span>
-      <span class="seg" id="agendaSeg"><button data-a="" class="active">Vše</button><button data-a="dnes">Dnes</button><button data-a="tyden">Tento týden</button><button data-a="po">Po termínu</button></span>
+      <button class="icon-btn filter-toggle-btn" id="filterToggleBtn" title="Zobrazit / skrýt filtry">⚙ <span class="t">Filtry</span></button>
+      <div class="filter-panel" id="filterPanel">
+        <select id="filterLead"><option value="">Klient: vše</option><option value="buyer">Kupující</option><option value="seller">Prodávající</option></select>
+        <select id="filterDeal"><option value="">Obchod: vše</option><option value="prodej">Prodej</option><option value="pronajem">Pronájem</option></select>
+        <select id="filterProp"><option value="">Nemovitost: vše</option><option value="house">Dům</option><option value="apartment">Byt</option><option value="commercial">Komerční</option><option value="land">Pozemek</option></select>
+        <select id="filterSource"><option value="">Druh: vše</option><option value="lead">Jen leady</option><option value="valuation">Jen odhady</option></select>
+        <span class="price-filter">Cena <input type="number" id="priceMin" min="0" placeholder="od" /> – <input type="number" id="priceMax" min="0" placeholder="do" /></span>
+        <span class="seg" id="agendaSeg"><button data-a="" class="active">Vše</button><button data-a="dnes">Dnes</button><button data-a="tyden">Tento týden</button><button data-a="po">Po termínu</button></span>
+      </div>
     </span>
     <div class="stat-wrap">
       <span class="overdue-pill" id="overduePill"></span>
@@ -986,6 +1019,20 @@ function notifyToday(t){ try{ new Notification("CRM · dnešní úkoly",{ body:`
 $("#notifyBtn").addEventListener("click", ()=>{
   if(!("Notification" in window)){ toast("Tento prohlížeč upozornění nepodporuje."); return; }
   Notification.requestPermission().then(p=>{ if(p==="granted"){ notifyToday(todayTaskCount()); toast("Upozornění zapnuta"); } else toast("Upozornění nebyla povolena."); });
+});
+
+// ── Topbar overflow menu ──
+const moreBtn=document.getElementById("moreBtn");
+const utilBtns=document.getElementById("utilBtns");
+moreBtn.addEventListener("click",e=>{ e.stopPropagation(); utilBtns.classList.toggle("open"); });
+document.addEventListener("click",e=>{ if(!utilBtns.contains(e.target)&&e.target!==moreBtn) utilBtns.classList.remove("open"); });
+
+// ── Filter panel toggle ──
+const filterToggleBtn=document.getElementById("filterToggleBtn");
+const filterPanel=document.getElementById("filterPanel");
+filterToggleBtn.addEventListener("click",()=>{
+  const open=filterPanel.classList.toggle("open");
+  filterToggleBtn.classList.toggle("active",open);
 });
 
 init();
