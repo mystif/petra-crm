@@ -1,0 +1,24 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BeReEst CRM">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#36322F"/>
+      <stop offset="1" stop-color="#201E1C"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#E0D0A0"/>
+      <stop offset="0.55" stop-color="#BEAF87"/>
+      <stop offset="1" stop-color="#A8966A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- dlaždice -->
+  <rect width="512" height="512" rx="116" fill="url(#tile)"/>
+
+  <!-- domeček: střecha + zdi (line-art se zaoblenými spoji) -->
+  <path d="M124 380 V250 L256 142 L388 250 V380"
+        fill="none" stroke="url(#gold)" stroke-width="42"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- obloukové dveře (plná zlatá) -->
+  <path d="M222 380 V322 Q222 290 256 290 Q290 290 290 322 V380 Z" fill="url(#gold)"/>
+</svg>

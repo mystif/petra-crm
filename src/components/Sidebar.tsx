@@ -3,7 +3,6 @@ import {
   KanbanSquare,
   Inbox,
   Users,
-  Building2,
   Search,
   Plus,
   Mail,
@@ -49,7 +48,10 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
         {/* logo */}
         <div className="flex items-center gap-3 px-5 pb-2 pt-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[.06] text-gold ring-1 ring-white/10 backdrop-blur">
-            <Building2 className="h-5 w-5" />
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+              <path d="M5 19.5V11l7-6 7 6v8.5" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10 19.5v-4a2 2 0 0 1 4 0v4Z" fill="currentColor" />
+            </svg>
           </div>
           <div className="leading-tight">
             <div className="font-display text-[17px] font-bold tracking-tight">BeReEst CRM</div>
