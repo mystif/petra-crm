@@ -86,3 +86,13 @@ export async function updateLead(id: string, patch: Partial<Lead>): Promise<void
     .eq('id', id)
   if (error) throw new Error(error.message)
 }
+
+/** Ruční vytvoření nového leadu (telefonát, doporučení, walk-in…). */
+export async function createLead(input: Partial<Lead>): Promise<void> {
+  const { error } = await supabase.from(TABLE).insert({
+    crm_status: 'novy',
+    crm_updated_at: new Date().toISOString(),
+    ...input
+  })
+  if (error) throw new Error(error.message)
+}

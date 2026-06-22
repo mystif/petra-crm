@@ -4,6 +4,7 @@ import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
+import { useNewLead } from '../lib/newLeadContext'
 import { formatCZK, relativeDays } from '../lib/format'
 import { contactRole, leadValue } from '../lib/leadDisplay'
 
@@ -26,8 +27,28 @@ const ROLE_STYLE: Record<string, string> = {
 }
 const ROLES = ['Vše', 'Kupující', 'Prodávající', 'Pronajímatel', 'Zájemce'] as const
 
+/** Stáhne kontakty jako CSV (oddělené středníkem kvůli Excelu v CZ). */
+function exportContactsCsv(rows: DerivedContact[]): void {
+  const head = ['Jméno', 'Telefon', 'E-mail', 'Role', 'Lokalita', 'Hodnota (Kč)', 'Poslední aktivita']
+  const esc = (v: string | number | null): string => {
+    const s = String(v ?? '')
+    return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  }
+  const lines = rows.map((c) =>
+    [c.name, c.phone, c.email, c.role, c.city, c.value || '', c.last?.slice(0, 10)].map(esc).join(';')
+  )
+  const csv = '﻿' + [head.join(';'), ...lines].join('\r\n') // BOM kvůli diakritice v Excelu
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `kontakty-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function Contacts(): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
+  const { open: openNewLead } = useNewLead()
   const [query, setQuery] = useState('')
   const [role, setRole] = useState<(typeof ROLES)[number]>('Vše')
 
@@ -78,8 +99,10 @@ export function Contacts(): JSX.Element {
         showSearch={false}
         actions={
           <>
-            <button className="btn-ghost"><Download className="h-4 w-4" /> Export</button>
-            <button className="btn-primary"><Plus className="h-4 w-4" /> Nový kontakt</button>
+            <button className="btn-ghost" onClick={() => exportContactsCsv(filtered)} disabled={filtered.length === 0}>
+              <Download className="h-4 w-4" /> Export
+            </button>
+            <button className="btn-primary" onClick={openNewLead}><Plus className="h-4 w-4" /> Nový kontakt</button>
           </>
         }
       />

@@ -5,6 +5,7 @@ import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { LeadDetail } from '../components/LeadDetail'
 import { useLeads } from '../lib/leadsContext'
+import { useNewLead } from '../lib/newLeadContext'
 import { STAGE_MAP, type Lead } from '../lib/supabase'
 import { formatCZK, relativeDays, formatDate } from '../lib/format'
 import { sourceStyle, isEstimate } from '../lib/leadDisplay'
@@ -24,6 +25,7 @@ type Filter = 'vse' | 'poptavka' | 'odhad'
 
 export function Leads(): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
+  const { open: openNewLead } = useNewLead()
   const [filter, setFilter] = useState<Filter>('vse')
   const [selected, setSelected] = useState<Lead | null>(null)
 
@@ -44,7 +46,7 @@ export function Leads(): JSX.Element {
       <Topbar
         title="Poptávky"
         subtitle="Leady z webových formulářů a žádosti o odhad"
-        actions={<button className="btn-primary">Přidat poptávku</button>}
+        actions={<button className="btn-primary" onClick={openNewLead}>Přidat poptávku</button>}
       />
 
       <div className="flex-1 overflow-y-auto p-8">

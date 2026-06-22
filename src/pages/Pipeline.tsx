@@ -5,12 +5,14 @@ import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState } from '../components/States'
 import { LeadDetail } from '../components/LeadDetail'
 import { useLeads } from '../lib/leadsContext'
+import { useNewLead } from '../lib/newLeadContext'
 import { STAGES, CLOSED_STAGES, type StageKey, type Lead } from '../lib/supabase'
 import { formatCZK, formatDate } from '../lib/format'
 import { propertyLabel, leadValue, hueFromId } from '../lib/leadDisplay'
 
 export function Pipeline(): JSX.Element {
   const { leads, loading, error, refetch, moveStage } = useLeads()
+  const { open: openNewLead } = useNewLead()
   const [dragId, setDragId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<StageKey | null>(null)
   const [selected, setSelected] = useState<Lead | null>(null)
@@ -38,7 +40,7 @@ export function Pipeline(): JSX.Element {
         title="Pipeline"
         subtitle={`Otevřená hodnota ${formatCZK(totalOpen, true)} · ${leads.length} leadů`}
         showSearch={false}
-        actions={<button className="btn-primary"><Plus className="h-4 w-4" /> Nový lead</button>}
+        actions={<button className="btn-primary" onClick={openNewLead}><Plus className="h-4 w-4" /> Nový lead</button>}
       />
 
       {loading ? (

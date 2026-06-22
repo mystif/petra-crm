@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
+import { useNewLead } from '../lib/newLeadContext'
 
 export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'templates'
 
@@ -28,6 +29,7 @@ interface SidebarProps {
 
 export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
   const { leads } = useLeads()
+  const { open: openNewLead } = useNewLead()
   // Odznak u Poptávek = počet nových (nezpracovaných) leadů.
   const freshCount = leads.filter((l) => l.crm_status === 'novy').length
 
@@ -62,8 +64,11 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
 
         {/* nový obchod */}
         <div className="px-4 pt-3">
-          <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-ink shadow-[0_6px_20px_rgba(0,0,0,.25)] transition hover:bg-white/90">
-            <Plus className="h-4 w-4" /> Nový obchod
+          <button
+            onClick={openNewLead}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-ink shadow-[0_6px_20px_rgba(0,0,0,.25)] transition hover:bg-white/90"
+          >
+            <Plus className="h-4 w-4" /> Nový lead
           </button>
         </div>
 
