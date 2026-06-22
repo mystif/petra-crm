@@ -3,19 +3,20 @@ import { MapPin, Plus, GripVertical, Building2, CalendarClock } from 'lucide-rea
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState } from '../components/States'
-import { LeadDetail } from '../components/LeadDetail'
 import { useLeads } from '../lib/leadsContext'
 import { useNewLead } from '../lib/newLeadContext'
-import { STAGES, CLOSED_STAGES, type StageKey, type Lead } from '../lib/supabase'
+import { useLeadDetail } from '../lib/leadDetailContext'
+import { STAGES, CLOSED_STAGES, type StageKey } from '../lib/supabase'
 import { formatCZK, formatDate } from '../lib/format'
 import { propertyLabel, leadValue, hueFromId } from '../lib/leadDisplay'
+import { photoUrl } from '../lib/photos'
 
 export function Pipeline(): JSX.Element {
   const { leads, loading, error, refetch, moveStage } = useLeads()
   const { open: openNewLead } = useNewLead()
+  const { openLead } = useLeadDetail()
   const [dragId, setDragId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<StageKey | null>(null)
-  const [selected, setSelected] = useState<Lead | null>(null)
 
   const totalOpen = leads
     .filter((l) => !CLOSED_STAGES.includes(l.crm_status))
@@ -91,6 +92,7 @@ export function Pipeline(): JSX.Element {
                   <div className="flex-1 space-y-2.5 overflow-y-auto p-2.5">
                     {items.map((l) => {
                       const hue = hueFromId(l.id)
+                      const cover = l.fotky?.[0]
                       return (
                         <article
                           key={l.id}
@@ -100,21 +102,28 @@ export function Pipeline(): JSX.Element {
                             setDragId(null)
                             setOverStage(null)
                           }}
-                          onClick={() => setSelected(l)}
+                          onClick={() => openLead(l)}
                           className={`group card cursor-grab p-3 transition hover:shadow-lift active:cursor-grabbing ${
                             dragId === l.id ? 'drag-ghost' : ''
                           }`}
                         >
                           <div
                             className="relative mb-2.5 flex h-20 items-end overflow-hidden rounded-xl p-2.5 text-white"
-                            style={{
-                              background: `linear-gradient(135deg, hsl(${hue} 58% 52%), hsl(${(hue + 40) % 360} 60% 38%))`
-                            }}
+                            style={
+                              cover
+                                ? undefined
+                                : {
+                                    background: `linear-gradient(135deg, hsl(${hue} 58% 52%), hsl(${(hue + 40) % 360} 60% 38%))`
+                                  }
+                            }
                           >
-                            <span className="pill bg-black/25 text-white backdrop-blur">
+                            {cover && (
+                              <img src={photoUrl(cover)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                            )}
+                            <span className="pill relative bg-black/40 text-white backdrop-blur">
                               {propertyLabel(l.property_type)}
                             </span>
-                            <Building2 className="absolute right-2.5 top-2.5 h-6 w-6 opacity-40" />
+                            {!cover && <Building2 className="absolute right-2.5 top-2.5 h-6 w-6 opacity-40" />}
                           </div>
 
                           <div className="flex items-start gap-1.5">
@@ -153,7 +162,7 @@ export function Pipeline(): JSX.Element {
                     {items.length === 0 && (
                       <div
                         className={`grid h-20 place-items-center rounded-xl border-2 border-dashed text-xs font-medium ${
-                          isOver ? 'border-brand/50 text-brand' : 'border-line text-tx-faint'
+                          isOver ? 'border-brand/50 text-brand-dark' : 'border-line text-tx-faint'
                         }`}
                       >
                         Přetáhni lead sem
@@ -166,8 +175,6 @@ export function Pipeline(): JSX.Element {
           </div>
         </div>
       )}
-
-      {selected && <LeadDetail lead={selected} onClose={() => setSelected(null)} />}
     </div>
   )
 }

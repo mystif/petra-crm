@@ -25,6 +25,22 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
   )
   const uniqueContacts = new Set(leads.map((l) => (l.email || l.phone || l.id).toLowerCase())).size
 
+  // Měsíční změna — co přibylo / uzavřelo se v aktuálním kalendářním měsíci.
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const inThisMonth = (iso: string | null): boolean => !!iso && new Date(iso) >= monthStart
+
+  const createdThisMonth = leads.filter((l) => inThisMonth(l.created_at))
+  const openAddedThisMonth = createdThisMonth.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
+  const closedThisMonth = won.filter((l) => inThisMonth(l.crm_updated_at))
+  const freshThisMonth = fresh.filter((l) => inThisMonth(l.created_at))
+  const contactsThisMonth = new Set(
+    createdThisMonth.map((l) => (l.email || l.phone || l.id).toLowerCase())
+  ).size
+
+  // „+N tento měsíc" — měsíční změna pro chip na dlaždici.
+  const delta = (n: number): string => `+${n} tento měsíc`
+
   const today = new Date().toLocaleDateString('cs-CZ', {
     weekday: 'long',
     day: 'numeric',
@@ -33,10 +49,10 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
   })
 
   const kpis = [
-    { label: 'Hodnota pipeline', value: formatCZK(pipelineValue, true), sub: `${open.length} otevřených leadů`, trend: 'aktivní', icon: Wallet, tint: 'text-brand bg-brand-soft' },
-    { label: 'Uzavřeno', value: formatCZK(wonValue, true), sub: `${won.length} obchodů`, trend: 'celkem', icon: Trophy, tint: 'text-emerald bg-emerald-soft' },
-    { label: 'Nové poptávky', value: String(fresh.length), sub: 'čekají na reakci', trend: 'nové', icon: Inbox, tint: 'text-amber bg-amber-soft' },
-    { label: 'Kontakty', value: String(uniqueContacts), sub: 'z poptávek', trend: 'databáze', icon: Users, tint: 'text-sky bg-sky-soft' }
+    { label: 'Hodnota pipeline', value: formatCZK(pipelineValue, true), sub: `${open.length} otevřených leadů`, deltaN: openAddedThisMonth.length, icon: Wallet, tint: 'text-brand-dark bg-brand-soft' },
+    { label: 'Uzavřeno', value: formatCZK(wonValue, true), sub: `${won.length} obchodů`, deltaN: closedThisMonth.length, icon: Trophy, tint: 'text-emerald bg-emerald-soft' },
+    { label: 'Nové poptávky', value: String(fresh.length), sub: 'čekají na reakci', deltaN: freshThisMonth.length, icon: Inbox, tint: 'text-amber bg-amber-soft' },
+    { label: 'Kontakty', value: String(uniqueContacts), sub: 'z poptávek', deltaN: contactsThisMonth, icon: Users, tint: 'text-sky bg-sky-soft' }
   ]
 
   const maxStageValue = Math.max(
@@ -135,8 +151,8 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
                     <div className={`grid h-10 w-10 place-items-center rounded-xl ${k.tint}`}>
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="pill bg-canvas text-tx-soft">
-                      <ArrowUpRight className="h-3 w-3" /> {k.trend}
+                    <span className={`pill ${k.deltaN > 0 ? 'bg-emerald-soft text-emerald' : 'bg-canvas text-tx-soft'}`}>
+                      {k.deltaN > 0 && <ArrowUpRight className="h-3 w-3" />} {delta(k.deltaN)}
                     </span>
                   </div>
                   <div className="mt-4 stat-num text-2xl text-tx">{k.value}</div>
@@ -155,7 +171,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
                   <h3 className="font-display text-lg font-bold text-tx">Pipeline podle fází</h3>
                   <p className="text-sm text-tx-soft">Hodnota leadů v jednotlivých fázích</p>
                 </div>
-                <button onClick={() => onNavigate('pipeline')} className="text-sm font-semibold text-brand hover:underline">
+                <button onClick={() => onNavigate('pipeline')} className="text-sm font-semibold text-brand-dark hover:underline">
                   Detail
                 </button>
               </div>
@@ -187,7 +203,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
             <section className="card p-6 lg:col-span-2">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="font-display text-lg font-bold text-tx">Nejnovější poptávky</h3>
-                <button onClick={() => onNavigate('leads')} className="text-sm font-semibold text-brand hover:underline">
+                <button onClick={() => onNavigate('leads')} className="text-sm font-semibold text-brand-dark hover:underline">
                   Vše
                 </button>
               </div>

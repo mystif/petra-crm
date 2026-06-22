@@ -4,18 +4,27 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Century 21 — Obsessed Gray (tmavé plochy, sidebar)
         ink: {
-          DEFAULT: '#14172A',
-          soft: '#1E2238',
-          line: '#2A2F4A'
+          DEFAULT: '#2C2C2C',
+          soft: '#393536',
+          line: '#4A4548'
+        },
+        // Century 21 — Relentless Gold (akcent)
+        gold: {
+          DEFAULT: '#BEAF87',
+          soft: '#EFEADC',
+          dark: '#A8966A'
         },
         canvas: '#F5F6FA',
         surface: '#FFFFFF',
         line: '#E7E9F1',
+        // Akcent celé aplikace = Century 21 gold (dark = čitelný text na bílé)
         brand: {
-          DEFAULT: '#5B5BD6',
-          strong: '#4B47C9',
-          soft: '#ECECFB'
+          DEFAULT: '#BEAF87',
+          strong: '#A8966A',
+          soft: '#F3EEE2',
+          dark: '#8A7038'
         },
         emerald: { DEFAULT: '#0FA968', soft: '#E3F6EE' },
         amber: { DEFAULT: '#E8920C', soft: '#FCF1DD' },

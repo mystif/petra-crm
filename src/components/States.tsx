@@ -3,7 +3,7 @@ import { Loader2, AlertTriangle, Inbox } from 'lucide-react'
 export function Loading({ label = 'Načítám data…' }: { label?: string }): JSX.Element {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-tx-soft">
-      <Loader2 className="h-7 w-7 animate-spin text-brand" />
+      <Loader2 className="h-7 w-7 animate-spin text-brand-dark" />
       <span className="text-sm">{label}</span>
     </div>
   )

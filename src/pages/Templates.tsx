@@ -32,8 +32,8 @@ export function Templates(): JSX.Element {
   return (
     <div className="flex h-full flex-col">
       <Topbar
-        title="E-mailové šablony"
-        subtitle="Předpřipravené texty pro follow-up a oslovení"
+        title="Email Follow-up"
+        subtitle="Šablony e-mailů pro follow-up a oslovení"
         showSearch={false}
         actions={<button className="btn-primary" onClick={() => setEditing('new')}><Plus className="h-4 w-4" /> Nová šablona</button>}
       />
@@ -51,7 +51,7 @@ export function Templates(): JSX.Element {
               <article key={t.id} className="card flex flex-col p-5">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand">
+                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand-dark">
                       <Mail className="h-4.5 w-4.5" />
                     </span>
                     <h3 className="font-bold text-tx">{t.name}</h3>

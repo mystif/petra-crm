@@ -34,7 +34,7 @@ export function sourceStyle(source: string | null): { cls: string; icon: typeof 
     case 'Odhad ceny':
       return { cls: 'bg-amber-soft text-amber', icon: Calculator }
     case 'Doporučení':
-      return { cls: 'bg-brand-soft text-brand', icon: Star }
+      return { cls: 'bg-brand-soft text-brand-dark', icon: Star }
     default:
       return { cls: 'bg-canvas text-tx-soft', icon: HelpCircle }
   }

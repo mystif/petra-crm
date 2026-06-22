@@ -3,9 +3,9 @@ import { Phone, Mail, MapPin, ArrowRight, CalendarClock } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState, Empty } from '../components/States'
-import { LeadDetail } from '../components/LeadDetail'
 import { useLeads } from '../lib/leadsContext'
 import { useNewLead } from '../lib/newLeadContext'
+import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGE_MAP, type Lead } from '../lib/supabase'
 import { formatCZK, relativeDays, formatDate } from '../lib/format'
 import { sourceStyle, isEstimate } from '../lib/leadDisplay'
@@ -26,8 +26,8 @@ type Filter = 'vse' | 'poptavka' | 'odhad'
 export function Leads(): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
   const { open: openNewLead } = useNewLead()
+  const { openLead } = useLeadDetail()
   const [filter, setFilter] = useState<Filter>('vse')
-  const [selected, setSelected] = useState<Lead | null>(null)
 
   const list = leads.filter((l) => {
     if (filter === 'odhad') return isEstimate(l)
@@ -62,7 +62,7 @@ export function Leads(): JSX.Element {
                   key={t.id}
                   onClick={() => setFilter(t.id)}
                   className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                    filter === t.id ? 'bg-brand text-white shadow-sm' : 'text-tx-soft hover:text-tx'
+                    filter === t.id ? 'bg-brand text-ink shadow-sm' : 'text-tx-soft hover:text-tx'
                   }`}
                 >
                   {t.label}
@@ -90,7 +90,7 @@ export function Leads(): JSX.Element {
                   return (
                     <article
                       key={l.id}
-                      onClick={() => setSelected(l)}
+                      onClick={() => openLead(l)}
                       className="card flex cursor-pointer flex-col p-5 transition hover:shadow-lift"
                     >
                       <div className="flex items-start gap-3">
@@ -142,18 +142,18 @@ export function Leads(): JSX.Element {
                       <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <a
                           href={l.phone ? `tel:${l.phone.replace(/\s/g, '')}` : undefined}
-                          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand"
+                          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
                           title={l.phone || ''}
                         >
                           <Phone className="h-4 w-4" />
                         </a>
                         <a
                           href={l.email ? `mailto:${l.email}` : undefined}
-                          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand"
+                          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
                         >
                           <Mail className="h-4 w-4" />
                         </a>
-                        <button className="btn-soft ml-auto py-2 text-sm" onClick={() => setSelected(l)}>
+                        <button className="btn-soft ml-auto py-2 text-sm" onClick={() => openLead(l)}>
                           Otevřít a napsat <ArrowRight className="h-4 w-4" />
                         </button>
                       </div>
@@ -169,8 +169,6 @@ export function Leads(): JSX.Element {
           </>
         )}
       </div>
-
-      {selected && <LeadDetail lead={selected} onClose={() => setSelected(null)} />}
     </div>
   )
 }

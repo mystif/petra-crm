@@ -11,8 +11,13 @@ import {
   MessageSquarePlus,
   Clock,
   StickyNote,
-  Cog
+  Cog,
+  ImagePlus,
+  Star,
+  X,
+  Trash2
 } from 'lucide-react'
+import { useRef } from 'react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
@@ -21,11 +26,16 @@ import { formatCZK, formatDateTime, formatDate } from '../lib/format'
 import { isEstimate } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity } from '../lib/activity'
+import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
 
 export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose: () => void }): JSX.Element {
-  const { leads, moveStage, patch } = useLeads()
+  const { leads, moveStage, patch, remove } = useLeads()
   // Živá verze leadu z contextu — odráží okamžité změny fáze / follow-upu.
   const lead = leads.find((l) => l.id === initialLead.id) ?? initialLead
+
+  const [confirmDel, setConfirmDel] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [delErr, setDelErr] = useState<string | null>(null)
 
   const [templates, setTemplates] = useState<Template[]>([])
   const [activity, setActivity] = useState<Activity[]>([])
@@ -40,6 +50,12 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
   const [note, setNote] = useState('')
   const [followUp, setFollowUp] = useState(lead.follow_up_at?.slice(0, 10) ?? '')
+
+  // fotky
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [photoErr, setPhotoErr] = useState<string | null>(null)
+  const fotky = lead.fotky ?? []
 
   const reloadActivity = (): void => {
     setLoadingAct(true)
@@ -97,6 +113,48 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     reloadActivity()
   }
 
+  // --- Fotky ---
+  const handleFiles = async (files: FileList | null): Promise<void> => {
+    if (!files || files.length === 0) return
+    setUploading(true)
+    setPhotoErr(null)
+    try {
+      const paths: string[] = []
+      for (const file of Array.from(files)) {
+        paths.push(await uploadLeadPhoto(lead.id, file))
+      }
+      await patch(lead.id, { fotky: [...fotky, ...paths] })
+      await addActivity(lead.id, 'system', null, `Přidáno ${paths.length} foto`)
+      reloadActivity()
+    } catch (e) {
+      setPhotoErr(e instanceof Error ? e.message : 'Nahrání fotky selhalo.')
+    } finally {
+      setUploading(false)
+      if (fileInput.current) fileInput.current.value = ''
+    }
+  }
+
+  const removePhoto = async (path: string): Promise<void> => {
+    await patch(lead.id, { fotky: fotky.filter((p) => p !== path) })
+    removePhotoFile(path).catch(() => {}) // soubor smažeme „best effort"
+  }
+
+  const makeCover = async (path: string): Promise<void> => {
+    await patch(lead.id, { fotky: [path, ...fotky.filter((p) => p !== path)] })
+  }
+
+  const handleDelete = async (): Promise<void> => {
+    setDeleting(true)
+    setDelErr(null)
+    try {
+      await remove(lead)
+      onClose()
+    } catch (e) {
+      setDelErr(e instanceof Error ? e.message : 'Smazání selhalo.')
+      setDeleting(false)
+    }
+  }
+
   const followUpStatus = useMemo(() => {
     if (!followUp) return null
     const today = new Date()
@@ -124,12 +182,12 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             <div className="flex-1 text-sm">
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-tx-soft">
                 {lead.phone && (
-                  <a href={`tel:${lead.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:text-brand">
+                  <a href={`tel:${lead.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:text-brand-dark">
                     <Phone className="h-3.5 w-3.5" /> {lead.phone}
                   </a>
                 )}
                 {lead.email && (
-                  <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 hover:text-brand">
+                  <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 hover:text-brand-dark">
                     <Mail className="h-3.5 w-3.5" /> {lead.email}
                   </a>
                 )}
@@ -187,10 +245,68 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             </div>
           </div>
 
+          {/* fotky nemovitosti */}
+          <div className="rounded-xl border border-line p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ImagePlus className="h-4 w-4 text-brand-dark" />
+                <h3 className="font-bold text-tx">Fotky {fotky.length > 0 && <span className="text-tx-faint">({fotky.length})</span>}</h3>
+              </div>
+              <button className="btn-soft py-1.5 text-sm" onClick={() => fileInput.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                {uploading ? 'Nahrávám…' : 'Přidat fotky'}
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+            </div>
+
+            {fotky.length === 0 ? (
+              <p className="text-sm text-tx-faint">Zatím žádné fotky. První fotka se použije jako úvodní na kartě v pipeline.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {fotky.map((path, i) => (
+                  <div key={path} className="group relative aspect-square overflow-hidden rounded-lg border border-line">
+                    <img src={photoUrl(path)} alt="" className="h-full w-full object-cover" />
+                    {i === 0 && (
+                      <span className="absolute left-1 top-1 flex items-center gap-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-ink">
+                        <Star className="h-2.5 w-2.5" /> Úvodní
+                      </span>
+                    )}
+                    <div className="absolute inset-x-1 bottom-1 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
+                      {i !== 0 && (
+                        <button
+                          onClick={() => makeCover(path)}
+                          title="Nastavit jako úvodní"
+                          className="grid h-6 w-6 place-items-center rounded bg-white/90 text-tx hover:text-brand-dark"
+                        >
+                          <Star className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => removePhoto(path)}
+                        title="Smazat"
+                        className="grid h-6 w-6 place-items-center rounded bg-white/90 text-rose"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {photoErr && <p className="mt-2 text-sm font-medium text-rose">{photoErr}</p>}
+          </div>
+
           {/* psaní e-mailu */}
           <div className="rounded-xl border border-line p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Send className="h-4 w-4 text-brand" />
+              <Send className="h-4 w-4 text-brand-dark" />
               <h3 className="font-bold text-tx">Napsat e-mail</h3>
             </div>
             <div className="space-y-2.5">
@@ -267,7 +383,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 <li key={a.id} className="flex gap-3">
                   <div className="mt-0.5">
                     {a.kind === 'email' ? (
-                      <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand"><Mail className="h-3.5 w-3.5" /></span>
+                      <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand-dark"><Mail className="h-3.5 w-3.5" /></span>
                     ) : a.kind === 'note' ? (
                       <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-soft text-amber"><StickyNote className="h-3.5 w-3.5" /></span>
                     ) : (
@@ -285,6 +401,38 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
           )}
         </div>
       </div>
+
+      {/* smazání leadu (kontakt zůstane v Kontaktech) */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        {confirmDel ? (
+          <>
+            <span className="text-sm text-tx-soft">
+              Smazat lead včetně historie a fotek? <b className="text-tx">Kontakt zůstane v Kontaktech.</b>
+            </span>
+            <div className="flex gap-2">
+              <button className="btn-ghost py-2 text-sm" onClick={() => setConfirmDel(false)} disabled={deleting}>
+                Zrušit
+              </button>
+              <button
+                className="btn bg-rose py-2 text-sm text-white hover:bg-rose/90"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {deleting ? 'Mažu…' : 'Ano, smazat lead'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            className="ml-auto flex items-center gap-1.5 text-sm font-semibold text-rose transition hover:text-rose/80"
+            onClick={() => setConfirmDel(true)}
+          >
+            <Trash2 className="h-4 w-4" /> Smazat lead
+          </button>
+        )}
+      </div>
+      {delErr && <p className="mt-2 text-right text-sm font-medium text-rose">{delErr}</p>}
     </Modal>
   )
 }

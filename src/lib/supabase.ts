@@ -57,6 +57,7 @@ export interface Lead {
   crm_updated_at: string | null
   meeting_at: string | null
   follow_up_at: string | null
+  fotky: string[] | null
 }
 
 // --- API ---

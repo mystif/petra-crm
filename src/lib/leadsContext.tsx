@@ -7,6 +7,7 @@ import {
   type ReactNode
 } from 'react'
 import { fetchLeads, updateLeadStage, updateLead, type Lead, type StageKey } from './supabase'
+import { deleteLeadKeepContact } from './leadActions'
 
 interface LeadsState {
   leads: Lead[]
@@ -15,6 +16,7 @@ interface LeadsState {
   refetch: () => Promise<void>
   moveStage: (id: string, stage: StageKey) => Promise<void>
   patch: (id: string, patch: Partial<Lead>) => Promise<void>
+  remove: (lead: Lead) => Promise<void>
 }
 
 const LeadsContext = createContext<LeadsState | null>(null)
@@ -78,8 +80,14 @@ export function LeadsProvider({ children }: { children: ReactNode }): JSX.Elemen
     }
   }, [leads])
 
+  // Smazání leadu (s zachováním kontaktu) + odebrání z lokálního stavu.
+  const remove = useCallback(async (lead: Lead) => {
+    await deleteLeadKeepContact(lead)
+    setLeads((cur) => cur.filter((l) => l.id !== lead.id))
+  }, [])
+
   return (
-    <LeadsContext.Provider value={{ leads, loading, error, refetch, moveStage, patch }}>
+    <LeadsContext.Provider value={{ leads, loading, error, refetch, moveStage, patch, remove }}>
       {children}
     </LeadsContext.Provider>
   )

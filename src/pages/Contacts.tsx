@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Phone, Mail, Search, MoreHorizontal, Plus, Download } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
@@ -7,6 +7,7 @@ import { useLeads } from '../lib/leadsContext'
 import { useNewLead } from '../lib/newLeadContext'
 import { formatCZK, relativeDays } from '../lib/format'
 import { contactRole, leadValue } from '../lib/leadDisplay'
+import { fetchSavedContacts, type SavedContact } from '../lib/contacts'
 
 interface DerivedContact {
   key: string
@@ -22,7 +23,7 @@ interface DerivedContact {
 const ROLE_STYLE: Record<string, string> = {
   Kupující: 'bg-sky-soft text-sky',
   Prodávající: 'bg-emerald-soft text-emerald',
-  Pronajímatel: 'bg-brand-soft text-brand',
+  Pronajímatel: 'bg-brand-soft text-brand-dark',
   Zájemce: 'bg-amber-soft text-amber'
 }
 const ROLES = ['Vše', 'Kupující', 'Prodávající', 'Pronajímatel', 'Zájemce'] as const
@@ -51,8 +52,14 @@ export function Contacts(): JSX.Element {
   const { open: openNewLead } = useNewLead()
   const [query, setQuery] = useState('')
   const [role, setRole] = useState<(typeof ROLES)[number]>('Vše')
+  const [saved, setSaved] = useState<SavedContact[]>([])
 
-  // Kontakty odvodíme z leadů — sloučíme podle e-mailu (nebo telefonu).
+  // Uložené kontakty (zůstávají i po smazání leadu z pipeline).
+  useEffect(() => {
+    fetchSavedContacts().then(setSaved).catch(() => setSaved([]))
+  }, [leads])
+
+  // Kontakty = odvozené z leadů + samostatně uložené, sloučené podle e-mailu/telefonu.
   const contacts = useMemo<DerivedContact[]>(() => {
     const map = new Map<string, DerivedContact>()
     for (const l of leads) {
@@ -75,8 +82,24 @@ export function Contacts(): JSX.Element {
         })
       }
     }
+    // Doplníme uložené kontakty, které už nemají aktivní lead.
+    for (const c of saved) {
+      const key = (c.email || c.phone || c.id).toLowerCase()
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          name: c.name || 'Bez jména',
+          phone: c.phone,
+          email: c.email,
+          role: c.role || 'Zájemce',
+          city: c.city,
+          value: 0,
+          last: c.updated_at
+        })
+      }
+    }
     return [...map.values()].sort((a, b) => b.last.localeCompare(a.last))
-  }, [leads])
+  }, [leads, saved])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -173,7 +196,7 @@ export function Contacts(): JSX.Element {
                           {c.phone ? (
                             <a
                               href={`tel:${c.phone.replace(/\s/g, '')}`}
-                              className="flex items-center gap-2 whitespace-nowrap font-mono text-[13px] text-tx-soft transition hover:text-brand"
+                              className="flex items-center gap-2 whitespace-nowrap font-mono text-[13px] text-tx-soft transition hover:text-brand-dark"
                             >
                               <Phone className="h-3.5 w-3.5 text-tx-faint" />
                               {c.phone}
@@ -186,7 +209,7 @@ export function Contacts(): JSX.Element {
                           {c.email ? (
                             <a
                               href={`mailto:${c.email}`}
-                              className="flex items-center gap-2 text-sm text-tx-soft transition hover:text-brand"
+                              className="flex items-center gap-2 text-sm text-tx-soft transition hover:text-brand-dark"
                             >
                               <Mail className="h-3.5 w-3.5 text-tx-faint" />
                               {c.email}

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Sidebar, type Page } from './components/Sidebar'
 import { LeadsProvider } from './lib/leadsContext'
+import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
+import { SearchProvider } from './lib/searchContext'
 import { Dashboard } from './pages/Dashboard'
 import { Pipeline } from './pages/Pipeline'
 import { Leads } from './pages/Leads'
@@ -13,7 +15,9 @@ export default function App(): JSX.Element {
 
   return (
     <LeadsProvider>
+      <LeadDetailProvider>
       <NewLeadProvider>
+      <SearchProvider>
       <div className="flex h-screen overflow-hidden bg-canvas">
         <Sidebar current={page} onNavigate={setPage} />
         <main className="flex-1 overflow-hidden">
@@ -24,7 +28,9 @@ export default function App(): JSX.Element {
           {page === 'templates' && <Templates />}
         </main>
       </div>
+      </SearchProvider>
       </NewLeadProvider>
+      </LeadDetailProvider>
     </LeadsProvider>
   )
 }

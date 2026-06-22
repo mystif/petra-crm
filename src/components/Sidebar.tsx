@@ -9,9 +9,12 @@ import {
   Mail,
   LifeBuoy
 } from 'lucide-react'
+import { useState } from 'react'
 import { Avatar } from './Avatar'
+import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
 import { useNewLead } from '../lib/newLeadContext'
+import { useSearch } from '../lib/searchContext'
 
 export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'templates'
 
@@ -30,10 +33,13 @@ interface SidebarProps {
 export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
   const { leads } = useLeads()
   const { open: openNewLead } = useNewLead()
+  const { openSearch } = useSearch()
+  const [helpOpen, setHelpOpen] = useState(false)
   // Odznak u Poptávek = počet nových (nezpracovaných) leadů.
   const freshCount = leads.filter((l) => l.crm_status === 'novy').length
 
   return (
+    <>
     <aside className="relative flex w-[252px] shrink-0 flex-col overflow-hidden bg-ink text-white">
       {/* atmosférický gradient + jemné zrno */}
       <div className="pointer-events-none absolute inset-0 aurora opacity-90" />
@@ -42,18 +48,21 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
       <div className="relative flex h-full flex-col scroll-dark">
         {/* logo */}
         <div className="flex items-center gap-3 px-5 pb-2 pt-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
-            <Building2 className="h-5 w-5 text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[.06] text-gold ring-1 ring-white/10 backdrop-blur">
+            <Building2 className="h-5 w-5" />
           </div>
           <div className="leading-tight">
-            <div className="font-display text-[17px] font-bold tracking-tight">Reality CRM</div>
+            <div className="font-display text-[17px] font-bold tracking-tight">BeReEst CRM</div>
             <div className="text-[11px] font-medium text-white/45">Realitní pult</div>
           </div>
         </div>
 
         {/* rychlé hledání */}
         <div className="px-4 pt-5">
-          <button className="flex w-full items-center gap-2.5 rounded-xl bg-white/[.06] px-3 py-2.5 text-sm text-white/55 ring-1 ring-white/10 transition hover:bg-white/[.1]">
+          <button
+            onClick={openSearch}
+            className="flex w-full items-center gap-2.5 rounded-xl bg-white/[.06] px-3 py-2.5 text-sm text-white/55 ring-1 ring-white/10 transition hover:bg-white/[.1]"
+          >
             <Search className="h-4 w-4" />
             <span>Hledat…</span>
             <kbd className="ml-auto rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-white/60">
@@ -90,7 +99,7 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
                 <Icon className="h-[18px] w-[18px]" />
                 <span>{item.label}</span>
                 {badge && (
-                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-white">
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-[11px] font-bold text-ink">
                     {badge}
                   </span>
                 )}
@@ -105,9 +114,9 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
             onClick={() => onNavigate('templates')}
             className={`nav-item w-full ${current === 'templates' ? 'active' : ''}`}
           >
-            <Mail className="h-[18px] w-[18px]" /> E-mailové šablony
+            <Mail className="h-[18px] w-[18px]" /> Email Follow-up
           </button>
-          <button className="nav-item w-full">
+          <button onClick={() => setHelpOpen(true)} className="nav-item w-full">
             <LifeBuoy className="h-[18px] w-[18px]" /> Podpora
           </button>
         </nav>
@@ -123,5 +132,26 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
         </div>
       </div>
     </aside>
+
+    <Modal open={helpOpen} size="md" title="Podpora a nápověda" onClose={() => setHelpOpen(false)}>
+      <div className="space-y-3 text-sm text-tx-soft">
+        <p>
+          Vítej v CRM. Leady z webových formulářů se sbírají automaticky, můžeš je posouvat v pipeline,
+          psát e-maily ze šablon a plánovat follow-up.
+        </p>
+        <ul className="list-inside list-disc space-y-1">
+          <li><b className="text-tx">Nový lead</b> přidáš tlačítkem vlevo nahoře.</li>
+          <li><b className="text-tx">Vyhledávání</b> otevřeš klávesou <kbd className="rounded bg-canvas px-1 text-xs">⌘K</kbd>.</li>
+          <li>Klikni na kartu leadu pro detail, psaní e-mailu a historii.</li>
+        </ul>
+        <p>
+          Potřebuješ pomoc nebo úpravu?{' '}
+          <a className="font-semibold text-brand-dark hover:underline" href="mailto:jirka.zabransky@gmail.com?subject=Petra%20CRM%20%E2%80%93%20podpora">
+            Napiš na podporu
+          </a>.
+        </p>
+      </div>
+    </Modal>
+    </>
   )
 }

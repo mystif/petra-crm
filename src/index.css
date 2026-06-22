@@ -46,21 +46,21 @@
       transition active:scale-[.98] disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-strong shadow-[0_4px_14px_rgba(91,91,214,.35)];
+    @apply btn bg-brand text-ink hover:bg-brand-strong shadow-[0_4px_14px_rgba(190,175,135,.45)];
   }
   .btn-ghost {
-    @apply btn bg-white text-tx border border-line hover:border-brand/40 hover:text-brand;
+    @apply btn bg-white text-tx border border-line hover:border-brand/50 hover:text-brand-dark;
   }
   .btn-soft {
-    @apply btn bg-brand-soft text-brand hover:bg-[#e0e0fb];
+    @apply btn bg-brand-soft text-brand-dark hover:bg-[#e8e1cc];
   }
   .nav-item {
-    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#9aa0c0]
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-gold
       transition hover:bg-white/[.06] hover:text-white;
   }
   .nav-item.active {
     @apply bg-white/[.08] text-white;
-    box-shadow: inset 2px 0 0 #8b8bf0;
+    box-shadow: inset 2px 0 0 #beaf87;
   }
   .input {
     @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm outline-none
@@ -72,12 +72,13 @@
 }
 
 @layer utilities {
+  /* Century 21 — zlaté záře přes Obsessed Gray (gold je akcent, ne celá plocha) */
   .aurora {
     background:
-      radial-gradient(60% 120% at 15% 10%, rgba(91, 91, 214, 0.5) 0%, transparent 55%),
-      radial-gradient(50% 120% at 90% 0%, rgba(15, 169, 104, 0.35) 0%, transparent 55%),
-      radial-gradient(80% 140% at 60% 120%, rgba(232, 146, 12, 0.28) 0%, transparent 50%),
-      linear-gradient(120deg, #1b1f38, #14172a);
+      radial-gradient(60% 120% at 15% 10%, rgba(190, 175, 135, 0.32) 0%, transparent 55%),
+      radial-gradient(50% 120% at 90% 0%, rgba(190, 175, 135, 0.18) 0%, transparent 55%),
+      radial-gradient(80% 140% at 60% 120%, rgba(190, 175, 135, 0.12) 0%, transparent 50%),
+      linear-gradient(120deg, #393536, #2c2c2c);
   }
   .grain {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
