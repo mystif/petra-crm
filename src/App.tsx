@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Pipeline } from './pages/Pipeline'
 import { Leads } from './pages/Leads'
 import { Contacts } from './pages/Contacts'
+import { Templates } from './pages/Templates'
 
 export default function App(): JSX.Element {
   const [page, setPage] = useState<Page>('dashboard')
@@ -18,6 +19,7 @@ export default function App(): JSX.Element {
           {page === 'pipeline' && <Pipeline />}
           {page === 'leads' && <Leads />}
           {page === 'contacts' && <Contacts />}
+          {page === 'templates' && <Templates />}
         </main>
       </div>
     </LeadsProvider>

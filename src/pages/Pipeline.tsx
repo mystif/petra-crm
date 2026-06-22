@@ -3,8 +3,9 @@ import { MapPin, Plus, GripVertical, Building2, CalendarClock } from 'lucide-rea
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState } from '../components/States'
+import { LeadDetail } from '../components/LeadDetail'
 import { useLeads } from '../lib/leadsContext'
-import { STAGES, CLOSED_STAGES, type StageKey } from '../lib/supabase'
+import { STAGES, CLOSED_STAGES, type StageKey, type Lead } from '../lib/supabase'
 import { formatCZK, formatDate } from '../lib/format'
 import { propertyLabel, leadValue, hueFromId } from '../lib/leadDisplay'
 
@@ -12,6 +13,7 @@ export function Pipeline(): JSX.Element {
   const { leads, loading, error, refetch, moveStage } = useLeads()
   const [dragId, setDragId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<StageKey | null>(null)
+  const [selected, setSelected] = useState<Lead | null>(null)
 
   const totalOpen = leads
     .filter((l) => !CLOSED_STAGES.includes(l.crm_status))
@@ -96,6 +98,7 @@ export function Pipeline(): JSX.Element {
                             setDragId(null)
                             setOverStage(null)
                           }}
+                          onClick={() => setSelected(l)}
                           className={`group card cursor-grab p-3 transition hover:shadow-lift active:cursor-grabbing ${
                             dragId === l.id ? 'drag-ghost' : ''
                           }`}
@@ -161,6 +164,8 @@ export function Pipeline(): JSX.Element {
           </div>
         </div>
       )}
+
+      {selected && <LeadDetail lead={selected} onClose={() => setSelected(null)} />}
     </div>
   )
 }

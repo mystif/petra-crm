@@ -13,3 +13,6 @@ vite.config.d.ts
 # Lokální zálohy starších (jednosouborových) verzí CRM — nepatří do repa
 filesV4/
 CRM_final_terminal/
+
+# GitHub Actions workflow (token nemá workflow scope) — přidat ručně
+.github/

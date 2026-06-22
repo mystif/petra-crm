@@ -1,4 +1,4 @@
-import { TrendingUp, Wallet, Trophy, Inbox, Users, ArrowUpRight, ArrowRight, Dot } from 'lucide-react'
+import { TrendingUp, Wallet, Trophy, Inbox, Users, ArrowUpRight, ArrowRight, Dot, CalendarClock } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState } from '../components/States'
@@ -16,6 +16,13 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
   const fresh = leads.filter((l) => l.crm_status === 'novy')
   const pipelineValue = open.reduce((s, l) => s + leadValue(l), 0)
   const wonValue = won.reduce((s, l) => s + leadValue(l), 0)
+
+  // Follow-upy k vyřízení (termín dnes nebo po termínu, otevřené leady).
+  const endOfToday = new Date()
+  endOfToday.setHours(23, 59, 59, 999)
+  const dueFollowUps = leads.filter(
+    (l) => l.follow_up_at && !CLOSED_STAGES.includes(l.crm_status) && new Date(l.follow_up_at) <= endOfToday
+  )
   const uniqueContacts = new Set(leads.map((l) => (l.email || l.phone || l.id).toLowerCase())).size
 
   const today = new Date().toLocaleDateString('cs-CZ', {
@@ -95,6 +102,28 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
               </div>
             </div>
           </section>
+
+          {/* Follow-upy k vyřízení */}
+          {dueFollowUps.length > 0 && (
+            <button
+              onClick={() => onNavigate('leads')}
+              className="flex w-full items-center gap-3 rounded-2xl border border-amber/30 bg-amber-soft px-5 py-3.5 text-left transition hover:border-amber/50"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-amber/15 text-amber">
+                <CalendarClock className="h-5 w-5" />
+              </span>
+              <div className="flex-1">
+                <div className="text-sm font-bold text-tx">
+                  {dueFollowUps.length} {dueFollowUps.length === 1 ? 'follow-up k vyřízení' : 'follow-upů k vyřízení'}
+                </div>
+                <div className="text-xs text-tx-soft">
+                  {dueFollowUps.slice(0, 3).map((l) => l.name).filter(Boolean).join(', ')}
+                  {dueFollowUps.length > 3 ? ' a další…' : ''}
+                </div>
+              </div>
+              <ArrowRight className="h-5 w-5 text-amber" />
+            </button>
+          )}
 
           {/* KPI */}
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

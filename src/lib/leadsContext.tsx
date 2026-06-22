@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode
 } from 'react'
-import { fetchLeads, updateLeadStage, type Lead, type StageKey } from './supabase'
+import { fetchLeads, updateLeadStage, updateLead, type Lead, type StageKey } from './supabase'
 
 interface LeadsState {
   leads: Lead[]
@@ -14,6 +14,7 @@ interface LeadsState {
   error: string | null
   refetch: () => Promise<void>
   moveStage: (id: string, stage: StageKey) => Promise<void>
+  patch: (id: string, patch: Partial<Lead>) => Promise<void>
 }
 
 const LeadsContext = createContext<LeadsState | null>(null)
@@ -64,8 +65,21 @@ export function LeadsProvider({ children }: { children: ReactNode }): JSX.Elemen
     [leads]
   )
 
+  // Obecná úprava leadu (follow-up termín, poznámka, fáze…) s lokální aktualizací.
+  const patch = useCallback(async (id: string, p: Partial<Lead>) => {
+    const prev = leads
+    setLeads((cur) => cur.map((l) => (l.id === id ? { ...l, ...p } : l)))
+    try {
+      await updateLead(id, p)
+    } catch (e) {
+      setLeads(prev)
+      setError(e instanceof Error ? e.message : 'Změnu se nepodařilo uložit.')
+      throw e
+    }
+  }, [leads])
+
   return (
-    <LeadsContext.Provider value={{ leads, loading, error, refetch, moveStage }}>
+    <LeadsContext.Provider value={{ leads, loading, error, refetch, moveStage, patch }}>
       {children}
     </LeadsContext.Provider>
   )

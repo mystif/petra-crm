@@ -6,13 +6,13 @@ import {
   Building2,
   Search,
   Plus,
-  Settings,
+  Mail,
   LifeBuoy
 } from 'lucide-react'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'templates'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -96,8 +96,11 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
           <div className="px-3 pb-1 pt-5 text-[11px] font-bold uppercase tracking-wider text-white/30">
             Ostatní
           </div>
-          <button className="nav-item w-full">
-            <Settings className="h-[18px] w-[18px]" /> Nastavení
+          <button
+            onClick={() => onNavigate('templates')}
+            className={`nav-item w-full ${current === 'templates' ? 'active' : ''}`}
+          >
+            <Mail className="h-[18px] w-[18px]" /> E-mailové šablony
           </button>
           <button className="nav-item w-full">
             <LifeBuoy className="h-[18px] w-[18px]" /> Podpora

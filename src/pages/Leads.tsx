@@ -1,18 +1,31 @@
 import { useState } from 'react'
-import { Phone, Mail, MapPin, ArrowRight } from 'lucide-react'
+import { Phone, Mail, MapPin, ArrowRight, CalendarClock } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState, Empty } from '../components/States'
+import { LeadDetail } from '../components/LeadDetail'
 import { useLeads } from '../lib/leadsContext'
-import { STAGE_MAP } from '../lib/supabase'
-import { formatCZK, relativeDays } from '../lib/format'
+import { STAGE_MAP, type Lead } from '../lib/supabase'
+import { formatCZK, relativeDays, formatDate } from '../lib/format'
 import { sourceStyle, isEstimate } from '../lib/leadDisplay'
+
+/** Stav follow-up termínu vůči dnešku. */
+function followUpInfo(lead: Lead): { text: string; cls: string } | null {
+  if (!lead.follow_up_at) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const d = new Date(lead.follow_up_at)
+  if (d < today) return { text: 'Follow-up po termínu', cls: 'bg-rose-soft text-rose' }
+  if (d.getTime() === today.getTime()) return { text: 'Follow-up dnes', cls: 'bg-amber-soft text-amber' }
+  return { text: `Follow-up ${formatDate(lead.follow_up_at)}`, cls: 'bg-canvas text-tx-soft' }
+}
 
 type Filter = 'vse' | 'poptavka' | 'odhad'
 
 export function Leads(): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
   const [filter, setFilter] = useState<Filter>('vse')
+  const [selected, setSelected] = useState<Lead | null>(null)
 
   const list = leads.filter((l) => {
     if (filter === 'odhad') return isEstimate(l)
@@ -71,8 +84,13 @@ export function Leads(): JSX.Element {
                   const SrcIcon = src.icon
                   const stage = STAGE_MAP[l.crm_status]
                   const estimate = isEstimate(l)
+                  const fu = followUpInfo(l)
                   return (
-                    <article key={l.id} className="card flex flex-col p-5 transition hover:shadow-lift">
+                    <article
+                      key={l.id}
+                      onClick={() => setSelected(l)}
+                      className="card flex cursor-pointer flex-col p-5 transition hover:shadow-lift"
+                    >
                       <div className="flex items-start gap-3">
                         <Avatar name={l.name || '?'} size={44} />
                         <div className="min-w-0 flex-1">
@@ -98,6 +116,12 @@ export function Leads(): JSX.Element {
                         )}
                       </div>
 
+                      {fu && (
+                        <div className={`mt-3 inline-flex items-center gap-1.5 self-start rounded-lg px-2.5 py-1 text-xs font-semibold ${fu.cls}`}>
+                          <CalendarClock className="h-3.5 w-3.5" /> {fu.text}
+                        </div>
+                      )}
+
                       {l.message && <p className="mt-3 text-sm text-tx">{l.message}</p>}
 
                       <div className="mt-4 rounded-xl bg-canvas p-3.5">
@@ -113,7 +137,7 @@ export function Leads(): JSX.Element {
                         </div>
                       </div>
 
-                      <div className="mt-4 flex items-center gap-2">
+                      <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <a
                           href={l.phone ? `tel:${l.phone.replace(/\s/g, '')}` : undefined}
                           className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand"
@@ -127,8 +151,8 @@ export function Leads(): JSX.Element {
                         >
                           <Mail className="h-4 w-4" />
                         </a>
-                        <button className="btn-soft ml-auto py-2 text-sm">
-                          Otevřít <ArrowRight className="h-4 w-4" />
+                        <button className="btn-soft ml-auto py-2 text-sm" onClick={() => setSelected(l)}>
+                          Otevřít a napsat <ArrowRight className="h-4 w-4" />
                         </button>
                       </div>
 
@@ -143,6 +167,8 @@ export function Leads(): JSX.Element {
           </>
         )}
       </div>
+
+      {selected && <LeadDetail lead={selected} onClose={() => setSelected(null)} />}
     </div>
   )
 }
