@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+.vite/
+*.log
+
+# TypeScript build artefakty
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# Lokální zálohy starších (jednosouborových) verzí CRM — nepatří do repa
+filesV4/
+CRM_final_terminal/

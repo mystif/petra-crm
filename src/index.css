@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    font-family: '"Plus Jakarta Sans"', system-ui, sans-serif;
+    background: #f5f6fa;
+    color: #1a1d2e;
+  }
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d3d7e3;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #b9bfd0;
+  }
+  /* tenký scrollbar uvnitř tmavého sidebaru */
+  .scroll-dark::-webkit-scrollbar-thumb {
+    background: #353b59;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+      transition active:scale-[.98] disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-strong shadow-[0_4px_14px_rgba(91,91,214,.35)];
+  }
+  .btn-ghost {
+    @apply btn bg-white text-tx border border-line hover:border-brand/40 hover:text-brand;
+  }
+  .btn-soft {
+    @apply btn bg-brand-soft text-brand hover:bg-[#e0e0fb];
+  }
+  .nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#9aa0c0]
+      transition hover:bg-white/[.06] hover:text-white;
+  }
+  .nav-item.active {
+    @apply bg-white/[.08] text-white;
+    box-shadow: inset 2px 0 0 #8b8bf0;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm outline-none
+      transition placeholder:text-tx-faint focus:border-brand focus:ring-4 focus:ring-brand/15;
+  }
+  .stat-num {
+    @apply font-display font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .aurora {
+    background:
+      radial-gradient(60% 120% at 15% 10%, rgba(91, 91, 214, 0.5) 0%, transparent 55%),
+      radial-gradient(50% 120% at 90% 0%, rgba(15, 169, 104, 0.35) 0%, transparent 55%),
+      radial-gradient(80% 140% at 60% 120%, rgba(232, 146, 12, 0.28) 0%, transparent 50%),
+      linear-gradient(120deg, #1b1f38, #14172a);
+  }
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+  .drag-ghost {
+    @apply opacity-40;
+  }
+  .drop-active {
+    @apply ring-2 ring-brand/60 ring-offset-2 ring-offset-canvas;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop {
+  animation: pop 0.18s ease-out both;
+}
