@@ -14,7 +14,9 @@ export async function deleteLeadKeepContact(lead: Lead): Promise<void> {
     phone: lead.phone,
     email: lead.email,
     role: contactRole(lead),
-    city: lead.location
+    city: lead.location,
+    gdpr_consent: lead.gdpr_consent,
+    birthdate: lead.birthdate
   })
 
   // 2. smazat fotky ze storage (best effort)

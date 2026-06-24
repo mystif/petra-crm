@@ -1,44 +1,54 @@
 import { useState } from 'react'
-import { Phone, Mail, MapPin, ArrowRight, CalendarClock } from 'lucide-react'
+import { Phone, Mail, MapPin, ArrowRight, CalendarClock, MessageCircle, Trash2, Loader2, ShieldCheck } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
+import { Modal } from '../components/Modal'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
 import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
-import { STAGE_MAP, type Lead } from '../lib/supabase'
-import { formatCZK, relativeDays, formatDate } from '../lib/format'
-import { sourceStyle, isEstimate } from '../lib/leadDisplay'
+import { STAGE_MAP, CLOSED_STAGES, type Lead } from '../lib/supabase'
+import { formatCZK, relativeDays, formatDate, followUpState } from '../lib/format'
+import { sourceStyle, isEstimate, whatsappUrl } from '../lib/leadDisplay'
 
-/** Stav follow-up termínu vůči dnešku. */
-function followUpInfo(lead: Lead): { text: string; cls: string } | null {
-  if (!lead.follow_up_at) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const d = new Date(lead.follow_up_at)
-  if (d < today) return { text: 'Follow-up po termínu', cls: 'bg-rose-soft text-rose' }
-  if (d.getTime() === today.getTime()) return { text: 'Follow-up dnes', cls: 'bg-amber-soft text-amber' }
-  return { text: `Follow-up ${formatDate(lead.follow_up_at)}`, cls: 'bg-canvas text-tx-soft' }
+export type LeadsFilter = 'vse' | 'poptavka' | 'odhad' | 'followup'
+
+/** Lead je „k vyřízení" — otevřený s follow-up termínem dnes nebo po termínu. */
+function isFollowUpDue(l: Lead): boolean {
+  if (CLOSED_STAGES.includes(l.crm_status)) return false
+  const s = followUpState(l.follow_up_at)
+  return s === 'overdue' || s === 'today'
 }
 
-type Filter = 'vse' | 'poptavka' | 'odhad'
+/** Štítek follow-up termínu na kartě poptávky. */
+function followUpInfo(lead: Lead): { text: string; cls: string } | null {
+  const s = followUpState(lead.follow_up_at)
+  if (!s) return null
+  if (s === 'overdue') return { text: 'Follow-up po termínu', cls: 'bg-rose-soft text-rose' }
+  if (s === 'today') return { text: 'Follow-up dnes', cls: 'bg-amber-soft text-amber' }
+  return { text: `Follow-up ${formatDate(lead.follow_up_at ?? '')}`, cls: 'bg-canvas text-tx-soft' }
+}
 
-export function Leads(): JSX.Element {
-  const { leads, loading, error, refetch } = useLeads()
+export function Leads({ filter, onFilter }: { filter: LeadsFilter; onFilter: (f: LeadsFilter) => void }): JSX.Element {
+  const { leads, loading, error, refetch, remove } = useLeads()
   const { open: openNewLead } = useNewLead()
   const { openLead } = useLeadDetail()
-  const [filter, setFilter] = useState<Filter>('vse')
+  const [toDelete, setToDelete] = useState<Lead | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const list = leads.filter((l) => {
     if (filter === 'odhad') return isEstimate(l)
     if (filter === 'poptavka') return !isEstimate(l)
+    if (filter === 'followup') return isFollowUpDue(l)
     return true
   })
 
-  const tabs: { id: Filter; label: string; count: number }[] = [
+  const dueCount = leads.filter(isFollowUpDue).length
+  const tabs: { id: LeadsFilter; label: string; count: number }[] = [
     { id: 'vse', label: 'Vše', count: leads.length },
     { id: 'poptavka', label: 'Poptávky', count: leads.filter((l) => !isEstimate(l)).length },
-    { id: 'odhad', label: 'Odhady ceny', count: leads.filter((l) => isEstimate(l)).length }
+    { id: 'odhad', label: 'Odhady ceny', count: leads.filter((l) => isEstimate(l)).length },
+    { id: 'followup', label: 'K vyřízení', count: dueCount }
   ]
 
   return (
@@ -60,7 +70,7 @@ export function Leads(): JSX.Element {
               {tabs.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => setFilter(t.id)}
+                  onClick={() => onFilter(t.id)}
                   className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                     filter === t.id ? 'bg-brand text-ink shadow-sm' : 'text-tx-soft hover:text-tx'
                   }`}
@@ -78,7 +88,7 @@ export function Leads(): JSX.Element {
             </div>
 
             {list.length === 0 ? (
-              <Empty label="Žádné poptávky v této kategorii." />
+              <Empty label={filter === 'followup' ? 'Nic k vyřízení — žádné follow-upy dnes ani po termínu.' : 'Žádné poptávky v této kategorii.'} />
             ) : (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                 {list.map((l) => {
@@ -87,12 +97,20 @@ export function Leads(): JSX.Element {
                   const stage = STAGE_MAP[l.crm_status]
                   const estimate = isEstimate(l)
                   const fu = followUpInfo(l)
+                  const isNew = l.crm_status === 'novy'
+                  const wa = whatsappUrl(l.phone)
                   return (
                     <article
                       key={l.id}
                       onClick={() => openLead(l)}
-                      className="card flex cursor-pointer flex-col p-5 transition hover:shadow-lift"
+                      className="card relative flex cursor-pointer flex-col overflow-hidden p-5 transition hover:shadow-lift"
                     >
+                      {/* rohový štítek NOVÉ */}
+                      {isNew && (
+                        <div className="pointer-events-none absolute -right-10 top-3.5 rotate-45 bg-brand px-10 py-1 text-center text-[11px] font-bold tracking-wider text-ink shadow-sm">
+                          NOVÉ
+                        </div>
+                      )}
                       <div className="flex items-start gap-3">
                         <Avatar name={l.name || '?'} size={44} />
                         <div className="min-w-0 flex-1">
@@ -104,6 +122,11 @@ export function Leads(): JSX.Element {
                                 style={{ background: `${stage.accent}1f`, color: stage.accent }}
                               >
                                 {stage.label}
+                              </span>
+                            )}
+                            {l.gdpr_consent && (
+                              <span className="pill bg-emerald-soft text-emerald" title="GDPR potvrzeno">
+                                <ShieldCheck className="h-3 w-3" /> GDPR
                               </span>
                             )}
                           </div>
@@ -143,18 +166,37 @@ export function Leads(): JSX.Element {
                         <a
                           href={l.phone ? `tel:${l.phone.replace(/\s/g, '')}` : undefined}
                           className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
-                          title={l.phone || ''}
+                          title={l.phone || 'Telefon'}
                         >
                           <Phone className="h-4 w-4" />
                         </a>
+                        {wa && (
+                          <a
+                            href={wa}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="grid h-9 w-9 place-items-center rounded-lg border border-line text-emerald transition hover:border-emerald/40"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </a>
+                        )}
                         <a
                           href={l.email ? `mailto:${l.email}` : undefined}
                           className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
+                          title={l.email || 'E-mail'}
                         >
                           <Mail className="h-4 w-4" />
                         </a>
-                        <button className="btn-soft ml-auto py-2 text-sm" onClick={() => openLead(l)}>
-                          Otevřít a napsat <ArrowRight className="h-4 w-4" />
+                        <button
+                          className="ml-auto grid h-9 w-9 place-items-center rounded-lg border border-line text-rose transition hover:border-rose/40 hover:bg-rose-soft"
+                          title="Smazat poptávku"
+                          onClick={() => setToDelete(l)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        <button className="btn-soft py-2 text-sm" onClick={() => openLead(l)}>
+                          Otevřít <ArrowRight className="h-4 w-4" />
                         </button>
                       </div>
 
@@ -169,6 +211,40 @@ export function Leads(): JSX.Element {
           </>
         )}
       </div>
+
+      {toDelete && (
+        <Modal
+          open
+          size="md"
+          title="Smazat poptávku"
+          subtitle={toDelete.name || 'Lead'}
+          onClose={() => setToDelete(null)}
+          footer={
+            <>
+              <button className="btn-ghost" onClick={() => setToDelete(null)} disabled={deleting}>Zrušit</button>
+              <button
+                className="btn bg-rose text-white hover:bg-rose/90"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true)
+                  try {
+                    await remove(toDelete)
+                    setToDelete(null)
+                  } finally {
+                    setDeleting(false)
+                  }
+                }}
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Smazat
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-tx-soft">
+            Smaže poptávku včetně historie a fotek. <b className="text-tx">Kontakt zůstane v Kontaktech.</b>
+          </p>
+        </Modal>
+      )}
     </div>
   )
 }

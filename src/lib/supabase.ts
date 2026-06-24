@@ -58,6 +58,8 @@ export interface Lead {
   meeting_at: string | null
   follow_up_at: string | null
   fotky: string[] | null
+  birthdate: string | null
+  provize: number | null
 }
 
 // --- API ---

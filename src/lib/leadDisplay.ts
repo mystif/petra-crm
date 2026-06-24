@@ -60,3 +60,20 @@ export function hueFromId(id: string): number {
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360
   return h
 }
+
+/** Odkaz na Google Mapy podle adresy/lokality (otevře pin). */
+export function mapUrl(lead: Lead): string | null {
+  const q = [lead.address, lead.location].filter(Boolean).join(', ').trim()
+  if (!q) return null
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+}
+
+/** WhatsApp odkaz z telefonu (jen číslice, předvolba +420 pokud chybí). */
+export function whatsappUrl(phone: string | null): string | null {
+  if (!phone) return null
+  let digits = phone.replace(/[^\d+]/g, '')
+  if (digits.startsWith('+')) digits = digits.slice(1)
+  else if (digits.length === 9) digits = '420' + digits // české číslo bez předvolby
+  if (digits.length < 9) return null
+  return `https://wa.me/${digits}`
+}

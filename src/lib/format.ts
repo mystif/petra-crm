@@ -17,6 +17,22 @@ export function formatDate(iso: string): string {
   return d.toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+/**
+ * Stav follow-up termínu vůči dnešku. Datum (YYYY-MM-DD) parsujeme jako LOKÁLNÍ den,
+ * aby se „dnešní" termín nepočítal kvůli časové zóně jako budoucí.
+ */
+export function followUpState(iso: string | null | undefined): 'overdue' | 'today' | 'future' | null {
+  if (!iso) return null
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  if (!y || !m || !d) return null
+  const fd = new Date(y, m - 1, d).getTime()
+  const t = new Date()
+  t.setHours(0, 0, 0, 0)
+  if (fd < t.getTime()) return 'overdue'
+  if (fd === t.getTime()) return 'today'
+  return 'future'
+}
+
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   const d = new Date(iso)

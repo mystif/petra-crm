@@ -8,6 +8,8 @@ export interface SavedContact {
   role: string | null
   city: string | null
   note: string | null
+  gdpr_consent: boolean | null
+  birthdate: string | null
   created_at: string
   updated_at: string
 }
@@ -31,6 +33,8 @@ export async function upsertContact(c: {
   email: string | null
   role: string | null
   city: string | null
+  gdpr_consent?: boolean | null
+  birthdate?: string | null
 }): Promise<void> {
   // Najdeme existující kontakt podle e-mailu nebo telefonu (samostatné dotazy = bezpečné kódování).
   let existingId: string | null = null

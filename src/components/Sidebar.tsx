@@ -27,9 +27,10 @@ const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
 interface SidebarProps {
   current: Page
   onNavigate: (p: Page) => void
+  onOpenAgent: () => void
 }
 
-export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
+export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX.Element {
   const { leads } = useLeads()
   const { open: openNewLead } = useNewLead()
   const { openSearch } = useSearch()
@@ -39,7 +40,7 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
 
   return (
     <>
-    <aside className="relative flex w-[252px] shrink-0 flex-col overflow-hidden bg-ink text-white">
+    <aside className="relative hidden w-[252px] shrink-0 flex-col overflow-hidden bg-ink text-white md:flex">
       {/* atmosférický gradient + jemné zrno */}
       <div className="pointer-events-none absolute inset-0 aurora opacity-90" />
       <div className="pointer-events-none absolute inset-0 grain opacity-[0.06] mix-blend-overlay" />
@@ -123,15 +124,18 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
           </button>
         </nav>
 
-        {/* profil makléře */}
-        <div className="m-3 flex items-center gap-3 rounded-xl bg-white/[.06] p-2.5 ring-1 ring-white/10">
+        {/* profil makléře — otevře kartu makléře */}
+        <button
+          onClick={onOpenAgent}
+          className="m-3 flex items-center gap-3 rounded-xl bg-white/[.06] p-2.5 text-left ring-1 ring-white/10 transition hover:bg-white/[.1]"
+        >
           <Avatar name="Petra Zábranská" size={36} />
           <div className="min-w-0 leading-tight">
             <div className="truncate text-sm font-semibold">Petra Zábranská</div>
             <div className="truncate text-[11px] text-white/45">Realitní makléřka</div>
           </div>
           <div className="ml-auto h-2 w-2 rounded-full bg-emerald shadow-[0_0_8px_#0FA968]" />
-        </div>
+        </button>
       </div>
     </aside>
 

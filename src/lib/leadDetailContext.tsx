@@ -20,7 +20,7 @@ export function LeadDetailProvider({ children }: { children: ReactNode }): JSX.E
   return (
     <LeadDetailContext.Provider value={{ openLead: setLead }}>
       {children}
-      {lead && <LeadDetail lead={lead} onClose={() => setLead(null)} />}
+      {lead && <LeadDetail key={lead.id} lead={lead} onClose={() => setLead(null)} />}
     </LeadDetailContext.Provider>
   )
 }

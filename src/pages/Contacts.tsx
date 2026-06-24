@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Phone, Mail, Search, MoreHorizontal, Plus, Download } from 'lucide-react'
+import { Phone, Mail, Search, MoreHorizontal, Plus, Download, ShieldCheck } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState, Empty } from '../components/States'
@@ -18,6 +18,7 @@ interface DerivedContact {
   city: string | null
   value: number
   last: string
+  gdpr: boolean
 }
 
 const ROLE_STYLE: Record<string, string> = {
@@ -69,6 +70,7 @@ export function Contacts(): JSX.Element {
       if (existing) {
         existing.value += leadValue(l)
         if (last > existing.last) existing.last = last
+        if (l.gdpr_consent) existing.gdpr = true
       } else {
         map.set(key, {
           key,
@@ -78,7 +80,8 @@ export function Contacts(): JSX.Element {
           role: contactRole(l),
           city: l.location,
           value: leadValue(l),
-          last
+          last,
+          gdpr: !!l.gdpr_consent
         })
       }
     }
@@ -94,7 +97,8 @@ export function Contacts(): JSX.Element {
           role: c.role || 'Zájemce',
           city: c.city,
           value: 0,
-          last: c.updated_at
+          last: c.updated_at,
+          gdpr: !!c.gdpr_consent
         })
       }
     }
@@ -187,7 +191,10 @@ export function Contacts(): JSX.Element {
                           <div className="flex items-center gap-3">
                             <Avatar name={c.name} size={38} />
                             <div>
-                              <div className="whitespace-nowrap text-sm font-bold text-tx">{c.name}</div>
+                              <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-bold text-tx">
+                                {c.name}
+                                {c.gdpr && <ShieldCheck className="h-3.5 w-3.5 text-emerald" aria-label="GDPR potvrzeno" />}
+                              </div>
                               {c.city && <div className="text-xs text-tx-faint">{c.city}</div>}
                             </div>
                           </div>

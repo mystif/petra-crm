@@ -34,17 +34,22 @@ export async function compressImage(file: File): Promise<Blob> {
   return file
 }
 
-/** Nahraje fotku leadu do bucketu foto_CRM, vrátí cestu k objektu. */
-export async function uploadLeadPhoto(leadId: string, file: File): Promise<string> {
+/** Nahraje obrázek do bucketu foto_CRM pod zadanou složku, vrátí cestu k objektu. */
+export async function uploadPhoto(folder: string, file: File): Promise<string> {
   const blob = await compressImage(file)
   const ext = blob.type === 'image/jpeg' ? 'jpg' : (file.name.split('.').pop() || 'jpg')
-  const path = `${leadId}/${crypto.randomUUID()}.${ext}`
+  const path = `${folder}/${crypto.randomUUID()}.${ext}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     contentType: blob.type || 'image/jpeg',
     upsert: false
   })
   if (error) throw new Error(error.message)
   return path
+}
+
+/** Nahraje fotku leadu do bucketu foto_CRM, vrátí cestu k objektu. */
+export function uploadLeadPhoto(leadId: string, file: File): Promise<string> {
+  return uploadPhoto(leadId, file)
 }
 
 /** Veřejná URL fotky pro zobrazení. */

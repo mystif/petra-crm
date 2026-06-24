@@ -1,14 +1,15 @@
-import { TrendingUp, Wallet, Trophy, Inbox, Users, ArrowUpRight, ArrowRight, Dot, CalendarClock } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Trophy, Inbox, Users, Coins, ArrowUpRight, ArrowRight, Dot, CalendarClock } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
 import { STAGES, CLOSED_STAGES } from '../lib/supabase'
-import { formatCZK, relativeDays } from '../lib/format'
+import { formatCZK, relativeDays, followUpState } from '../lib/format'
 import { leadValue } from '../lib/leadDisplay'
 import type { Page } from '../components/Sidebar'
+import type { LeadsFilter } from './Leads'
 
-export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JSX.Element {
+export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsFilter) => void }): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
 
   const open = leads.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
@@ -18,11 +19,11 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
   const wonValue = won.reduce((s, l) => s + leadValue(l), 0)
 
   // Follow-upy k vyřízení (termín dnes nebo po termínu, otevřené leady).
-  const endOfToday = new Date()
-  endOfToday.setHours(23, 59, 59, 999)
-  const dueFollowUps = leads.filter(
-    (l) => l.follow_up_at && !CLOSED_STAGES.includes(l.crm_status) && new Date(l.follow_up_at) <= endOfToday
-  )
+  const dueFollowUps = leads.filter((l) => {
+    if (CLOSED_STAGES.includes(l.crm_status)) return false
+    const s = followUpState(l.follow_up_at)
+    return s === 'overdue' || s === 'today'
+  })
   const uniqueContacts = new Set(leads.map((l) => (l.email || l.phone || l.id).toLowerCase())).size
 
   // Měsíční změna — co přibylo / uzavřelo se v aktuálním kalendářním měsíci.
@@ -38,8 +39,23 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
     createdThisMonth.map((l) => (l.email || l.phone || l.id).toLowerCase())
   ).size
 
-  // „+N tento měsíc" — měsíční změna pro chip na dlaždici.
-  const delta = (n: number): string => `+${n} tento měsíc`
+  // Provize: aktuální vs. minulý měsíc (podle data uzavření).
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const inLastMonth = (iso: string | null): boolean => {
+    if (!iso) return false
+    const d = new Date(iso)
+    return d >= lastMonthStart && d < monthStart
+  }
+  const provizeThisMonth = won.filter((l) => inThisMonth(l.crm_updated_at)).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const provizeLastMonth = won.filter((l) => inLastMonth(l.crm_updated_at)).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const provizeDelta = provizeThisMonth - provizeLastMonth
+  const provizePct = provizeLastMonth > 0 ? Math.round((provizeDelta / provizeLastMonth) * 100) : null
+  const provizeChip =
+    provizePct != null
+      ? `${provizePct >= 0 ? '+' : ''}${provizePct} % vs. minulý měsíc`
+      : `${provizeDelta >= 0 ? '+' : ''}${formatCZK(provizeDelta, true)} vs. minulý`
+
+  const monthDelta = (n: number): { chip: string; up: boolean } => ({ chip: `+${n} tento měsíc`, up: n > 0 })
 
   const today = new Date().toLocaleDateString('cs-CZ', {
     weekday: 'long',
@@ -49,16 +65,20 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
   })
 
   const kpis = [
-    { label: 'Hodnota pipeline', value: formatCZK(pipelineValue, true), sub: `${open.length} otevřených leadů`, deltaN: openAddedThisMonth.length, icon: Wallet, tint: 'text-brand-dark bg-brand-soft' },
-    { label: 'Uzavřeno', value: formatCZK(wonValue, true), sub: `${won.length} obchodů`, deltaN: closedThisMonth.length, icon: Trophy, tint: 'text-emerald bg-emerald-soft' },
-    { label: 'Nové poptávky', value: String(fresh.length), sub: 'čekají na reakci', deltaN: freshThisMonth.length, icon: Inbox, tint: 'text-amber bg-amber-soft' },
-    { label: 'Kontakty', value: String(uniqueContacts), sub: 'z poptávek', deltaN: contactsThisMonth, icon: Users, tint: 'text-sky bg-sky-soft' }
+    { label: 'Hodnota pipeline', value: formatCZK(pipelineValue, true), sub: `${open.length} otevřených leadů`, ...monthDelta(openAddedThisMonth.length), icon: Wallet, tint: 'text-brand-dark bg-brand-soft' },
+    { label: 'Provize (měsíc)', value: formatCZK(provizeThisMonth, true), sub: `${closedThisMonth.length} uzavřených obchodů`, chip: provizeChip, up: provizeDelta >= 0, icon: Coins, tint: 'text-emerald bg-emerald-soft' },
+    { label: 'Uzavřeno', value: formatCZK(wonValue, true), sub: `${won.length} obchodů celkem`, ...monthDelta(closedThisMonth.length), icon: Trophy, tint: 'text-amber bg-amber-soft' },
+    { label: 'Nové poptávky', value: String(fresh.length), sub: 'čekají na reakci', ...monthDelta(freshThisMonth.length), icon: Inbox, tint: 'text-sky bg-sky-soft' },
+    { label: 'Kontakty', value: String(uniqueContacts), sub: 'z poptávek', ...monthDelta(contactsThisMonth), icon: Users, tint: 'text-[#9333EA] bg-[#F0E7FB]' }
   ]
 
-  const maxStageValue = Math.max(
-    1,
-    ...STAGES.map((s) => leads.filter((l) => l.crm_status === s.key).reduce((a, l) => a + leadValue(l), 0))
-  )
+  // Graf: rozložení hodnoty pipeline podle fází (donut).
+  const stageData = STAGES.map((s) => ({
+    ...s,
+    items: leads.filter((l) => l.crm_status === s.key),
+    val: leads.filter((l) => l.crm_status === s.key).reduce((a, l) => a + leadValue(l), 0)
+  }))
+  const stageTotal = Math.max(1, stageData.reduce((a, s) => a + s.val, 0))
 
   return (
     <div className="flex h-full flex-col">
@@ -122,7 +142,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
           {/* Follow-upy k vyřízení */}
           {dueFollowUps.length > 0 && (
             <button
-              onClick={() => onNavigate('leads')}
+              onClick={() => onNavigate('leads', 'followup')}
               className="flex w-full items-center gap-3 rounded-2xl border border-amber/30 bg-amber-soft px-5 py-3.5 text-left transition hover:border-amber/50"
             >
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-amber/15 text-amber">
@@ -142,17 +162,17 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
           )}
 
           {/* KPI */}
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {kpis.map((k) => {
               const Icon = k.icon
               return (
                 <div key={k.label} className="card p-5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <div className={`grid h-10 w-10 place-items-center rounded-xl ${k.tint}`}>
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className={`pill ${k.deltaN > 0 ? 'bg-emerald-soft text-emerald' : 'bg-canvas text-tx-soft'}`}>
-                      {k.deltaN > 0 && <ArrowUpRight className="h-3 w-3" />} {delta(k.deltaN)}
+                    <span className={`pill ${k.up ? 'bg-emerald-soft text-emerald' : 'bg-canvas text-tx-soft'}`}>
+                      {k.up ? <ArrowUpRight className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {k.chip}
                     </span>
                   </div>
                   <div className="mt-4 stat-num text-2xl text-tx">{k.value}</div>
@@ -175,27 +195,58 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }): JS
                   Detail
                 </button>
               </div>
-              <div className="space-y-4">
-                {STAGES.map((s) => {
-                  const items = leads.filter((l) => l.crm_status === s.key)
-                  const val = items.reduce((a, l) => a + leadValue(l), 0)
-                  const pct = (val / maxStageValue) * 100
-                  return (
-                    <div key={s.key}>
-                      <div className="mb-1.5 flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 font-semibold text-tx">
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ background: s.accent }} />
-                          {s.label}
-                          <span className="text-tx-faint">· {items.length}</span>
-                        </span>
-                        <span className="font-mono text-[13px] font-semibold text-tx-soft">{formatCZK(val, true)}</span>
+              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+                {/* donut */}
+                <div className="relative h-44 w-44 shrink-0">
+                  <svg viewBox="0 0 176 176" className="h-full w-full -rotate-90">
+                    <circle cx="88" cy="88" r="75" fill="none" stroke="#EEF0F4" strokeWidth="22" />
+                    {(() => {
+                      const C = 2 * Math.PI * 75
+                      let acc = 0
+                      return stageData.map((s) => {
+                        const dash = (s.val / stageTotal) * C
+                        const el = (
+                          <circle
+                            key={s.key}
+                            cx="88"
+                            cy="88"
+                            r="75"
+                            fill="none"
+                            stroke={s.accent}
+                            strokeWidth="22"
+                            strokeDasharray={`${dash} ${C - dash}`}
+                            strokeDashoffset={-acc}
+                            strokeLinecap="butt"
+                          >
+                            <title>{`${s.label}: ${formatCZK(s.val, true)}`}</title>
+                          </circle>
+                        )
+                        acc += dash
+                        return el
+                      })
+                    })()}
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-display text-lg font-bold text-tx">{formatCZK(pipelineValue + wonValue, true)}</span>
+                    <span className="text-[11px] text-tx-faint">celková hodnota</span>
+                  </div>
+                </div>
+
+                {/* legenda */}
+                <div className="flex-1 space-y-2">
+                  {stageData.map((s) => {
+                    const pct = Math.round((s.val / stageTotal) * 100)
+                    return (
+                      <div key={s.key} className="flex items-center gap-3 text-sm">
+                        <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: s.accent }} />
+                        <span className="font-medium text-tx">{s.label}</span>
+                        <span className="text-tx-faint">· {s.items.length}</span>
+                        <span className="ml-auto font-mono text-[13px] font-semibold text-tx-soft">{formatCZK(s.val, true)}</span>
+                        <span className="w-9 text-right text-xs text-tx-faint">{pct}%</span>
                       </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-canvas">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: s.accent }} />
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </section>
 

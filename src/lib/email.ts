@@ -1,5 +1,8 @@
 import { supabase, type Lead } from './supabase'
 import { formatCZK } from './format'
+import { vocative } from './vocative'
+import { photoUrl } from './photos'
+import type { Makler } from './makler'
 
 export const AGENT_NAME = 'Petra Zábranská'
 
@@ -55,6 +58,7 @@ export function mergeFields(text: string, lead: Lead): string {
   const map: Record<string, string> = {
     jmeno: lead.name ?? '',
     krestni: (lead.name ?? '').split(' ')[0] ?? '',
+    osloveni: vocative(lead.name), // 5. pád křestního jména (Petra → Petro)
     lokalita: lead.location ?? '',
     cena,
     email: lead.email ?? '',
@@ -66,13 +70,35 @@ export function mergeFields(text: string, lead: Lead): string {
 
 /** Seznam dostupných polí pro nápovědu v editoru šablon. */
 export const MERGE_FIELDS = [
+  { token: '{{osloveni}}', label: 'Oslovení (5. pád: Petro, Davide)' },
+  { token: '{{krestni}}', label: 'Křestní jméno (1. pád)' },
   { token: '{{jmeno}}', label: 'Celé jméno' },
-  { token: '{{krestni}}', label: 'Křestní jméno' },
   { token: '{{lokalita}}', label: 'Lokalita' },
   { token: '{{cena}}', label: 'Cena / rozpočet' },
   { token: '{{telefon}}', label: 'Telefon' },
   { token: '{{makler}}', label: 'Jméno makléře' }
 ]
+
+/** Sestaví HTML podpis makléře. Fotka je malý kulatý avatar vedle textu (ne velký obrázek). */
+export function signatureHtml(makler: Makler | null): string {
+  if (!makler) return ''
+  const lines = (makler.signature || makler.name || '')
+    .split('\n')
+    .map((l) => escapeHtml(l))
+    .join('<br/>')
+  if (!lines && !makler.photo_path) return ''
+
+  const avatarCell = makler.photo_path
+    ? `<td style="vertical-align:middle;padding-right:12px"><img src="${photoUrl(makler.photo_path)}" width="48" height="48" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;display:block" /></td>`
+    : ''
+
+  return (
+    '<br/><br/>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #eee;margin-top:6px;padding-top:12px">' +
+    `<tr>${avatarCell}<td style="vertical-align:middle;color:#555;font-size:13px;line-height:1.5">${lines}</td></tr>` +
+    '</table>'
+  )
+}
 
 // --- Odeslání e-mailu přes Edge Function (Resend) ---
 
@@ -85,11 +111,13 @@ export async function sendEmail(args: {
   to: string
   subject: string
   body: string
+  signature?: string // HTML podpisu (z signatureHtml)
 }): Promise<SendResult> {
-  const html = args.body
-    .split('\n')
-    .map((line) => (line.length ? escapeHtml(line) : '<br/>'))
-    .join('<br/>\n')
+  const html =
+    args.body
+      .split('\n')
+      .map((line) => (line.length ? escapeHtml(line) : '<br/>'))
+      .join('<br/>\n') + (args.signature ?? '')
 
   const { data, error } = await supabase.functions.invoke('send-email', {
     body: { to: args.to, subject: args.subject, text: args.body, html }
