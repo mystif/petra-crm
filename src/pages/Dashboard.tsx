@@ -1,16 +1,25 @@
-import { TrendingUp, TrendingDown, Wallet, Trophy, Inbox, Users, Coins, ArrowUpRight, ArrowRight, Dot, CalendarClock } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Trophy, Inbox, Users, Coins, ArrowUpRight, ArrowRight, Dot, CalendarClock, AlertCircle, MapPin } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
+import { useEvents } from '../lib/eventsContext'
 import { STAGES, CLOSED_STAGES } from '../lib/supabase'
 import { formatCZK, relativeDays, followUpState } from '../lib/format'
 import { leadValue } from '../lib/leadDisplay'
+import { eventTypeMeta, isOverdue, sameDay, eventTime } from '../lib/events'
 import type { Page } from '../components/Sidebar'
 import type { LeadsFilter } from './Leads'
 
 export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsFilter) => void }): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
+  const { events } = useEvents()
+
+  const leadName = (id: string | null): string | null => leads.find((l) => l.id === id)?.name ?? null
+  const todayEvents = events
+    .filter((e) => sameDay(new Date(e.start_at), new Date()))
+    .sort((a, b) => a.start_at.localeCompare(b.start_at))
+  const overdueEvents = events.filter(isOverdue).sort((a, b) => a.start_at.localeCompare(b.start_at))
 
   const open = leads.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
   const won = leads.filter((l) => l.crm_status === 'uzavreno')
@@ -160,6 +169,79 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
               <ArrowRight className="h-5 w-5 text-amber" />
             </button>
           )}
+
+          {/* DENNÍ AGENDA */}
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Dnes */}
+            <div className="card p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand-dark"><CalendarClock className="h-5 w-5" /></span>
+                  <h3 className="font-display text-lg font-bold text-tx">Dnes</h3>
+                </div>
+                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Kalendář</button>
+              </div>
+              {todayEvents.length === 0 ? (
+                <p className="py-6 text-center text-sm text-tx-faint">Dnes nemáš žádné naplánované události.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {todayEvents.map((e) => {
+                    const meta = eventTypeMeta(e.type)
+                    const Icon = meta.icon
+                    const ln = leadName(e.lead_id)
+                    return (
+                      <li key={e.id} className={`flex items-center gap-3 rounded-xl p-2 transition hover:bg-canvas ${e.done ? 'opacity-50' : ''}`}>
+                        <span className="w-12 shrink-0 font-mono text-[13px] font-bold text-tx-soft">{e.all_day ? '—' : eventTime(e)}</span>
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white" style={{ background: meta.color }}><Icon className="h-4 w-4" /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className={`truncate text-sm font-semibold text-tx ${e.done ? 'line-through' : ''}`}>{e.title}</div>
+                          {(ln || e.location) && (
+                            <div className="flex items-center gap-2 truncate text-xs text-tx-soft">
+                              {ln && <span>{ln}</span>}
+                              {e.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {e.location}</span>}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {/* Po termínu */}
+            <div className={`card p-6 ${overdueEvents.length > 0 ? 'ring-1 ring-rose/30' : ''}`}>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-rose-soft text-rose"><AlertCircle className="h-5 w-5" /></span>
+                  <h3 className="font-display text-lg font-bold text-tx">Po termínu</h3>
+                </div>
+                <button onClick={() => onNavigate('tasks')} className="text-sm font-semibold text-brand-dark hover:underline">Úkoly</button>
+              </div>
+              {overdueEvents.length === 0 ? (
+                <p className="py-6 text-center text-sm text-tx-faint">Nic po termínu. Máš vše pod kontrolou 👌</p>
+              ) : (
+                <ul className="space-y-1">
+                  {overdueEvents.slice(0, 6).map((e) => {
+                    const meta = eventTypeMeta(e.type)
+                    const Icon = meta.icon
+                    const ln = leadName(e.lead_id)
+                    const days = Math.max(1, Math.floor((Date.now() - new Date(e.start_at).getTime()) / 86_400_000))
+                    return (
+                      <li key={e.id} className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-canvas">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-canvas text-tx-soft"><Icon className="h-4 w-4" /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold text-tx">{e.title}</div>
+                          <div className="truncate text-xs text-tx-soft">{ln ?? meta.label}</div>
+                        </div>
+                        <span className="shrink-0 rounded-md bg-rose-soft px-2 py-0.5 text-xs font-bold text-rose">{days} {days === 1 ? 'den' : days < 5 ? 'dny' : 'dní'}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </section>
 
           {/* KPI */}
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

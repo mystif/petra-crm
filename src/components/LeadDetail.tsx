@@ -14,6 +14,8 @@ import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type
 import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
 import { useMakler } from '../lib/maklerContext'
+import { EventForm } from './EventForm'
+import { eventTypeMeta, type EventType } from '../lib/events'
 
 function dayLabel(iso: string): string {
   const d = new Date(iso); d.setHours(0, 0, 0, 0)
@@ -74,7 +76,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
   // akce
   const [callOpen, setCallOpen] = useState(false)
-  const [meetingMode, setMeetingMode] = useState<'Schůzka' | 'Prohlídka' | null>(null)
+  const [eventType, setEventType] = useState<EventType | null>(null)
   const composerRef = useRef<HTMLDivElement>(null)
 
   const fileInput = useRef<HTMLInputElement>(null)
@@ -254,11 +256,17 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     { label: 'Zavolat', icon: Phone, on: actCall, show: !!lead.phone },
     { label: 'E-mail', icon: Mail, on: actEmail, show: true },
     { label: 'WhatsApp', icon: MessageCircle, on: actWhatsApp, show: !!wa },
-    { label: 'Schůzka', icon: CalendarPlus, on: () => setMeetingMode('Schůzka'), show: true },
-    { label: 'Prohlídka', icon: Home, on: () => setMeetingMode('Prohlídka'), show: true },
+    { label: 'Schůzka', icon: CalendarPlus, on: () => setEventType('schuzka'), show: true },
+    { label: 'Prohlídka', icon: Home, on: () => setEventType('prohlidka'), show: true },
     { label: 'Smlouva', icon: FileText, on: actContract, show: lead.crm_status !== 'uzavreno' },
     { label: 'Uzavřít', icon: CheckCircle, on: actCloseDeal, show: lead.crm_status !== 'uzavreno' }
   ].filter((a) => a.show)
+
+  /** Změna fáze; přesun do „Schůzka" nabídne rovnou naplánování prohlídky. */
+  const changeStage = (next: StageKey): void => {
+    moveStage(lead.id, next)
+    if (next === 'schuzka' && lead.crm_status !== 'schuzka') setEventType('prohlidka')
+  }
 
   return (
     <Modal
@@ -357,7 +365,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             </div>
             <div>
               <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Cog className="h-3.5 w-3.5" /> Fáze</label>
-              <select className="input" value={lead.crm_status} onChange={(e) => moveStage(lead.id, e.target.value as StageKey)}>
+              <select className="input" value={lead.crm_status} onChange={(e) => changeStage(e.target.value as StageKey)}>
                 {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>
@@ -525,14 +533,16 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
           }}
         />
       )}
-      {meetingMode && (
-        <MeetingModal
-          mode={meetingMode}
-          onClose={() => setMeetingMode(null)}
-          onSave={async (when) => {
-            await patch(lead.id, { meeting_at: when })
-            await logContact('meeting', meetingMode, `${meetingMode} naplánována na ${formatDateTime(when)}`)
-            setMeetingMode(null)
+      {eventType && (
+        <EventForm
+          open
+          initialLeadId={lead.id}
+          initialType={eventType}
+          initialTitle={`${eventTypeMeta(eventType).label} — ${lead.name ?? ''}`.trim().replace(/—\s*$/, '').trim()}
+          onClose={() => setEventType(null)}
+          onSaved={async (ev) => {
+            await patch(lead.id, { meeting_at: ev.start_at })
+            await logContact('meeting', ev.title, `${eventTypeMeta(ev.type).label} naplánována na ${formatDateTime(ev.start_at)}`)
           }}
         />
       )}
@@ -564,22 +574,3 @@ function CallModal({ phone, onClose, onLog }: { phone: string | null; onClose: (
   )
 }
 
-function MeetingModal({ mode, onClose, onSave }: { mode: string; onClose: () => void; onSave: (when: string) => Promise<void> }): JSX.Element {
-  const [when, setWhen] = useState('')
-  const [saving, setSaving] = useState(false)
-  return (
-    <Modal open size="md" title={`${mode} — naplánovat`} onClose={onClose}
-      footer={
-        <>
-          <button className="btn-ghost" onClick={onClose}>Zrušit</button>
-          <button className="btn-primary" disabled={saving || !when} onClick={async () => { setSaving(true); await onSave(new Date(when).toISOString()) }}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />} Naplánovat
-          </button>
-        </>
-      }
-    >
-      <label className="mb-1 block text-sm font-semibold text-tx-soft">Datum a čas</label>
-      <input type="datetime-local" className="input" value={when} onChange={(e) => setWhen(e.target.value)} autoFocus />
-    </Modal>
-  )
-}

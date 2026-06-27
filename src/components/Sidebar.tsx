@@ -3,6 +3,8 @@ import {
   KanbanSquare,
   Inbox,
   Users,
+  CheckSquare,
+  CalendarDays,
   Search,
   Plus,
   Mail,
@@ -12,17 +14,21 @@ import { useState } from 'react'
 import { Avatar } from './Avatar'
 import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
+import { useEvents } from '../lib/eventsContext'
 import { useNewLead } from '../lib/newLeadContext'
 import { useSearch } from '../lib/searchContext'
 import { useMakler } from '../lib/maklerContext'
+import { isOverdue, sameDay } from '../lib/events'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'templates'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'tasks' | 'calendar' | 'templates'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
   { id: 'pipeline', label: 'Pipeline', icon: KanbanSquare },
   { id: 'leads', label: 'Poptávky', icon: Inbox },
-  { id: 'contacts', label: 'Kontakty', icon: Users }
+  { id: 'contacts', label: 'Kontakty', icon: Users },
+  { id: 'tasks', label: 'Úkoly', icon: CheckSquare },
+  { id: 'calendar', label: 'Kalendář', icon: CalendarDays }
 ]
 
 interface SidebarProps {
@@ -33,12 +39,15 @@ interface SidebarProps {
 
 export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX.Element {
   const { leads } = useLeads()
+  const { events } = useEvents()
   const { open: openNewLead } = useNewLead()
   const { openSearch } = useSearch()
   const { makler, avatarUrl } = useMakler()
   const [helpOpen, setHelpOpen] = useState(false)
   // Odznak u Poptávek = počet nových (nezpracovaných) leadů.
   const freshCount = leads.filter((l) => l.crm_status === 'novy').length
+  // Odznak u Úkolů = dnešní + po termínu (nesplněné).
+  const taskCount = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), new Date()))).length
 
   return (
     <>
@@ -94,7 +103,10 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
           {NAV.map((item) => {
             const Icon = item.icon
             const active = current === item.id
-            const badge = item.id === 'leads' && freshCount > 0 ? freshCount : undefined
+            const badge =
+              item.id === 'leads' && freshCount > 0 ? freshCount
+                : item.id === 'tasks' && taskCount > 0 ? taskCount
+                  : undefined
             return (
               <button
                 key={item.id}

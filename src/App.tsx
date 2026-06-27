@@ -3,6 +3,7 @@ import { Sidebar, type Page } from './components/Sidebar'
 import { MobileNav } from './components/MobileNav'
 import { MaklerCard } from './components/MaklerCard'
 import { LeadsProvider } from './lib/leadsContext'
+import { EventsProvider } from './lib/eventsContext'
 import { MaklerProvider } from './lib/maklerContext'
 import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
@@ -11,6 +12,8 @@ import { Dashboard } from './pages/Dashboard'
 import { Pipeline } from './pages/Pipeline'
 import { Leads, type LeadsFilter } from './pages/Leads'
 import { Contacts } from './pages/Contacts'
+import { Tasks } from './pages/Tasks'
+import { Calendar } from './pages/Calendar'
 import { Templates } from './pages/Templates'
 
 export default function App(): JSX.Element {
@@ -27,6 +30,7 @@ export default function App(): JSX.Element {
 
   return (
     <LeadsProvider>
+      <EventsProvider>
       <MaklerProvider>
       <LeadDetailProvider>
       <NewLeadProvider>
@@ -38,6 +42,8 @@ export default function App(): JSX.Element {
           {page === 'pipeline' && <Pipeline />}
           {page === 'leads' && <Leads filter={leadsFilter} onFilter={setLeadsFilter} />}
           {page === 'contacts' && <Contacts />}
+          {page === 'tasks' && <Tasks />}
+          {page === 'calendar' && <Calendar />}
           {page === 'templates' && <Templates />}
         </main>
         <MobileNav current={page} onNavigate={go} onOpenAgent={openAgent} />
@@ -47,6 +53,7 @@ export default function App(): JSX.Element {
       </NewLeadProvider>
       </LeadDetailProvider>
       </MaklerProvider>
+      </EventsProvider>
     </LeadsProvider>
   )
 }
