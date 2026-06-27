@@ -65,7 +65,7 @@ export function Tasks(): JSX.Element {
       ) : error ? (
         <ErrorState message={error} onRetry={refetch} />
       ) : (
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 flex flex-wrap gap-1.5">
               {FILTERS.map((f) => {

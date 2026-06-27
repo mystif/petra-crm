@@ -36,7 +36,7 @@ export function Topbar({ title, subtitle, actions, showSearch = true }: TopbarPr
   }
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-canvas/80 px-8 py-4 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-canvas/80 px-4 py-4 backdrop-blur-xl md:px-8">
       <div className="min-w-0">
         <h1 className="font-display text-[22px] font-bold tracking-tight text-tx">{title}</h1>
         {subtitle && <p className="text-sm text-tx-soft">{subtitle}</p>}

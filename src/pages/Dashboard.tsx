@@ -102,7 +102,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
       ) : error ? (
         <ErrorState message={error} onRetry={refetch} />
       ) : (
-        <div className="flex-1 space-y-6 overflow-y-auto p-8">
+        <div className="flex-1 space-y-6 overflow-y-auto p-4 md:p-8">
           {/* HERO */}
           <section className="relative overflow-hidden rounded-2xl text-white shadow-lift">
             <div className="absolute inset-0 aurora" />

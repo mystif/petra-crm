@@ -169,7 +169,7 @@ export function Contacts(): JSX.Element {
         }
       />
 
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8">
         {loading ? (
           <Loading />
         ) : error ? (
@@ -206,7 +206,14 @@ export function Contacts(): JSX.Element {
             {filtered.length === 0 ? (
               <Empty label="Žádné kontakty neodpovídají hledání." />
             ) : (
-              <div className="card overflow-x-auto">
+              <>
+              {/* mobil: karty */}
+              <ul className="space-y-2.5 md:hidden">
+                {filtered.map((c) => <ContactCard key={c.key} c={c} />)}
+              </ul>
+
+              {/* desktop: tabulka */}
+              <div className="card hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[940px]">
                   <thead>
                     <tr className="border-b border-line text-left text-[11px] font-bold uppercase tracking-wider text-tx-faint">
@@ -291,10 +298,67 @@ export function Contacts(): JSX.Element {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </>
         )}
       </div>
     </div>
+  )
+}
+
+/** Kompaktní karta kontaktu pro mobilní zobrazení. */
+function ContactCard({ c }: { c: DerivedContact }): JSX.Element {
+  const lcDays = Math.floor((Date.now() - new Date(c.lastContact).getTime()) / 86_400_000)
+  const fuState = followUpState(c.nextFollowUp)
+  return (
+    <li className="card p-3.5">
+      <div className="flex items-center gap-3">
+        <Avatar name={c.name} size={42} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 text-sm font-bold text-tx">
+            <span className="truncate">{c.name}</span>
+            {c.gdpr && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald" aria-label="GDPR potvrzeno" />}
+          </div>
+          <div className="truncate text-xs text-tx-soft">
+            {c.source || 'Lead'} · {c.deals} {c.deals === 1 ? 'obchod' : c.deals < 5 ? 'obchody' : 'obchodů'}
+            {c.won > 0 && <span className="font-semibold text-emerald"> · {c.won}✓</span>}
+          </div>
+        </div>
+        {c.tags[0] && <span className={`pill shrink-0 ${tagStyle(c.tags[0])}`}>{c.tags[0]}</span>}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div>
+          <div className="text-tx-faint">Poslední kontakt</div>
+          <div className={`flex items-center gap-1 font-medium ${lcDays > 14 ? 'text-rose' : 'text-tx-soft'}`}>
+            <Clock className="h-3 w-3" /> {relativeDays(c.lastContact)}
+          </div>
+        </div>
+        <div>
+          <div className="text-tx-faint">Další follow-up</div>
+          {c.nextFollowUp ? (
+            <div className={`flex items-center gap-1 font-medium ${fuState === 'overdue' ? 'text-rose' : fuState === 'today' ? 'text-amber' : 'text-tx-soft'}`}>
+              <CalendarClock className="h-3 w-3" /> {formatDate(c.nextFollowUp)}
+            </div>
+          ) : <div className="text-tx-faint">—</div>}
+        </div>
+      </div>
+
+      {(c.phone || c.email) && (
+        <div className="mt-3 flex gap-2 border-t border-line pt-3">
+          {c.phone && (
+            <a href={`tel:${c.phone.replace(/\s/g, '')}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-canvas py-2 text-sm font-semibold text-tx-soft transition active:bg-line">
+              <Phone className="h-4 w-4" /> Volat
+            </a>
+          )}
+          {c.email && (
+            <a href={`mailto:${c.email}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-canvas py-2 text-sm font-semibold text-tx-soft transition active:bg-line">
+              <Mail className="h-4 w-4" /> E-mail
+            </a>
+          )}
+        </div>
+      )}
+    </li>
   )
 }

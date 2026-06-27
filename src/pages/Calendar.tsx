@@ -31,7 +31,8 @@ function blockGeometry(e: EventItem): { top: number; height: number } {
 export function Calendar(): JSX.Element {
   const { events, loading, error, refetch } = useEvents()
   const { leads } = useLeads()
-  const [view, setView] = useState<View>('tyden')
+  // Na mobilu je týdenní mřížka stísněná → výchozí pohled Agenda.
+  const [view, setView] = useState<View>(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 'agenda' : 'tyden'))
   const [anchor, setAnchor] = useState(new Date())
   const [editing, setEditing] = useState<EventItem | null>(null)
   const [creating, setCreating] = useState<string | null>(null) // initialStart (datetime-local)
@@ -206,7 +207,7 @@ function AgendaView({ events, leadName, onEvent }: {
   if (groups.length === 0) return <div className="p-8"><Empty label="Žádné nadcházející události. Naplánuj prohlídku nebo schůzku." /></div>
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6">
       <div className="mx-auto max-w-2xl space-y-6">
         {groups.map((g) => (
           <div key={g.key}>
