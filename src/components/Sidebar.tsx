@@ -8,6 +8,7 @@ import {
   Search,
   Plus,
   Mail,
+  Zap,
   LifeBuoy
 } from 'lucide-react'
 import { useState } from 'react'
@@ -20,7 +21,7 @@ import { useSearch } from '../lib/searchContext'
 import { useMakler } from '../lib/maklerContext'
 import { isOverdue, sameDay } from '../lib/events'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'tasks' | 'calendar' | 'templates'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'tasks' | 'calendar' | 'automatizace' | 'templates'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -127,6 +128,12 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
           <div className="px-3 pb-1 pt-5 text-[11px] font-bold uppercase tracking-wider text-white/30">
             Ostatní
           </div>
+          <button
+            onClick={() => onNavigate('automatizace')}
+            className={`nav-item w-full ${current === 'automatizace' ? 'active' : ''}`}
+          >
+            <Zap className="h-[18px] w-[18px]" /> Automatizace
+          </button>
           <button
             onClick={() => onNavigate('templates')}
             className={`nav-item w-full ${current === 'templates' ? 'active' : ''}`}

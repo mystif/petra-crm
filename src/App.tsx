@@ -14,6 +14,7 @@ import { Leads, type LeadsFilter } from './pages/Leads'
 import { Contacts } from './pages/Contacts'
 import { Tasks } from './pages/Tasks'
 import { Calendar } from './pages/Calendar'
+import { Automatizace } from './pages/Automatizace'
 import { Templates } from './pages/Templates'
 
 export default function App(): JSX.Element {
@@ -44,6 +45,7 @@ export default function App(): JSX.Element {
           {page === 'contacts' && <Contacts />}
           {page === 'tasks' && <Tasks />}
           {page === 'calendar' && <Calendar />}
+          {page === 'automatizace' && <Automatizace />}
           {page === 'templates' && <Templates />}
         </main>
         <MobileNav current={page} onNavigate={go} onOpenAgent={openAgent} />
