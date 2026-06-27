@@ -68,6 +68,36 @@ export function mapUrl(lead: Lead): string | null {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
 }
 
+// --- Priorita ---
+
+export interface PriorityMeta {
+  value: string
+  label: string
+  emoji: string
+  cls: string
+  dot: string
+}
+
+export const PRIORITIES: PriorityMeta[] = [
+  { value: 'horky', label: 'Horký lead', emoji: '🔥', cls: 'bg-rose-soft text-rose', dot: '#E5484D' },
+  { value: 'stredni', label: 'Střední', emoji: '🟡', cls: 'bg-amber-soft text-amber', dot: '#E8920C' },
+  { value: 'dlouhodoby', label: 'Dlouhodobý', emoji: '🔵', cls: 'bg-sky-soft text-sky', dot: '#3B8EF0' }
+]
+
+export function priorityMeta(p: string | null): PriorityMeta | null {
+  return PRIORITIES.find((x) => x.value === p) ?? null
+}
+
+// --- Poslední kontakt ---
+
+/** Info o posledním kontaktu — počet dní, text a příznak „prošlé" (>14 dní). */
+export function lastContactInfo(lead: Lead): { days: number; stale: boolean; text: string } {
+  const base = lead.last_contact_at || lead.created_at
+  const days = Math.floor((Date.now() - new Date(base).getTime()) / 86_400_000)
+  const text = days <= 0 ? 'dnes' : days === 1 ? 'včera' : `před ${days} dny`
+  return { days, stale: days > 14, text }
+}
+
 /** WhatsApp odkaz z telefonu (jen číslice, předvolba +420 pokud chybí). */
 export function whatsappUrl(phone: string | null): string | null {
   if (!phone) return null

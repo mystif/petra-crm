@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MapPin, Plus, GripVertical, Building2, CalendarClock, Navigation, BellRing, Coins, Loader2 } from 'lucide-react'
+import { MapPin, Plus, GripVertical, Building2, CalendarClock, Navigation, BellRing, Coins, Loader2, Clock } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Modal } from '../components/Modal'
@@ -9,7 +9,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGES, CLOSED_STAGES, type StageKey, type Lead } from '../lib/supabase'
 import { formatCZK, formatDate, followUpState } from '../lib/format'
-import { propertyLabel, leadValue, hueFromId, mapUrl } from '../lib/leadDisplay'
+import { propertyLabel, leadValue, hueFromId, mapUrl, priorityMeta, lastContactInfo } from '../lib/leadDisplay'
 import { photoUrl } from '../lib/photos'
 import { addActivity } from '../lib/activity'
 
@@ -91,6 +91,9 @@ export function Pipeline(): JSX.Element {
                       const cover = l.fotky?.[0]
                       const due = followUpDue(l)
                       const map = mapUrl(l)
+                      const prio = priorityMeta(l.priorita)
+                      const lc = lastContactInfo(l)
+                      const danger = lc.stale || due === 'overdue'
                       return (
                         <article
                           key={l.id}
@@ -99,14 +102,22 @@ export function Pipeline(): JSX.Element {
                           onDragEnd={() => { setDragId(null); setOverStage(null) }}
                           onClick={() => openLead(l)}
                           className={`group card cursor-grab p-3 transition hover:shadow-lift active:cursor-grabbing ${dragId === l.id ? 'drag-ghost' : ''} ${
-                            due === 'overdue' ? 'ring-2 ring-rose/60' : due === 'today' ? 'ring-2 ring-amber/60' : ''
+                            danger ? 'ring-2 ring-rose/60' : due === 'today' ? 'ring-2 ring-amber/60' : ''
                           }`}
                         >
-                          {/* výrazný follow-up tag */}
-                          {due && (
-                            <div className={`mb-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold ${due === 'overdue' ? 'bg-rose text-white' : 'bg-amber text-white'}`}>
-                              <BellRing className="h-3.5 w-3.5" />
-                              {due === 'overdue' ? 'Follow-up po termínu' : 'Follow-up dnes'}
+                          {/* priorita + follow-up */}
+                          {(prio || due) && (
+                            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                              {prio && (
+                                <span className={`pill ${prio.cls}`}>
+                                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: prio.dot }} /> {prio.label}
+                                </span>
+                              )}
+                              {due && (
+                                <span className={`pill text-white ${due === 'overdue' ? 'bg-rose' : 'bg-amber'}`}>
+                                  <BellRing className="h-3 w-3" /> {due === 'overdue' ? 'Follow-up po termínu' : 'Follow-up dnes'}
+                                </span>
+                              )}
                             </div>
                           )}
 
@@ -146,6 +157,10 @@ export function Pipeline(): JSX.Element {
                               <CalendarClock className="h-3.5 w-3.5" /> {formatDate(l.meeting_at)}
                             </div>
                           )}
+
+                          <div className={`mt-1 flex items-center gap-1 text-xs ${lc.stale ? 'font-semibold text-rose' : 'text-tx-faint'}`}>
+                            <Clock className="h-3.5 w-3.5" /> Poslední kontakt: {lc.text}
+                          </div>
 
                           <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5">
                             <div className="flex items-center gap-1.5">

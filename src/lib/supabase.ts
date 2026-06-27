@@ -60,6 +60,8 @@ export interface Lead {
   fotky: string[] | null
   birthdate: string | null
   provize: number | null
+  priorita: string | null // 'horky' | 'stredni' | 'dlouhodoby'
+  last_contact_at: string | null
 }
 
 // --- API ---

@@ -1,38 +1,50 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Phone,
-  Mail,
-  MapPin,
-  Send,
-  CalendarClock,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  MessageSquarePlus,
-  Clock,
-  StickyNote,
-  Cog,
-  ImagePlus,
-  Star,
-  X,
-  Trash2,
-  Pencil,
-  ShieldCheck,
-  Cake,
-  Coins,
-  MessageCircle,
-  Navigation
+  Phone, Mail, MapPin, Send, CalendarClock, Loader2, CheckCircle2, XCircle, MessageSquarePlus,
+  Clock, StickyNote, Cog, ImagePlus, Star, X, Trash2, Pencil, ShieldCheck, Cake, Coins,
+  MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus
 } from 'lucide-react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
 import { STAGES, type Lead, type StageKey } from '../lib/supabase'
 import { formatCZK, formatDateTime, formatDate, followUpState } from '../lib/format'
-import { isEstimate, whatsappUrl, mapUrl } from '../lib/leadDisplay'
+import { isEstimate, whatsappUrl, mapUrl, PRIORITIES } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
-import { fetchActivity, addActivity, type Activity } from '../lib/activity'
+import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
 import { useMakler } from '../lib/maklerContext'
+
+function dayLabel(iso: string): string {
+  const d = new Date(iso); d.setHours(0, 0, 0, 0)
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const diff = Math.round((t.getTime() - d.getTime()) / 86_400_000)
+  if (diff === 0) return 'Dnes'
+  if (diff === 1) return 'Včera'
+  return d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })
+}
+function timeOf(iso: string): string {
+  return new Date(iso).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+}
+
+const ACT_FILTERS: { id: 'all' | ActivityKind; label: string }[] = [
+  { id: 'all', label: 'Vše' },
+  { id: 'email', label: 'E-maily' },
+  { id: 'call', label: 'Hovory' },
+  { id: 'meeting', label: 'Schůzky' },
+  { id: 'note', label: 'Poznámky' }
+]
+
+function ActIcon({ kind }: { kind: ActivityKind }): JSX.Element {
+  if (kind === 'email') return <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand-dark"><Mail className="h-3.5 w-3.5" /></span>
+  if (kind === 'call') return <span className="grid h-7 w-7 place-items-center rounded-full bg-sky-soft text-sky"><PhoneCall className="h-3.5 w-3.5" /></span>
+  if (kind === 'meeting') return <span className="grid h-7 w-7 place-items-center rounded-full bg-[#F0E7FB] text-[#9333EA]"><CalendarCheckIcon /></span>
+  if (kind === 'note') return <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-soft text-amber"><StickyNote className="h-3.5 w-3.5" /></span>
+  return <span className="grid h-7 w-7 place-items-center rounded-full bg-canvas text-tx-soft"><Cog className="h-3.5 w-3.5" /></span>
+}
+function CalendarCheckIcon(): JSX.Element {
+  return <CalendarClock className="h-3.5 w-3.5" />
+}
 
 export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose: () => void }): JSX.Element {
   const { leads, moveStage, patch, remove } = useLeads()
@@ -42,8 +54,8 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const [templates, setTemplates] = useState<Template[]>([])
   const [activity, setActivity] = useState<Activity[]>([])
   const [loadingAct, setLoadingAct] = useState(true)
+  const [actFilter, setActFilter] = useState<'all' | ActivityKind>('all')
 
-  // compose
   const [to, setTo] = useState(lead.email ?? '')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
@@ -53,7 +65,6 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const [note, setNote] = useState('')
   const [followUp, setFollowUp] = useState(lead.follow_up_at?.slice(0, 10) ?? '')
 
-  // úprava ceny / poznámky / provize
   const estimate = isEstimate(lead)
   const priceField: 'price' | 'price_estimate' = estimate ? 'price_estimate' : 'price'
   const [editPrice, setEditPrice] = useState(false)
@@ -61,13 +72,16 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const [crmNote, setCrmNote] = useState(lead.crm_note ?? '')
   const [provizeVal, setProvizeVal] = useState(String(lead.provize ?? ''))
 
-  // fotky
+  // akce
+  const [callOpen, setCallOpen] = useState(false)
+  const [meetingMode, setMeetingMode] = useState<'Schůzka' | 'Prohlídka' | null>(null)
+  const composerRef = useRef<HTMLDivElement>(null)
+
   const fileInput = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [photoErr, setPhotoErr] = useState<string | null>(null)
   const fotky = lead.fotky ?? []
 
-  // smazání
   const [confirmDel, setConfirmDel] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [delErr, setDelErr] = useState<string | null>(null)
@@ -85,6 +99,13 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
   const value = Number(lead[priceField] ?? 0)
 
+  /** Zaznamená kontakt do historie a posune „poslední kontakt" na teď. */
+  const logContact = async (kind: ActivityKind, subj: string | null, n: string | null): Promise<void> => {
+    await addActivity(lead.id, kind, subj, n)
+    await patch(lead.id, { last_contact_at: new Date().toISOString() })
+    reloadActivity()
+  }
+
   const applyTemplate = (id: string): void => {
     const t = templates.find((x) => x.id === id)
     if (!t) return
@@ -101,10 +122,8 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     setSending(false)
     if (res.ok) {
       setSendMsg({ ok: true, text: 'E-mail byl odeslán.' })
-      await addActivity(lead.id, 'email', subject, `Odesláno na ${to}`)
-      setSubject('')
-      setBody('')
-      reloadActivity()
+      await logContact('email', subject, `Odesláno na ${to}`)
+      setSubject(''); setBody('')
     } else {
       setSendMsg({ ok: false, text: res.error || 'Odeslání selhalo.' })
     }
@@ -124,19 +143,17 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     reloadActivity()
   }
 
-  // Úprava rozpočtu/ceny — se záznamem do historie aktivit.
+  const savePriorita = async (val: string): Promise<void> => {
+    await patch(lead.id, { priorita: val || null })
+  }
+
   const savePrice = async (): Promise<void> => {
     const next = priceVal ? Number(priceVal.replace(/\s/g, '')) : null
     const prev = lead[priceField] ?? null
     setEditPrice(false)
     if (next === prev) return
     await patch(lead.id, { [priceField]: next })
-    await addActivity(
-      lead.id,
-      'system',
-      null,
-      `${estimate ? 'Odhadovaná cena' : 'Rozpočet'} upraven z ${prev != null ? formatCZK(Number(prev)) : '—'} na ${next != null ? formatCZK(next) : '—'}`
-    )
+    await addActivity(lead.id, 'system', null, `${estimate ? 'Odhadovaná cena' : 'Rozpočet'} upraven z ${prev != null ? formatCZK(Number(prev)) : '—'} na ${next != null ? formatCZK(next) : '—'}`)
     reloadActivity()
   }
 
@@ -158,11 +175,32 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     await patch(lead.id, { birthdate: val || null })
   }
 
-  // fotky
+  // akce z horní lišty
+  const wa = whatsappUrl(lead.phone)
+  const map = mapUrl(lead)
+  const isClosed = lead.crm_status === 'uzavreno'
+
+  const actCall = (): void => setCallOpen(true)
+  const actEmail = (): void => composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const actWhatsApp = (): void => {
+    if (!wa) return
+    window.open(wa, '_blank')
+    logContact('note', null, 'Kontakt přes WhatsApp')
+  }
+  const actContract = async (): Promise<void> => {
+    await moveStage(lead.id, 'nabidka')
+    await addActivity(lead.id, 'system', null, 'Zahájena příprava nabídky / smlouvy')
+    reloadActivity()
+  }
+  const actCloseDeal = async (): Promise<void> => {
+    await moveStage(lead.id, 'uzavreno')
+    await addActivity(lead.id, 'system', null, 'Obchod uzavřen 🎉')
+    reloadActivity()
+  }
+
   const handleFiles = async (files: FileList | null): Promise<void> => {
     if (!files || files.length === 0) return
-    setUploading(true)
-    setPhotoErr(null)
+    setUploading(true); setPhotoErr(null)
     try {
       const paths: string[] = []
       for (const file of Array.from(files)) paths.push(await uploadLeadPhoto(lead.id, file))
@@ -185,14 +223,9 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   }
 
   const handleDelete = async (): Promise<void> => {
-    setDeleting(true)
-    setDelErr(null)
-    try {
-      await remove(lead)
-      onClose()
-    } catch (e) {
-      setDelErr(e instanceof Error ? e.message : 'Smazání selhalo.')
-      setDeleting(false)
+    setDeleting(true); setDelErr(null)
+    try { await remove(lead); onClose() } catch (e) {
+      setDelErr(e instanceof Error ? e.message : 'Smazání selhalo.'); setDeleting(false)
     }
   }
 
@@ -204,9 +237,28 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     return { text: `Naplánováno na ${formatDate(followUp)}`, cls: 'text-tx-soft' }
   }, [followUp])
 
-  const wa = whatsappUrl(lead.phone)
-  const map = mapUrl(lead)
-  const isClosed = lead.crm_status === 'uzavreno'
+  // timeline: filtr + seskupení po dnech
+  const groups = useMemo(() => {
+    const filtered = activity.filter((a) => actFilter === 'all' || a.kind === actFilter)
+    const out: { label: string; items: Activity[] }[] = []
+    for (const a of filtered) {
+      const label = dayLabel(a.created_at)
+      const last = out[out.length - 1]
+      if (last && last.label === label) last.items.push(a)
+      else out.push({ label, items: [a] })
+    }
+    return out
+  }, [activity, actFilter])
+
+  const ACTIONS = [
+    { label: 'Zavolat', icon: Phone, on: actCall, show: !!lead.phone },
+    { label: 'E-mail', icon: Mail, on: actEmail, show: true },
+    { label: 'WhatsApp', icon: MessageCircle, on: actWhatsApp, show: !!wa },
+    { label: 'Schůzka', icon: CalendarPlus, on: () => setMeetingMode('Schůzka'), show: true },
+    { label: 'Prohlídka', icon: Home, on: () => setMeetingMode('Prohlídka'), show: true },
+    { label: 'Smlouva', icon: FileText, on: actContract, show: lead.crm_status !== 'uzavreno' },
+    { label: 'Uzavřít', icon: CheckCircle, on: actCloseDeal, show: lead.crm_status !== 'uzavreno' }
+  ].filter((a) => a.show)
 
   return (
     <Modal
@@ -216,10 +268,25 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
       subtitle={`${lead.source ?? 'Lead'} · přijato ${formatDate(lead.created_at)}`}
       onClose={onClose}
     >
+      {/* AKČNÍ LIŠTA — další krok */}
+      <div className="-mt-1 mb-5 flex gap-2 overflow-x-auto pb-1">
+        {ACTIONS.map((a) => {
+          const Icon = a.icon
+          return (
+            <button
+              key={a.label}
+              onClick={a.on}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-tx transition hover:border-brand/50 hover:text-brand-dark"
+            >
+              <Icon className="h-4 w-4" /> {a.label}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* LEVÝ SLOUPEC */}
         <div className="space-y-5 lg:col-span-3">
-          {/* kontakt */}
           <div className="flex items-start gap-3">
             <Avatar name={lead.name || '?'} size={46} />
             <div className="flex-1 text-sm">
@@ -251,7 +318,6 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 )}
               </div>
 
-              {/* štítky: GDPR */}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {lead.gdpr_consent ? (
                   <span className="pill bg-emerald-soft text-emerald"><ShieldCheck className="h-3 w-3" /> GDPR potvrzeno</span>
@@ -260,25 +326,16 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 )}
               </div>
 
-              {/* rozpočet / odhad — editovatelné */}
               <div className="mt-2">
                 {editPrice ? (
                   <div className="flex items-center gap-2">
-                    <input
-                      className="input w-44 font-mono"
-                      inputMode="numeric"
-                      value={priceVal}
-                      onChange={(e) => setPriceVal(e.target.value)}
-                      autoFocus
-                    />
+                    <input className="input w-44 font-mono" inputMode="numeric" value={priceVal} onChange={(e) => setPriceVal(e.target.value)} autoFocus />
                     <button className="btn-primary py-1.5 text-xs" onClick={savePrice}>Uložit</button>
                     <button className="btn-ghost py-1.5 text-xs" onClick={() => { setPriceVal(String(lead[priceField] ?? '')); setEditPrice(false) }}>Zrušit</button>
                   </div>
                 ) : (
                   <button onClick={() => setEditPrice(true)} className="group flex items-center gap-2" title="Upravit">
-                    <span className="font-mono text-base font-bold text-tx">
-                      {estimate ? '~ ' : ''}{formatCZK(value, true)}
-                    </span>
+                    <span className="font-mono text-base font-bold text-tx">{estimate ? '~ ' : ''}{formatCZK(value, true)}</span>
                     <span className="text-xs font-normal text-tx-faint">{estimate ? 'odhad' : 'rozpočet'}</span>
                     <Pencil className="h-3.5 w-3.5 text-tx-faint opacity-0 transition group-hover:opacity-100" />
                   </button>
@@ -289,78 +346,56 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
           {lead.message && <p className="rounded-xl bg-canvas p-3 text-sm text-tx">{lead.message}</p>}
 
-          {/* fáze + follow-up */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* priorita / fáze / follow-up */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint">
-                <Cog className="h-3.5 w-3.5" /> Fáze
-              </label>
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-tx-faint">Priorita</label>
+              <select className="input" value={lead.priorita ?? ''} onChange={(e) => savePriorita(e.target.value)}>
+                <option value="">— žádná —</option>
+                {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Cog className="h-3.5 w-3.5" /> Fáze</label>
               <select className="input" value={lead.crm_status} onChange={(e) => moveStage(lead.id, e.target.value as StageKey)}>
                 {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint">
-                <CalendarClock className="h-3.5 w-3.5" /> Follow-up
-              </label>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><CalendarClock className="h-3.5 w-3.5" /> Follow-up</label>
               <input type="date" className="input" value={followUp} onChange={(e) => saveFollowUp(e.target.value)} />
               {followUpStatus && <div className={`mt-1 text-xs font-semibold ${followUpStatus.cls}`}>{followUpStatus.text}</div>}
             </div>
           </div>
 
-          {/* provize (po uzavření) */}
           {isClosed && (
             <div className="rounded-xl border border-emerald/30 bg-emerald-soft/50 p-4">
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald">
-                <Coins className="h-3.5 w-3.5" /> Provize z obchodu
-              </label>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald"><Coins className="h-3.5 w-3.5" /> Provize z obchodu</label>
               <div className="flex items-center gap-2">
-                <input
-                  className="input w-44 font-mono"
-                  inputMode="numeric"
-                  placeholder="např. 250000"
-                  value={provizeVal}
-                  onChange={(e) => setProvizeVal(e.target.value)}
-                  onBlur={saveProvize}
-                />
+                <input className="input w-44 font-mono" inputMode="numeric" placeholder="např. 250000" value={provizeVal} onChange={(e) => setProvizeVal(e.target.value)} onBlur={saveProvize} />
                 <span className="text-xs text-tx-soft">Kč — započítá se do dashboardu a karty makléře.</span>
               </div>
             </div>
           )}
 
-          {/* narození + poznámka */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint">
-                <Cake className="h-3.5 w-3.5" /> Datum narození
-              </label>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Cake className="h-3.5 w-3.5" /> Datum narození</label>
               <input type="date" className="input" defaultValue={lead.birthdate?.slice(0, 10) ?? ''} onChange={(e) => saveBirthdate(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint">
-              <StickyNote className="h-3.5 w-3.5" /> Poznámka k leadu
-            </label>
-            <textarea
-              className="input min-h-[70px] resize-y"
-              placeholder="Interní poznámka…"
-              value={crmNote}
-              onChange={(e) => setCrmNote(e.target.value)}
-              onBlur={saveCrmNote}
-            />
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><StickyNote className="h-3.5 w-3.5" /> Poznámka k leadu</label>
+            <textarea className="input min-h-[70px] resize-y" placeholder="Interní poznámka…" value={crmNote} onChange={(e) => setCrmNote(e.target.value)} onBlur={saveCrmNote} />
           </div>
 
           {/* fotky */}
           <div className="rounded-xl border border-line p-4">
             <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ImagePlus className="h-4 w-4 text-brand-dark" />
-                <h3 className="font-bold text-tx">Fotky {fotky.length > 0 && <span className="text-tx-faint">({fotky.length})</span>}</h3>
-              </div>
+              <div className="flex items-center gap-2"><ImagePlus className="h-4 w-4 text-brand-dark" /><h3 className="font-bold text-tx">Fotky {fotky.length > 0 && <span className="text-tx-faint">({fotky.length})</span>}</h3></div>
               <button className="btn-soft py-1.5 text-sm" onClick={() => fileInput.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-                {uploading ? 'Nahrávám…' : 'Přidat fotky'}
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}{uploading ? 'Nahrávám…' : 'Přidat fotky'}
               </button>
               <input ref={fileInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
             </div>
@@ -371,20 +406,10 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 {fotky.map((path, i) => (
                   <div key={path} className="group relative aspect-square overflow-hidden rounded-lg border border-line">
                     <img src={photoUrl(path)} alt="" className="h-full w-full object-cover" />
-                    {i === 0 && (
-                      <span className="absolute left-1 top-1 flex items-center gap-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-ink">
-                        <Star className="h-2.5 w-2.5" /> Úvodní
-                      </span>
-                    )}
+                    {i === 0 && <span className="absolute left-1 top-1 flex items-center gap-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-ink"><Star className="h-2.5 w-2.5" /> Úvodní</span>}
                     <div className="absolute inset-x-1 bottom-1 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
-                      {i !== 0 && (
-                        <button onClick={() => makeCover(path)} title="Nastavit jako úvodní" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-tx hover:text-brand-dark">
-                          <Star className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                      <button onClick={() => removePhoto(path)} title="Smazat" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-rose">
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                      {i !== 0 && <button onClick={() => makeCover(path)} title="Nastavit jako úvodní" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-tx hover:text-brand-dark"><Star className="h-3.5 w-3.5" /></button>}
+                      <button onClick={() => removePhoto(path)} title="Smazat" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-rose"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>
                 ))}
@@ -394,11 +419,8 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
           </div>
 
           {/* psaní e-mailu */}
-          <div className="rounded-xl border border-line p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <Send className="h-4 w-4 text-brand-dark" />
-              <h3 className="font-bold text-tx">Napsat e-mail</h3>
-            </div>
+          <div ref={composerRef} className="rounded-xl border border-line p-4">
+            <div className="mb-3 flex items-center gap-2"><Send className="h-4 w-4 text-brand-dark" /><h3 className="font-bold text-tx">Napsat e-mail</h3></div>
             <div className="space-y-2.5">
               <select className="input" defaultValue="" onChange={(e) => applyTemplate(e.target.value)}>
                 <option value="">— vyberte šablonu —</option>
@@ -406,88 +428,82 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               </select>
               <input className="input" placeholder="Příjemce" value={to} onChange={(e) => setTo(e.target.value)} />
               <input className="input" placeholder="Předmět" value={subject} onChange={(e) => setSubject(e.target.value)} />
-              <textarea
-                className="input min-h-[150px] resize-y"
-                placeholder="Text e-mailu… (oslovení se skloňuje, doplní se jméno, lokalita, cena; podpis a fotka makléře se přidají automaticky)"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-              />
+              <textarea className="input min-h-[150px] resize-y" placeholder="Text e-mailu… (oslovení se skloňuje; podpis a fotka makléře se přidají automaticky)" value={body} onChange={(e) => setBody(e.target.value)} />
               <div className="flex items-center justify-between">
                 {sendMsg ? (
                   <span className={`flex items-center gap-1.5 text-sm font-medium ${sendMsg.ok ? 'text-emerald' : 'text-rose'}`}>
-                    {sendMsg.ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                    {sendMsg.text}
+                    {sendMsg.ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}{sendMsg.text}
                   </span>
                 ) : (
                   <span className="text-xs text-tx-faint">Odesílá se jako {makler?.name || AGENT_NAME}</span>
                 )}
                 <button className="btn-primary" onClick={handleSend} disabled={sending}>
-                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {sending ? 'Odesílám…' : 'Odeslat e-mail'}
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{sending ? 'Odesílám…' : 'Odeslat e-mail'}
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* PRAVÝ SLOUPEC: aktivita */}
+        {/* PRAVÝ SLOUPEC: timeline */}
         <div className="lg:col-span-2">
-          <h3 className="mb-3 flex items-center gap-2 font-bold text-tx">
-            <Clock className="h-4 w-4 text-tx-soft" /> Historie a aktivita
-          </h3>
-          <div className="mb-3 flex gap-2">
-            <input
-              className="input"
-              placeholder="Přidat poznámku do historie…"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-            />
-            <button className="btn-ghost px-3" onClick={handleAddNote} title="Přidat poznámku">
-              <MessageSquarePlus className="h-4 w-4" />
-            </button>
+          <h3 className="mb-3 flex items-center gap-2 font-bold text-tx"><Clock className="h-4 w-4 text-tx-soft" /> Historie a aktivita</h3>
+
+          {/* filtry */}
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {ACT_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setActFilter(f.id)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${actFilter === f.id ? 'bg-ink text-white' : 'border border-line bg-white text-tx-soft hover:text-tx'}`}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
+
+          <div className="mb-3 flex gap-2">
+            <input className="input" placeholder="Přidat poznámku…" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddNote()} />
+            <button className="btn-ghost px-3" onClick={handleAddNote} title="Přidat poznámku"><MessageSquarePlus className="h-4 w-4" /></button>
+          </div>
+
           {loadingAct ? (
             <div className="py-8 text-center text-sm text-tx-faint"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></div>
-          ) : activity.length === 0 ? (
-            <p className="py-8 text-center text-sm text-tx-faint">Zatím žádná aktivita.</p>
+          ) : groups.length === 0 ? (
+            <p className="py-8 text-center text-sm text-tx-faint">Žádná aktivita v této kategorii.</p>
           ) : (
-            <ul className="space-y-3">
-              {activity.map((a) => (
-                <li key={a.id} className="flex gap-3">
-                  <div className="mt-0.5">
-                    {a.kind === 'email' ? (
-                      <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand-dark"><Mail className="h-3.5 w-3.5" /></span>
-                    ) : a.kind === 'note' ? (
-                      <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-soft text-amber"><StickyNote className="h-3.5 w-3.5" /></span>
-                    ) : (
-                      <span className="grid h-7 w-7 place-items-center rounded-full bg-canvas text-tx-soft"><Cog className="h-3.5 w-3.5" /></span>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    {a.subject && <div className="text-sm font-semibold text-tx">{a.subject}</div>}
-                    {a.note && <div className="text-sm text-tx-soft">{a.note}</div>}
-                    <div className="text-[11px] text-tx-faint">{formatDateTime(a.created_at)}</div>
-                  </div>
-                </li>
+            <div className="space-y-4">
+              {groups.map((g) => (
+                <div key={g.label}>
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-tx-faint">{g.label}</div>
+                  <ul className="space-y-3 border-l border-line pl-4">
+                    {g.items.map((a) => (
+                      <li key={a.id} className="relative flex gap-3">
+                        <span className="absolute -left-[25px] top-0.5"><ActIcon kind={a.kind} /></span>
+                        <div className="min-w-0 flex-1">
+                          {a.subject && <div className="text-sm font-semibold text-tx">{a.subject}</div>}
+                          {a.note && <div className="text-sm text-tx-soft">{a.note}</div>}
+                          <div className="text-[11px] text-tx-faint">{timeOf(a.created_at)}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>
 
-      {/* smazání leadu */}
+      {/* smazání */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
         {confirmDel ? (
           <>
-            <span className="text-sm text-tx-soft">
-              Smazat lead včetně historie a fotek? <b className="text-tx">Kontakt zůstane v Kontaktech.</b>
-            </span>
+            <span className="text-sm text-tx-soft">Smazat lead včetně historie a fotek? <b className="text-tx">Kontakt zůstane v Kontaktech.</b></span>
             <div className="flex gap-2">
               <button className="btn-ghost py-2 text-sm" onClick={() => setConfirmDel(false)} disabled={deleting}>Zrušit</button>
               <button className="btn bg-rose py-2 text-sm text-white hover:bg-rose/90" onClick={handleDelete} disabled={deleting}>
-                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                {deleting ? 'Mažu…' : 'Ano, smazat lead'}
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}{deleting ? 'Mažu…' : 'Ano, smazat lead'}
               </button>
             </div>
           </>
@@ -498,6 +514,72 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
         )}
       </div>
       {delErr && <p className="mt-2 text-right text-sm font-medium text-rose">{delErr}</p>}
+
+      {callOpen && (
+        <CallModal
+          phone={lead.phone}
+          onClose={() => setCallOpen(false)}
+          onLog={async (min) => {
+            await logContact('call', null, `Voláno klientovi${min ? ` (${min} min)` : ''}`)
+            setCallOpen(false)
+          }}
+        />
+      )}
+      {meetingMode && (
+        <MeetingModal
+          mode={meetingMode}
+          onClose={() => setMeetingMode(null)}
+          onSave={async (when) => {
+            await patch(lead.id, { meeting_at: when })
+            await logContact('meeting', meetingMode, `${meetingMode} naplánována na ${formatDateTime(when)}`)
+            setMeetingMode(null)
+          }}
+        />
+      )}
+    </Modal>
+  )
+}
+
+function CallModal({ phone, onClose, onLog }: { phone: string | null; onClose: () => void; onLog: (min: string) => Promise<void> }): JSX.Element {
+  const [min, setMin] = useState('')
+  const [saving, setSaving] = useState(false)
+  return (
+    <Modal open size="md" title="Zaznamenat hovor" onClose={onClose}
+      footer={
+        <>
+          <button className="btn-ghost" onClick={onClose}>Zrušit</button>
+          <button className="btn-primary" disabled={saving} onClick={async () => { setSaving(true); await onLog(min) }}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneCall className="h-4 w-4" />} Zaznamenat
+          </button>
+        </>
+      }
+    >
+      {phone && (
+        <a href={`tel:${phone.replace(/\s/g, '')}`} className="btn-soft mb-3 w-full"><Phone className="h-4 w-4" /> Zavolat {phone}</a>
+      )}
+      <label className="mb-1 block text-sm font-semibold text-tx-soft">Délka hovoru (min)</label>
+      <input className="input w-32 font-mono" inputMode="numeric" placeholder="5" value={min} onChange={(e) => setMin(e.target.value)} autoFocus />
+      <p className="mt-2 text-xs text-tx-soft">Zapíše se do historie a posune „poslední kontakt" na dnešek.</p>
+    </Modal>
+  )
+}
+
+function MeetingModal({ mode, onClose, onSave }: { mode: string; onClose: () => void; onSave: (when: string) => Promise<void> }): JSX.Element {
+  const [when, setWhen] = useState('')
+  const [saving, setSaving] = useState(false)
+  return (
+    <Modal open size="md" title={`${mode} — naplánovat`} onClose={onClose}
+      footer={
+        <>
+          <button className="btn-ghost" onClick={onClose}>Zrušit</button>
+          <button className="btn-primary" disabled={saving || !when} onClick={async () => { setSaving(true); await onSave(new Date(when).toISOString()) }}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />} Naplánovat
+          </button>
+        </>
+      }
+    >
+      <label className="mb-1 block text-sm font-semibold text-tx-soft">Datum a čas</label>
+      <input type="datetime-local" className="input" value={when} onChange={(e) => setWhen(e.target.value)} autoFocus />
     </Modal>
   )
 }

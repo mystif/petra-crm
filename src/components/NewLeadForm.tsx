@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Modal } from './Modal'
 import { createLead, STAGES, type StageKey } from '../lib/supabase'
+import { PRIORITIES } from '../lib/leadDisplay'
 
 interface NewLeadFormProps {
   open: boolean
@@ -26,6 +27,7 @@ interface FormState {
   location: string
   price: string
   crm_status: StageKey
+  priorita: string
   follow_up_at: string
   message: string
 }
@@ -40,6 +42,7 @@ const EMPTY: FormState = {
   location: '',
   price: '',
   crm_status: 'novy',
+  priorita: '',
   follow_up_at: '',
   message: ''
 }
@@ -78,6 +81,7 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
         price: form.lead_type === 'poptavka' ? priceNum : null,
         price_estimate: form.lead_type === 'odhad' ? priceNum : null,
         crm_status: form.crm_status,
+        priorita: form.priorita || null,
         follow_up_at: form.follow_up_at || null,
         message: form.message.trim() || null
       })
@@ -150,7 +154,12 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
         <Field label="Zavolat zpět (follow-up)">
           <input className="input" type="date" value={form.follow_up_at} onChange={(e) => set({ follow_up_at: e.target.value })} />
         </Field>
-        <div className="hidden sm:block" />
+        <Field label="Priorita">
+          <select className="input" value={form.priorita} onChange={(e) => set({ priorita: e.target.value })}>
+            <option value="">— žádná —</option>
+            {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
+          </select>
+        </Field>
 
         <Field label="Poznámka" full>
           <textarea className="input min-h-[80px] resize-y" value={form.message} onChange={(e) => set({ message: e.target.value })} />
