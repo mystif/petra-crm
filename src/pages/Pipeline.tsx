@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { MapPin, Plus, GripVertical, Building2, CalendarClock, Navigation, BellRing, Coins, Loader2, Clock } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
-import { Avatar } from '../components/Avatar'
+import { ScoreChip } from '../components/LeadScore'
 import { Modal } from '../components/Modal'
 import { Loading, ErrorState } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
@@ -164,7 +164,7 @@ export function Pipeline(): JSX.Element {
 
                           <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5">
                             <div className="flex items-center gap-1.5">
-                              <Avatar name={l.name || '?'} size={22} />
+                              <ScoreChip lead={l} />
                               <span className="text-xs font-medium text-tx-soft">{l.source || 'Lead'}</span>
                             </div>
                             <span className="font-mono text-[13px] font-bold text-tx">{formatCZK(leadValue(l), true)}</span>

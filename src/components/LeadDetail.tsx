@@ -16,6 +16,7 @@ import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
 import { useMakler } from '../lib/maklerContext'
 import { EventForm } from './EventForm'
 import { eventTypeMeta, type EventType } from '../lib/events'
+import { ScorePanel } from './LeadScore'
 
 function dayLabel(iso: string): string {
   const d = new Date(iso); d.setHours(0, 0, 0, 0)
@@ -453,8 +454,10 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
           </div>
         </div>
 
-        {/* PRAVÝ SLOUPEC: timeline */}
+        {/* PRAVÝ SLOUPEC: skóre + timeline */}
         <div className="lg:col-span-2">
+          <div className="mb-5"><ScorePanel lead={lead} /></div>
+
           <h3 className="mb-3 flex items-center gap-2 font-bold text-tx"><Clock className="h-4 w-4 text-tx-soft" /> Historie a aktivita</h3>
 
           {/* filtry */}

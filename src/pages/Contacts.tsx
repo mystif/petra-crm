@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Phone, Mail, Search, MoreHorizontal, Plus, Download, ShieldCheck } from 'lucide-react'
+import { Phone, Mail, Search, MoreHorizontal, Plus, Download, ShieldCheck, CalendarClock, Clock } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
 import { useNewLead } from '../lib/newLeadContext'
-import { formatCZK, relativeDays } from '../lib/format'
+import { formatDate, relativeDays, followUpState } from '../lib/format'
 import { contactRole, leadValue } from '../lib/leadDisplay'
+import { CLOSED_STAGES } from '../lib/supabase'
 import { fetchSavedContacts, type SavedContact } from '../lib/contacts'
 
 interface DerivedContact {
@@ -17,7 +18,12 @@ interface DerivedContact {
   role: string
   city: string | null
   value: number
-  last: string
+  lastContact: string
+  nextFollowUp: string | null
+  deals: number
+  won: number
+  source: string | null
+  tags: string[]
   gdpr: boolean
 }
 
@@ -29,15 +35,24 @@ const ROLE_STYLE: Record<string, string> = {
 }
 const ROLES = ['Vše', 'Kupující', 'Prodávající', 'Pronajímatel', 'Zájemce'] as const
 
+/** Barva štítku (tagu) — VIP/Investor zlatě, ostatní neutrálně. */
+function tagStyle(tag: string): string {
+  if (/vip/i.test(tag)) return 'bg-brand text-ink'
+  if (/investor|developer/i.test(tag)) return 'bg-[#F0E7FB] text-[#9333EA]'
+  return ROLE_STYLE[tag] ?? 'bg-canvas text-tx-soft'
+}
+
+const uniq = (arr: string[]): string[] => [...new Set(arr.filter(Boolean))]
+
 /** Stáhne kontakty jako CSV (oddělené středníkem kvůli Excelu v CZ). */
 function exportContactsCsv(rows: DerivedContact[]): void {
-  const head = ['Jméno', 'Telefon', 'E-mail', 'Role', 'Lokalita', 'Hodnota (Kč)', 'Poslední aktivita']
-  const esc = (v: string | number | null): string => {
+  const head = ['Jméno', 'Telefon', 'E-mail', 'Role', 'Lokalita', 'Hodnota (Kč)', 'Poslední kontakt', 'Další follow-up', 'Obchody', 'Zdroj', 'Tagy']
+  const esc = (v: string | number | null | undefined): string => {
     const s = String(v ?? '')
     return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const lines = rows.map((c) =>
-    [c.name, c.phone, c.email, c.role, c.city, c.value || '', c.last?.slice(0, 10)].map(esc).join(';')
+    [c.name, c.phone, c.email, c.role, c.city, c.value || '', c.lastContact?.slice(0, 10), c.nextFollowUp?.slice(0, 10), c.deals, c.source, c.tags.join(', ')].map(esc).join(';')
   )
   const csv = '﻿' + [head.join(';'), ...lines].join('\r\n') // BOM kvůli diakritice v Excelu
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
@@ -60,36 +75,51 @@ export function Contacts(): JSX.Element {
     fetchSavedContacts().then(setSaved).catch(() => setSaved([]))
   }, [leads])
 
-  // Kontakty = odvozené z leadů + samostatně uložené, sloučené podle e-mailu/telefonu.
+  // Kontakty = odvozené z leadů (seskupené podle e-mailu/telefonu) + samostatně uložené.
   const contacts = useMemo<DerivedContact[]>(() => {
-    const map = new Map<string, DerivedContact>()
+    const groups = new Map<string, typeof leads>()
     for (const l of leads) {
       const key = (l.email || l.phone || l.id).toLowerCase()
-      const existing = map.get(key)
-      const last = l.crm_updated_at || l.created_at
-      if (existing) {
-        existing.value += leadValue(l)
-        if (last > existing.last) existing.last = last
-        if (l.gdpr_consent) existing.gdpr = true
-      } else {
-        map.set(key, {
-          key,
-          name: l.name || 'Bez jména',
-          phone: l.phone,
-          email: l.email,
-          role: contactRole(l),
-          city: l.location,
-          value: leadValue(l),
-          last,
-          gdpr: !!l.gdpr_consent
-        })
-      }
+      const arr = groups.get(key) ?? []
+      arr.push(l)
+      groups.set(key, arr)
     }
+
+    const out: DerivedContact[] = []
+    for (const [key, arr] of groups) {
+      const sorted = [...arr].sort((a, b) => (b.crm_updated_at || b.created_at).localeCompare(a.crm_updated_at || a.created_at))
+      const primary = sorted[0]
+      const contactDates = arr.map((l) => l.last_contact_at || l.crm_updated_at || l.created_at).sort()
+      const lastContact = contactDates[contactDates.length - 1] ?? primary.created_at
+      // nejbližší naplánovaný follow-up u otevřených leadů
+      const nextFollowUp = arr
+        .filter((l) => !CLOSED_STAGES.includes(l.crm_status) && l.follow_up_at)
+        .map((l) => l.follow_up_at as string)
+        .sort()[0] ?? null
+      const tags = uniq([...arr.flatMap((l) => l.tags ?? []), contactRole(primary)])
+      out.push({
+        key,
+        name: primary.name || 'Bez jména',
+        phone: primary.phone,
+        email: primary.email,
+        role: contactRole(primary),
+        city: primary.location,
+        value: arr.reduce((s, l) => s + leadValue(l), 0),
+        lastContact,
+        nextFollowUp,
+        deals: arr.length,
+        won: arr.filter((l) => l.crm_status === 'uzavreno').length,
+        source: primary.source,
+        tags,
+        gdpr: arr.some((l) => !!l.gdpr_consent)
+      })
+    }
+
     // Doplníme uložené kontakty, které už nemají aktivní lead.
     for (const c of saved) {
       const key = (c.email || c.phone || c.id).toLowerCase()
-      if (!map.has(key)) {
-        map.set(key, {
+      if (!groups.has(key)) {
+        out.push({
           key,
           name: c.name || 'Bez jména',
           phone: c.phone,
@@ -97,12 +127,17 @@ export function Contacts(): JSX.Element {
           role: c.role || 'Zájemce',
           city: c.city,
           value: 0,
-          last: c.updated_at,
+          lastContact: c.updated_at,
+          nextFollowUp: null,
+          deals: 0,
+          won: 0,
+          source: 'Uložený kontakt',
+          tags: uniq([c.role || 'Zájemce']),
           gdpr: !!c.gdpr_consent
         })
       }
     }
-    return [...map.values()].sort((a, b) => b.last.localeCompare(a.last))
+    return out.sort((a, b) => b.lastContact.localeCompare(a.lastContact))
   }, [leads, saved])
 
   const filtered = useMemo(() => {
@@ -172,79 +207,87 @@ export function Contacts(): JSX.Element {
               <Empty label="Žádné kontakty neodpovídají hledání." />
             ) : (
               <div className="card overflow-x-auto">
-                <table className="w-full min-w-[680px]">
+                <table className="w-full min-w-[940px]">
                   <thead>
                     <tr className="border-b border-line text-left text-[11px] font-bold uppercase tracking-wider text-tx-faint">
                       <th className="px-5 py-3.5">Jméno</th>
                       <th className="px-5 py-3.5">Telefon</th>
-                      <th className="px-5 py-3.5">E-mail</th>
-                      <th className="hidden px-5 py-3.5 lg:table-cell">Role</th>
-                      <th className="hidden px-5 py-3.5 text-right xl:table-cell">Hodnota</th>
-                      <th className="hidden px-5 py-3.5 md:table-cell">Aktivita</th>
+                      <th className="hidden px-5 py-3.5 lg:table-cell">Poslední kontakt</th>
+                      <th className="hidden px-5 py-3.5 lg:table-cell">Další follow-up</th>
+                      <th className="hidden px-5 py-3.5 text-center md:table-cell">Obchody</th>
+                      <th className="hidden px-5 py-3.5 xl:table-cell">Zdroj</th>
+                      <th className="px-5 py-3.5">Tagy</th>
                       <th className="px-5 py-3.5"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
-                    {filtered.map((c) => (
-                      <tr key={c.key} className="group transition hover:bg-canvas">
-                        <td className="px-5 py-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar name={c.name} size={38} />
-                            <div>
-                              <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-bold text-tx">
-                                {c.name}
-                                {c.gdpr && <ShieldCheck className="h-3.5 w-3.5 text-emerald" aria-label="GDPR potvrzeno" />}
+                    {filtered.map((c) => {
+                      const lcDays = Math.floor((Date.now() - new Date(c.lastContact).getTime()) / 86_400_000)
+                      const fuState = followUpState(c.nextFollowUp)
+                      return (
+                        <tr key={c.key} className="group transition hover:bg-canvas">
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              <Avatar name={c.name} size={38} />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-bold text-tx">
+                                  {c.name}
+                                  {c.gdpr && <ShieldCheck className="h-3.5 w-3.5 text-emerald" aria-label="GDPR potvrzeno" />}
+                                </div>
+                                {c.email ? (
+                                  <a href={`mailto:${c.email}`} className="flex items-center gap-1 truncate text-xs text-tx-soft hover:text-brand-dark">
+                                    <Mail className="h-3 w-3" /> {c.email}
+                                  </a>
+                                ) : c.city ? <div className="text-xs text-tx-faint">{c.city}</div> : null}
                               </div>
-                              {c.city && <div className="text-xs text-tx-faint">{c.city}</div>}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3">
-                          {c.phone ? (
-                            <a
-                              href={`tel:${c.phone.replace(/\s/g, '')}`}
-                              className="flex items-center gap-2 whitespace-nowrap font-mono text-[13px] text-tx-soft transition hover:text-brand-dark"
-                            >
-                              <Phone className="h-3.5 w-3.5 text-tx-faint" />
-                              {c.phone}
-                            </a>
-                          ) : (
-                            <span className="text-tx-faint">—</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3">
-                          {c.email ? (
-                            <a
-                              href={`mailto:${c.email}`}
-                              className="flex items-center gap-2 text-sm text-tx-soft transition hover:text-brand-dark"
-                            >
-                              <Mail className="h-3.5 w-3.5 text-tx-faint" />
-                              {c.email}
-                            </a>
-                          ) : (
-                            <span className="text-tx-faint">—</span>
-                          )}
-                        </td>
-                        <td className="hidden px-5 py-3 lg:table-cell">
-                          <span className={`pill ${ROLE_STYLE[c.role] ?? 'bg-canvas text-tx-soft'}`}>
-                            {c.role}
-                          </span>
-                        </td>
-                        <td className="hidden px-5 py-3 text-right xl:table-cell">
-                          <span className="font-mono text-[13px] font-semibold text-tx">
-                            {c.value ? formatCZK(c.value, true) : '—'}
-                          </span>
-                        </td>
-                        <td className="hidden px-5 py-3 text-sm text-tx-soft md:table-cell">
-                          {relativeDays(c.last)}
-                        </td>
-                        <td className="px-5 py-3 text-right">
-                          <button className="grid h-8 w-8 place-items-center rounded-lg text-tx-faint opacity-0 transition hover:bg-line group-hover:opacity-100">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-5 py-3">
+                            {c.phone ? (
+                              <a
+                                href={`tel:${c.phone.replace(/\s/g, '')}`}
+                                className="flex items-center gap-2 whitespace-nowrap font-mono text-[13px] text-tx-soft transition hover:text-brand-dark"
+                              >
+                                <Phone className="h-3.5 w-3.5 text-tx-faint" />
+                                {c.phone}
+                              </a>
+                            ) : (
+                              <span className="text-tx-faint">—</span>
+                            )}
+                          </td>
+                          <td className="hidden px-5 py-3 lg:table-cell">
+                            <span className={`flex items-center gap-1.5 whitespace-nowrap text-sm ${lcDays > 14 ? 'font-semibold text-rose' : 'text-tx-soft'}`}>
+                              <Clock className="h-3.5 w-3.5" /> {relativeDays(c.lastContact)}
+                            </span>
+                          </td>
+                          <td className="hidden px-5 py-3 lg:table-cell">
+                            {c.nextFollowUp ? (
+                              <span className={`flex items-center gap-1.5 whitespace-nowrap text-sm font-medium ${fuState === 'overdue' ? 'text-rose' : fuState === 'today' ? 'text-amber' : 'text-tx-soft'}`}>
+                                <CalendarClock className="h-3.5 w-3.5" /> {formatDate(c.nextFollowUp)}
+                              </span>
+                            ) : <span className="text-tx-faint">—</span>}
+                          </td>
+                          <td className="hidden px-5 py-3 text-center md:table-cell">
+                            <span className="font-mono text-[13px] font-semibold text-tx">{c.deals}</span>
+                            {c.won > 0 && <span className="ml-1 text-[11px] font-bold text-emerald">· {c.won}✓</span>}
+                          </td>
+                          <td className="hidden px-5 py-3 text-sm text-tx-soft xl:table-cell whitespace-nowrap">{c.source || '—'}</td>
+                          <td className="px-5 py-3">
+                            <div className="flex max-w-[220px] flex-wrap gap-1">
+                              {c.tags.slice(0, 3).map((t) => (
+                                <span key={t} className={`pill ${tagStyle(t)}`}>{t}</span>
+                              ))}
+                              {c.tags.length > 3 && <span className="pill bg-canvas text-tx-faint">+{c.tags.length - 3}</span>}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <button className="grid h-8 w-8 place-items-center rounded-lg text-tx-faint opacity-0 transition hover:bg-line group-hover:opacity-100">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
