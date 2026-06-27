@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, Mail, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Mail, Loader2, Zap } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Modal } from '../components/Modal'
 import { Loading, ErrorState, Empty } from '../components/States'
@@ -48,11 +48,11 @@ export function Templates(): JSX.Element {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {list.map((t) => (
-              <article key={t.id} className="card flex flex-col p-5">
+              <article key={t.id} className={`card flex flex-col p-5 ${t.auto_kod ? 'ring-1 ring-brand/40' : ''}`}>
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand-dark">
-                      <Mail className="h-4.5 w-4.5" />
+                      <Mail className="h-4 w-4" />
                     </span>
                     <h3 className="font-bold text-tx">{t.name}</h3>
                   </div>
@@ -60,11 +60,18 @@ export function Templates(): JSX.Element {
                     <button className="grid h-8 w-8 place-items-center rounded-lg text-tx-soft hover:bg-canvas" onClick={() => setEditing(t)}>
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button className="grid h-8 w-8 place-items-center rounded-lg text-rose hover:bg-rose-soft" onClick={() => setDeleting(t)}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {!t.auto_kod && (
+                      <button className="grid h-8 w-8 place-items-center rounded-lg text-rose hover:bg-rose-soft" onClick={() => setDeleting(t)}>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
+                {t.auto_kod === 'uvitaci' && (
+                  <span className="mb-2 inline-flex w-fit items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-gold">
+                    <Zap className="h-3 w-3" /> Rozesílá automatizace
+                  </span>
+                )}
                 <div className="text-sm font-semibold text-tx-soft">{t.subject || '(bez předmětu)'}</div>
                 <p className="mt-1.5 line-clamp-4 whitespace-pre-wrap text-sm text-tx-faint">{t.body}</p>
               </article>
@@ -158,6 +165,12 @@ function TemplateEditor({
       }
     >
       <div className="space-y-3">
+        {template?.auto_kod === 'uvitaci' && (
+          <div className="flex items-start gap-2 rounded-lg border border-brand/30 bg-brand-soft/50 p-3 text-xs text-tx-soft">
+            <Zap className="mt-0.5 h-4 w-4 shrink-0 text-brand-dark" />
+            <span>Tuto šablonu posílá <b className="text-tx">automatizace</b> každému novému leadu (když je pravidlo „Uvítací e-mail" zapnuté). Změny se projeví u dalších leadů.</span>
+          </div>
+        )}
         <div>
           <label className="mb-1 block text-sm font-semibold text-tx-soft">Název šablony</label>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="např. První kontakt" autoFocus />

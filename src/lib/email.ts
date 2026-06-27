@@ -13,6 +13,7 @@ export interface Template {
   name: string
   subject: string
   body: string
+  auto_kod: string | null // 'uvitaci' = šablona rozesílaná automatizací
   created_at: string
   updated_at: string
 }
