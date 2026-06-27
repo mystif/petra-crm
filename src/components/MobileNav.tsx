@@ -3,6 +3,7 @@ import type { ComponentType } from 'react'
 import type { Page } from './Sidebar'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
+import { useMakler } from '../lib/maklerContext'
 
 const ITEMS: { id: Page; icon: ComponentType<{ className?: string }> }[] = [
   { id: 'dashboard', icon: LayoutGrid },
@@ -21,6 +22,7 @@ interface MobileNavProps {
 /** Spodní lišta jen s ikonami pro mobil (sidebar je skrytý). */
 export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps): JSX.Element {
   const { leads } = useLeads()
+  const { makler, avatarUrl } = useMakler()
   const fresh = leads.filter((l) => l.crm_status === 'novy').length
 
   return (
@@ -42,7 +44,7 @@ export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps):
         )
       })}
       <button onClick={onOpenAgent} className="grid h-11 w-11 place-items-center rounded-xl" title="Profil makléře">
-        <Avatar name="Petra Zábranská" size={30} />
+        <Avatar name={makler?.name || 'Petra Zábranská'} src={avatarUrl} size={30} />
       </button>
     </nav>
   )

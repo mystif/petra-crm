@@ -3,6 +3,7 @@ import { Sidebar, type Page } from './components/Sidebar'
 import { MobileNav } from './components/MobileNav'
 import { MaklerCard } from './components/MaklerCard'
 import { LeadsProvider } from './lib/leadsContext'
+import { MaklerProvider } from './lib/maklerContext'
 import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
 import { SearchProvider } from './lib/searchContext'
@@ -26,6 +27,7 @@ export default function App(): JSX.Element {
 
   return (
     <LeadsProvider>
+      <MaklerProvider>
       <LeadDetailProvider>
       <NewLeadProvider>
       <SearchProvider>
@@ -44,6 +46,7 @@ export default function App(): JSX.Element {
       </SearchProvider>
       </NewLeadProvider>
       </LeadDetailProvider>
+      </MaklerProvider>
     </LeadsProvider>
   )
 }

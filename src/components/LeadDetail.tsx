@@ -32,13 +32,13 @@ import { isEstimate, whatsappUrl, mapUrl } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
-import { fetchMakler, type Makler } from '../lib/makler'
+import { useMakler } from '../lib/maklerContext'
 
 export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose: () => void }): JSX.Element {
   const { leads, moveStage, patch, remove } = useLeads()
+  const { makler } = useMakler()
   const lead = leads.find((l) => l.id === initialLead.id) ?? initialLead
 
-  const [makler, setMakler] = useState<Makler | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
   const [activity, setActivity] = useState<Activity[]>([])
   const [loadingAct, setLoadingAct] = useState(true)
@@ -79,7 +79,6 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
   useEffect(() => {
     fetchTemplates().then(setTemplates).catch(() => setTemplates([]))
-    fetchMakler().then(setMakler).catch(() => setMakler(null))
     reloadActivity()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead.id])

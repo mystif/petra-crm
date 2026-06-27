@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { Loader2, Camera, Coins, TrendingUp, TrendingDown, User } from 'lucide-react'
 import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
-import { fetchMakler, updateMakler, type Makler } from '../lib/makler'
+import { useMakler } from '../lib/maklerContext'
+import { updateMakler, type Makler } from '../lib/makler'
 import { uploadPhoto, photoUrl } from '../lib/photos'
 import { formatCZK } from '../lib/format'
 
 export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element | null {
   const { leads } = useLeads()
-  const [makler, setMakler] = useState<Makler | null>(null)
+  const { makler, setMakler } = useMakler()
   const [form, setForm] = useState<Partial<Makler>>({})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -16,12 +17,8 @@ export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => vo
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (!open) return
-    fetchMakler().then((m) => {
-      setMakler(m)
-      setForm(m ?? {})
-    }).catch(() => setMakler(null))
-  }, [open])
+    if (open) setForm(makler ?? {})
+  }, [open, makler])
 
   // Provize: tento vs. minulý měsíc (uzavřené obchody dle data úpravy).
   const now = new Date()
@@ -50,7 +47,7 @@ export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => vo
       const path = await uploadPhoto('makler', file)
       await updateMakler(makler.id, { photo_path: path })
       setForm((f) => ({ ...f, photo_path: path }))
-      setMakler((m) => (m ? { ...m, photo_path: path } : m))
+      setMakler({ ...makler, photo_path: path })
     } finally {
       setUploading(false)
       if (fileInput.current) fileInput.current.value = ''
@@ -62,12 +59,14 @@ export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => vo
     setSaving(true)
     setMsg(null)
     try {
-      await updateMakler(makler.id, {
+      const patch = {
         name: form.name ?? null,
         email: form.email ?? null,
         phone: form.phone ?? null,
         signature: form.signature ?? null
-      })
+      }
+      await updateMakler(makler.id, patch)
+      setMakler({ ...makler, ...patch })
       setMsg('Uloženo.')
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Uložení selhalo.')
