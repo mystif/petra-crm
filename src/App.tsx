@@ -38,7 +38,7 @@ export default function App(): JSX.Element {
       <SearchProvider>
       <div className="flex h-screen overflow-hidden bg-canvas">
         <Sidebar current={page} onNavigate={go} onOpenAgent={openAgent} />
-        <main className="flex-1 overflow-hidden pb-[72px] md:pb-0">
+        <main className="flex-1 overflow-hidden pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0">
           {page === 'dashboard' && <Dashboard onNavigate={go} />}
           {page === 'pipeline' && <Pipeline />}
           {page === 'leads' && <Leads filter={leadsFilter} onFilter={setLeadsFilter} />}

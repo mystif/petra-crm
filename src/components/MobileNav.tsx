@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { LayoutGrid, KanbanSquare, Inbox, CheckSquare, CalendarDays, MoreHorizontal, Users, Mail, Zap, LifeBuoy, X } from 'lucide-react'
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { Page } from './Sidebar'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
@@ -46,34 +46,21 @@ export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps):
           const active = current === item.id
           const badge = item.id === 'leads' ? fresh : item.id === 'tasks' ? taskDue : 0
           return (
-            <button
-              key={item.id}
-              onClick={() => go(item.id)}
-              className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-semibold transition ${active ? 'text-gold' : 'text-white/55'}`}
-            >
-              <span className="relative">
-                <Icon className="h-[23px] w-[23px]" />
-                {badge > 0 && (
-                  <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-bold text-ink ring-2 ring-ink">
-                    {badge}
-                  </span>
-                )}
-              </span>
-              <span className="leading-none">{item.label}</span>
-              {active && <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-gold" />}
-            </button>
+            <NavTab key={item.id} active={active} label={item.label} onClick={() => go(item.id)}>
+              <Icon className="h-6 w-6" />
+              {badge > 0 && (
+                <span className="absolute -right-1.5 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-ink ring-2 ring-ink">
+                  {badge}
+                </span>
+              )}
+            </NavTab>
           )
         })}
 
         {/* Víc */}
-        <button
-          onClick={() => setMoreOpen(true)}
-          className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-semibold transition ${moreActive ? 'text-gold' : 'text-white/55'}`}
-        >
-          <MoreHorizontal className="h-[23px] w-[23px]" />
-          <span className="leading-none">Víc</span>
-          {moreActive && <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-gold" />}
-        </button>
+        <NavTab active={moreActive} label="Víc" onClick={() => setMoreOpen(true)}>
+          <MoreHorizontal className="h-6 w-6" />
+        </NavTab>
       </nav>
 
       {/* Bottom sheet „Víc" */}
@@ -112,6 +99,24 @@ export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps):
         </div>
       )}
     </>
+  )
+}
+
+/** Jeden vyšší dotykový tab spodní lišty s aktivní „pilulkou". */
+function NavTab({ active, label, onClick, children }: {
+  active: boolean; label: string; onClick: () => void; children: ReactNode
+}): JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={`flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1.5 pb-2 pt-2.5 text-[11px] font-semibold transition ${active ? 'text-gold' : 'text-white/55'}`}
+    >
+      <span className={`relative grid h-8 w-14 place-items-center rounded-2xl transition ${active ? 'bg-gold/15' : ''}`}>
+        {children}
+      </span>
+      <span className="leading-none">{label}</span>
+    </button>
   )
 }
 
