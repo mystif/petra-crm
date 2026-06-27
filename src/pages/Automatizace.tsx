@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Zap, Inbox, Trophy, ArrowDown, Loader2, UserPlus, CalendarClock, PhoneCall, Mail, BellRing } from 'lucide-react'
+import { Zap, Inbox, Trophy, Cake, ArrowDown, Loader2, UserPlus, CalendarClock, PhoneCall, Mail, BellRing } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Loading, ErrorState } from '../components/States'
 import { fetchRules, setRuleEnabled, FLOWS, type Rule } from '../lib/automatizace'
@@ -9,7 +9,8 @@ const STEP_ICON: Record<string, typeof UserPlus> = {
   novy_lead_followup: CalendarClock,
   novy_lead_ukol: PhoneCall,
   novy_lead_email: Mail,
-  uzavreno_pripomenuti: BellRing
+  uzavreno_pripomenuti: BellRing,
+  narozeniny_email: Cake
 }
 
 export function Automatizace(): JSX.Element {
@@ -72,7 +73,7 @@ export function Automatizace(): JSX.Element {
 
             {/* toky */}
             {FLOWS.map((flow) => {
-              const TriggerIcon = flow.triggerIcon === 'lead' ? Inbox : Trophy
+              const TriggerIcon = flow.triggerIcon === 'lead' ? Inbox : flow.triggerIcon === 'deal' ? Trophy : Cake
               const steps = flow.steps.map((s) => byKey[s.key]).filter(Boolean)
               return (
                 <div key={flow.trigger} className="card p-5">

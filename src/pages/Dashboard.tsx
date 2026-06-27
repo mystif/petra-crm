@@ -1,25 +1,29 @@
-import { TrendingUp, TrendingDown, Wallet, Trophy, Inbox, Users, Coins, ArrowUpRight, ArrowRight, Dot, CalendarClock, AlertCircle, MapPin } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Trophy, Inbox, Users, Coins, ArrowUpRight, ArrowRight, Dot, CalendarClock, AlertCircle, MapPin, Gift } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
+import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGES, CLOSED_STAGES } from '../lib/supabase'
 import { formatCZK, relativeDays, followUpState } from '../lib/format'
 import { leadValue } from '../lib/leadDisplay'
 import { eventTypeMeta, isOverdue, sameDay, eventTime } from '../lib/events'
+import { topReferrers } from '../lib/referrals'
 import type { Page } from '../components/Sidebar'
 import type { LeadsFilter } from './Leads'
 
 export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsFilter) => void }): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
   const { events } = useEvents()
+  const { openLead } = useLeadDetail()
 
   const leadName = (id: string | null): string | null => leads.find((l) => l.id === id)?.name ?? null
   const todayEvents = events
     .filter((e) => sameDay(new Date(e.start_at), new Date()))
     .sort((a, b) => a.start_at.localeCompare(b.start_at))
   const overdueEvents = events.filter(isOverdue).sort((a, b) => a.start_at.localeCompare(b.start_at))
+  const referrers = topReferrers(leads)
 
   const open = leads.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
   const won = leads.filter((l) => l.crm_status === 'uzavreno')
@@ -357,6 +361,32 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
               </ul>
             </section>
           </div>
+
+          {/* TOP DOPORUČITELÉ */}
+          {referrers.length > 0 && (
+            <section className="card p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand-dark"><Gift className="h-5 w-5" /></span>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-tx">Top doporučitelé</h3>
+                  <p className="text-sm text-tx-soft">Klienti, kteří vám přivádějí další obchody</p>
+                </div>
+              </div>
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {referrers.map((r, i) => (
+                  <li key={r.lead.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-gold">{i + 1}</span>
+                    <Avatar name={r.lead.name || '?'} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <button onClick={() => openLead(r.lead)} className="truncate text-sm font-bold text-tx hover:text-brand-dark hover:underline">{r.lead.name || 'Bez jména'}</button>
+                      <div className="text-xs text-tx-soft">{r.count} {r.count === 1 ? 'doporučení' : r.count < 5 ? 'doporučení' : 'doporučení'}</div>
+                    </div>
+                    <span className="font-mono text-[13px] font-bold text-emerald">{formatCZK(r.value, true)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       )}
     </div>

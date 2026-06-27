@@ -31,7 +31,7 @@ export async function setRuleEnabled(key: string, enabled: boolean): Promise<voi
 /** Vizuální popis spouštěče a kroků pro každé pravidlo (skupiny v UI). */
 export interface Flow {
   trigger: string
-  triggerIcon: 'lead' | 'deal'
+  triggerIcon: 'lead' | 'deal' | 'birthday'
   steps: { key: string; fallbackLabel: string }[]
 }
 
@@ -51,6 +51,13 @@ export const FLOWS: Flow[] = [
     triggerIcon: 'deal',
     steps: [
       { key: 'uzavreno_pripomenuti', fallbackLabel: 'Připomenutí za 6 měsíců' }
+    ]
+  },
+  {
+    trigger: 'V den narozenin klienta',
+    triggerIcon: 'birthday',
+    steps: [
+      { key: 'narozeniny_email', fallbackLabel: 'Narozeninové přání + follow-up za 7 dní' }
     ]
   }
 ]

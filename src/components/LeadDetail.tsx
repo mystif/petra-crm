@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Phone, Mail, MapPin, Send, CalendarClock, Loader2, CheckCircle2, XCircle, MessageSquarePlus,
   Clock, StickyNote, Cog, ImagePlus, Star, X, Trash2, Pencil, ShieldCheck, Cake, Coins,
-  MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus
+  MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift
 } from 'lucide-react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
@@ -17,6 +17,8 @@ import { useMakler } from '../lib/maklerContext'
 import { EventForm } from './EventForm'
 import { eventTypeMeta, type EventType } from '../lib/events'
 import { ScorePanel } from './LeadScore'
+import { referralsBy, referrerOf } from '../lib/referrals'
+import { useLeadDetail } from '../lib/leadDetailContext'
 
 function dayLabel(iso: string): string {
   const d = new Date(iso); d.setHours(0, 0, 0, 0)
@@ -52,6 +54,7 @@ function CalendarCheckIcon(): JSX.Element {
 export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose: () => void }): JSX.Element {
   const { leads, moveStage, patch, remove } = useLeads()
   const { makler } = useMakler()
+  const { openLead } = useLeadDetail()
   const lead = leads.find((l) => l.id === initialLead.id) ?? initialLead
 
   const [templates, setTemplates] = useState<Template[]>([])
@@ -184,6 +187,10 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
   const saveBirthdate = async (val: string): Promise<void> => {
     await patch(lead.id, { birthdate: val || null })
+  }
+
+  const saveReferrer = async (val: string): Promise<void> => {
+    await patch(lead.id, { doporucil_id: val || null })
   }
 
   /** Otevře editaci kontaktu s aktuálními hodnotami leadu. */
@@ -466,7 +473,36 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Cake className="h-3.5 w-3.5" /> Datum narození</label>
               <input type="date" className="input" defaultValue={lead.birthdate?.slice(0, 10) ?? ''} onChange={(e) => saveBirthdate(e.target.value)} />
             </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Share2 className="h-3.5 w-3.5" /> Doporučil(a)</label>
+              <select className="input" value={lead.doporucil_id ?? ''} onChange={(e) => saveReferrer(e.target.value)}>
+                <option value="">— nikdo / z webu —</option>
+                {leads.filter((l) => l.id !== lead.id).map((l) => <option key={l.id} value={l.id}>{l.name || 'Bez jména'}</option>)}
+              </select>
+            </div>
           </div>
+
+          {/* doporučení — kdo přivedl + co tento člověk přinesl */}
+          {(() => {
+            const referrer = referrerOf(leads, lead)
+            const made = referralsBy(leads, lead.id)
+            if (!referrer && made.count === 0) return null
+            return (
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand/30 bg-brand-soft/40 p-3 text-sm">
+                <Gift className="h-4 w-4 shrink-0 text-brand-dark" />
+                {referrer && (
+                  <span className="text-tx-soft">Doporučen od <button onClick={() => openLead(referrer)} className="font-bold text-tx hover:text-brand-dark hover:underline">{referrer.name}</button></span>
+                )}
+                {referrer && made.count > 0 && <span className="text-tx-faint">·</span>}
+                {made.count > 0 && (
+                  <span className="text-tx-soft">
+                    Sám doporučil <b className="text-tx">{made.count} {made.count === 1 ? 'klienta' : made.count < 5 ? 'klienty' : 'klientů'}</b>
+                    {made.value > 0 && <> · přinesl <b className="text-emerald">{formatCZK(made.value, true)}</b></>}
+                  </span>
+                )}
+              </div>
+            )
+          })()}
 
           <div>
             <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><StickyNote className="h-3.5 w-3.5" /> Poznámka k leadu</label>

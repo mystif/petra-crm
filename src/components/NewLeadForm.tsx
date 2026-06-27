@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { Modal } from './Modal'
 import { createLead, STAGES, type StageKey } from '../lib/supabase'
 import { PRIORITIES } from '../lib/leadDisplay'
+import { useLeads } from '../lib/leadsContext'
 
 interface NewLeadFormProps {
   open: boolean
@@ -28,6 +29,7 @@ interface FormState {
   price: string
   crm_status: StageKey
   priorita: string
+  doporucil_id: string
   follow_up_at: string
   message: string
 }
@@ -43,11 +45,13 @@ const EMPTY: FormState = {
   price: '',
   crm_status: 'novy',
   priorita: '',
+  doporucil_id: '',
   follow_up_at: '',
   message: ''
 }
 
 export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX.Element {
+  const { leads } = useLeads()
   const [form, setForm] = useState<FormState>(EMPTY)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -73,7 +77,6 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
         name: form.name.trim(),
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
-        source: 'Ručně',
         lead_type: form.lead_type,
         deal_type: form.deal_type || null,
         property_type: form.property_type || null,
@@ -82,6 +85,8 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
         price_estimate: form.lead_type === 'odhad' ? priceNum : null,
         crm_status: form.crm_status,
         priorita: form.priorita || null,
+        doporucil_id: form.doporucil_id || null,
+        source: form.doporucil_id ? 'Doporučení' : 'Ručně',
         follow_up_at: form.follow_up_at || null,
         message: form.message.trim() || null
       })
@@ -158,6 +163,13 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
           <select className="input" value={form.priorita} onChange={(e) => set({ priorita: e.target.value })}>
             <option value="">— žádná —</option>
             {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
+          </select>
+        </Field>
+
+        <Field label="Doporučil(a)" full>
+          <select className="input" value={form.doporucil_id} onChange={(e) => set({ doporucil_id: e.target.value })}>
+            <option value="">— nikdo / z webu —</option>
+            {leads.map((l) => <option key={l.id} value={l.id}>{l.name || 'Bez jména'}</option>)}
           </select>
         </Field>
 
