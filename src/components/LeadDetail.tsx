@@ -75,6 +75,14 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const [crmNote, setCrmNote] = useState(lead.crm_note ?? '')
   const [provizeVal, setProvizeVal] = useState(String(lead.provize ?? ''))
 
+  // editace kontaktních údajů + popisu
+  const [editContact, setEditContact] = useState(false)
+  const [phoneVal, setPhoneVal] = useState(lead.phone ?? '')
+  const [emailVal, setEmailVal] = useState(lead.email ?? '')
+  const [addressVal, setAddressVal] = useState(lead.location ?? '')
+  const [editMsg, setEditMsg] = useState(false)
+  const [msgVal, setMsgVal] = useState(lead.message ?? '')
+
   // akce
   const [callOpen, setCallOpen] = useState(false)
   const [eventType, setEventType] = useState<EventType | null>(null)
@@ -176,6 +184,30 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
   const saveBirthdate = async (val: string): Promise<void> => {
     await patch(lead.id, { birthdate: val || null })
+  }
+
+  /** Otevře editaci kontaktu s aktuálními hodnotami leadu. */
+  const startEditContact = (): void => {
+    setPhoneVal(lead.phone ?? '')
+    setEmailVal(lead.email ?? '')
+    setAddressVal(lead.location ?? '')
+    setEditContact(true)
+  }
+
+  const saveContact = async (): Promise<void> => {
+    setEditContact(false)
+    const next = { phone: phoneVal.trim() || null, email: emailVal.trim() || null, location: addressVal.trim() || null }
+    if (next.phone === (lead.phone ?? null) && next.email === (lead.email ?? null) && next.location === (lead.location ?? null)) return
+    await patch(lead.id, next) // sdílený stav → propíše se i do karty v pipeline
+    await addActivity(lead.id, 'system', null, 'Upraveny kontaktní údaje')
+    reloadActivity()
+  }
+
+  const saveMessage = async (): Promise<void> => {
+    setEditMsg(false)
+    const next = msgVal.trim() || null
+    if (next === (lead.message ?? null)) return
+    await patch(lead.id, { message: next })
   }
 
   // akce z horní lišty
@@ -299,33 +331,50 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
           <div className="flex items-start gap-3">
             <Avatar name={lead.name || '?'} size={46} />
             <div className="flex-1 text-sm">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-tx-soft">
-                {lead.phone && (
-                  <a href={`tel:${lead.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:text-brand-dark">
-                    <Phone className="h-3.5 w-3.5" /> {lead.phone}
-                  </a>
-                )}
-                {wa && (
-                  <a href={wa} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-emerald hover:underline">
-                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                  </a>
-                )}
-                {lead.email && (
-                  <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 hover:text-brand-dark">
-                    <Mail className="h-3.5 w-3.5" /> {lead.email}
-                  </a>
-                )}
-                {lead.location && (
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" /> {lead.location}
-                    {map && (
-                      <a href={map} target="_blank" rel="noreferrer" title="Otevřít v mapě" className="text-brand-dark hover:underline">
-                        <Navigation className="h-3.5 w-3.5" />
-                      </a>
-                    )}
-                  </span>
-                )}
-              </div>
+              {editContact ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <input className="input" placeholder="Telefon" value={phoneVal} onChange={(e) => setPhoneVal(e.target.value)} autoFocus />
+                    <input className="input" type="email" placeholder="E-mail" value={emailVal} onChange={(e) => setEmailVal(e.target.value)} />
+                  </div>
+                  <input className="input" placeholder="Adresa nemovitosti" value={addressVal} onChange={(e) => setAddressVal(e.target.value)} />
+                  <div className="flex gap-2">
+                    <button className="btn-primary py-1.5 text-xs" onClick={saveContact}>Uložit</button>
+                    <button className="btn-ghost py-1.5 text-xs" onClick={() => setEditContact(false)}>Zrušit</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-tx-soft">
+                  {lead.phone && (
+                    <a href={`tel:${lead.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:text-brand-dark">
+                      <Phone className="h-3.5 w-3.5" /> {lead.phone}
+                    </a>
+                  )}
+                  {wa && (
+                    <a href={wa} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-emerald hover:underline">
+                      <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                    </a>
+                  )}
+                  {lead.email && (
+                    <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 hover:text-brand-dark">
+                      <Mail className="h-3.5 w-3.5" /> {lead.email}
+                    </a>
+                  )}
+                  {lead.location && (
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" /> {lead.location}
+                      {map && (
+                        <a href={map} target="_blank" rel="noreferrer" title="Otevřít v mapě" className="text-brand-dark hover:underline">
+                          <Navigation className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </span>
+                  )}
+                  <button onClick={startEditContact} className="flex items-center gap-1 font-medium text-brand-dark hover:underline" title="Upravit kontakt a adresu">
+                    <Pencil className="h-3.5 w-3.5" /> Upravit
+                  </button>
+                </div>
+              )}
 
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {lead.gdpr_consent ? (
@@ -353,7 +402,32 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             </div>
           </div>
 
-          {lead.message && <p className="rounded-xl bg-canvas p-3 text-sm text-tx">{lead.message}</p>}
+          {/* popis poptávky — editovatelný */}
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-wide text-tx-faint">Popis poptávky</label>
+              {!editMsg && (
+                <button onClick={() => { setMsgVal(lead.message ?? ''); setEditMsg(true) }} className="text-tx-faint transition hover:text-brand-dark" title="Upravit popis">
+                  <Pencil className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            {editMsg ? (
+              <div className="space-y-2">
+                <textarea className="input min-h-[80px] resize-y" value={msgVal} onChange={(e) => setMsgVal(e.target.value)} autoFocus placeholder="Popis poptávky…" />
+                <div className="flex gap-2">
+                  <button className="btn-primary py-1.5 text-xs" onClick={saveMessage}>Uložit</button>
+                  <button className="btn-ghost py-1.5 text-xs" onClick={() => setEditMsg(false)}>Zrušit</button>
+                </div>
+              </div>
+            ) : lead.message ? (
+              <p className="rounded-xl bg-canvas p-3 text-sm text-tx">{lead.message}</p>
+            ) : (
+              <button onClick={() => { setMsgVal(''); setEditMsg(true) }} className="w-full rounded-xl bg-canvas p-3 text-left text-sm italic text-tx-faint hover:text-brand-dark">
+                Bez popisu — klikni pro doplnění.
+              </button>
+            )}
+          </div>
 
           {/* priorita / fáze / follow-up */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
