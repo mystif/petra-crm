@@ -1,5 +1,5 @@
 import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, ChevronDown,
-  CalendarDays, ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Ruler } from 'lucide-react'
+  ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Ruler } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { AnnaBriefing } from '../components/AnnaBriefing'
 import { Loading, ErrorState } from '../components/States'
@@ -72,18 +72,11 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const taskDue = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), now))).length
   const activeProps = listings.filter((l) => l.status === 'available').length
 
-  const dateRange = `${monthStart.getDate()}. ${monthStart.getMonth() + 1}. – ${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}. ${now.getMonth() + 1}. ${now.getFullYear()}`
-
   return (
     <div className="flex h-full flex-col">
       <Topbar
         title="Přehled"
         subtitle="Souhrn vašeho realitního byznysu"
-        actions={
-          <span className="hidden items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 text-sm font-semibold text-tx-soft sm:flex">
-            <CalendarDays className="h-4 w-4 text-brand-dark" /> {dateRange}
-          </span>
-        }
       />
 
       {loading ? (

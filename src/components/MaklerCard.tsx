@@ -129,7 +129,7 @@ export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => vo
       <div className="flex flex-col gap-5 sm:flex-row">
         {/* fotka */}
         <div className="flex flex-col items-center gap-2">
-          <div className="relative h-28 w-28 overflow-hidden rounded-2xl bg-canvas ring-1 ring-line">
+          <div className="relative h-28 w-28 overflow-hidden rounded-full bg-canvas ring-2 ring-brand/50">
             {form.photo_path ? (
               <img src={photoUrl(form.photo_path)} alt="" className="h-full w-full object-cover" />
             ) : (
