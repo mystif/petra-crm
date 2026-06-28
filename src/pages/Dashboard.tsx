@@ -1,91 +1,89 @@
-import { TrendingDown, Wallet, Trophy, Inbox, Users, Coins, ArrowUpRight, Gift } from 'lucide-react'
+import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, ChevronDown,
+  CalendarDays, ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Ruler } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
-import { Avatar } from '../components/Avatar'
 import { AnnaBriefing } from '../components/AnnaBriefing'
 import { Loading, ErrorState } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
+import { useEvents } from '../lib/eventsContext'
+import { useListings } from '../lib/listingsContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
-import { STAGES, CLOSED_STAGES } from '../lib/supabase'
-import { formatCZK, relativeDays } from '../lib/format'
+import { CLOSED_STAGES } from '../lib/supabase'
+import { formatCZK } from '../lib/format'
 import { leadValue } from '../lib/leadDisplay'
-import { topReferrers } from '../lib/referrals'
+import { eventTypeMeta, isOverdue, sameDay, eventTime, type EventItem } from '../lib/events'
+import { statusMeta, formatListingPrice, propertyTypeLabel } from '../lib/listings'
 import type { Page } from '../components/Sidebar'
 import type { LeadsFilter } from './Leads'
 
+const MONTHS = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
+const DAY_NAMES = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne']
+
 export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsFilter) => void }): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
+  const { events } = useEvents()
+  const { listings } = useListings()
   const { openLead } = useLeadDetail()
 
-  const referrers = topReferrers(leads)
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const yearStart = new Date(now.getFullYear(), 0, 1)
 
   const open = leads.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
   const won = leads.filter((l) => l.crm_status === 'uzavreno')
   const fresh = leads.filter((l) => l.crm_status === 'novy')
-  const pipelineValue = open.reduce((s, l) => s + leadValue(l), 0)
-  const wonValue = won.reduce((s, l) => s + leadValue(l), 0)
-
   const uniqueContacts = new Set(leads.map((l) => (l.email || l.phone || l.id).toLowerCase())).size
+  const inMonth = (iso: string | null): boolean => !!iso && new Date(iso) >= monthStart
 
-  // Měsíční změna — co přibylo / uzavřelo se v aktuálním kalendářním měsíci.
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const inThisMonth = (iso: string | null): boolean => !!iso && new Date(iso) >= monthStart
+  const provizeMonth = won.filter((l) => inMonth(l.crm_updated_at)).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const provizeYtd = won.filter((l) => l.crm_updated_at && new Date(l.crm_updated_at) >= yearStart).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const newContactsMonth = new Set(leads.filter((l) => inMonth(l.created_at)).map((l) => (l.email || l.phone || l.id).toLowerCase())).size
 
-  const createdThisMonth = leads.filter((l) => inThisMonth(l.created_at))
-  const openAddedThisMonth = createdThisMonth.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
-  const closedThisMonth = won.filter((l) => inThisMonth(l.crm_updated_at))
-  const freshThisMonth = fresh.filter((l) => inThisMonth(l.created_at))
-  const contactsThisMonth = new Set(
-    createdThisMonth.map((l) => (l.email || l.phone || l.id).toLowerCase())
-  ).size
-
-  // Provize: aktuální vs. minulý měsíc (podle data uzavření).
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const inLastMonth = (iso: string | null): boolean => {
-    if (!iso) return false
-    const d = new Date(iso)
-    return d >= lastMonthStart && d < monthStart
-  }
-  const provizeThisMonth = won.filter((l) => inThisMonth(l.crm_updated_at)).reduce((s, l) => s + Number(l.provize || 0), 0)
-  const provizeLastMonth = won.filter((l) => inLastMonth(l.crm_updated_at)).reduce((s, l) => s + Number(l.provize || 0), 0)
-  const provizeDelta = provizeThisMonth - provizeLastMonth
-  const provizePct = provizeLastMonth > 0 ? Math.round((provizeDelta / provizeLastMonth) * 100) : null
-  const provizeChip =
-    provizePct != null
-      ? `${provizePct >= 0 ? '+' : ''}${provizePct} % vs. minulý měsíc`
-      : `${provizeDelta >= 0 ? '+' : ''}${formatCZK(provizeDelta, true)} vs. minulý`
-
-  const monthDelta = (n: number): { chip: string; up: boolean } => ({ chip: `+${n} tento měsíc`, up: n > 0 })
-
-  const today = new Date().toLocaleDateString('cs-CZ', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
-
+  // KPI řada
   const kpis = [
-    { label: 'Hodnota pipeline', value: formatCZK(pipelineValue, true), sub: `${open.length} otevřených leadů`, ...monthDelta(openAddedThisMonth.length), icon: Wallet, tint: 'text-brand-dark bg-brand-soft' },
-    { label: 'Provize (měsíc)', value: formatCZK(provizeThisMonth, true), sub: `${closedThisMonth.length} uzavřených obchodů`, chip: provizeChip, up: provizeDelta >= 0, icon: Coins, tint: 'text-emerald bg-emerald-soft' },
-    { label: 'Uzavřeno', value: formatCZK(wonValue, true), sub: `${won.length} obchodů celkem`, ...monthDelta(closedThisMonth.length), icon: Trophy, tint: 'text-amber bg-amber-soft' },
-    { label: 'Nové poptávky', value: String(fresh.length), sub: 'čekají na reakci', ...monthDelta(freshThisMonth.length), icon: Inbox, tint: 'text-sky bg-sky-soft' },
-    { label: 'Kontakty', value: String(uniqueContacts), sub: 'z poptávek', ...monthDelta(contactsThisMonth), icon: Users, tint: 'text-[#9333EA] bg-[#F0E7FB]' }
+    { label: 'Nové kontakty', value: String(newContactsMonth), icon: Users, delta: newContactsMonth },
+    { label: 'Aktivní obchody', value: String(open.length), icon: Briefcase, delta: open.filter((l) => inMonth(l.created_at)).length },
+    { label: 'Nové poptávky', value: String(fresh.length), icon: MessageSquare, delta: fresh.filter((l) => inMonth(l.created_at)).length },
+    { label: 'Uzavřené obchody', value: String(won.filter((l) => inMonth(l.crm_updated_at)).length), icon: CheckCircle2, delta: won.filter((l) => inMonth(l.crm_updated_at)).length },
+    { label: 'Provize (měsíc)', value: formatCZK(provizeMonth, true), icon: Coins, delta: null }
   ]
 
-  // Graf: rozložení hodnoty pipeline podle fází (donut).
-  const stageData = STAGES.map((s) => ({
-    ...s,
-    items: leads.filter((l) => l.crm_status === s.key),
-    val: leads.filter((l) => l.crm_status === s.key).reduce((a, l) => a + leadValue(l), 0)
-  }))
-  const stageTotal = Math.max(1, stageData.reduce((a, s) => a + s.val, 0))
+  // Pipeline trychtýř
+  const cnt = (k: string): number => leads.filter((l) => l.crm_status === k).length
+  const funnel = [
+    { label: 'Nové', value: cnt('novy') },
+    { label: 'Jednání', value: cnt('kontaktovan') + cnt('schuzka') },
+    { label: 'Nabídka', value: cnt('nabidka') },
+    { label: 'Uzavřené', value: cnt('uzavreno') }
+  ]
+  const funnelTop = Math.max(1, funnel[0].value || open.length)
+  const conversion = funnelTop > 0 ? Math.round((funnel[3].value / Math.max(1, funnel.reduce((s, f) => s + f.value, 0))) * 1000) / 10 : 0
+
+  // Výkon — provize po měsících (posledních 6 měsíců)
+  const perf = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
+    const next = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+    const value = won
+      .filter((l) => l.crm_updated_at && new Date(l.crm_updated_at) >= d && new Date(l.crm_updated_at) < next)
+      .reduce((s, l) => s + Number(l.provize || 0), 0)
+    return { label: MONTHS[d.getMonth()], value }
+  })
+
+  const todayEvents = events.filter((e) => sameDay(new Date(e.start_at), now)).sort((a, b) => a.start_at.localeCompare(b.start_at))
+  const taskDue = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), now))).length
+  const activeProps = listings.filter((l) => l.status === 'available').length
+
+  const dateRange = `${monthStart.getDate()}. ${monthStart.getMonth() + 1}. – ${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}. ${now.getMonth() + 1}. ${now.getFullYear()}`
 
   return (
     <div className="flex h-full flex-col">
       <Topbar
-        title="Dashboard"
-        subtitle={today.charAt(0).toUpperCase() + today.slice(1)}
-        actions={<button className="btn-primary" onClick={() => onNavigate('pipeline')}>Otevřít pipeline</button>}
+        title="Přehled"
+        subtitle="Souhrn vašeho realitního byznysu"
+        actions={
+          <span className="hidden items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 text-sm font-semibold text-tx-soft sm:flex">
+            <CalendarDays className="h-4 w-4 text-brand-dark" /> {dateRange}
+          </span>
+        }
       />
 
       {loading ? (
@@ -93,152 +91,290 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
       ) : error ? (
         <ErrorState message={error} onRetry={refetch} />
       ) : (
-        <div className="flex-1 space-y-6 overflow-y-auto p-4 md:p-8">
-          {/* ASISTENTKA ANNA — denní itinerář */}
+        <div className="flex-1 space-y-5 overflow-y-auto p-4 md:p-6">
+          {/* AI asistentka Anna (jediný tmavý box nahoře) */}
           <AnnaBriefing onNavigate={onNavigate} />
 
           {/* KPI */}
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {kpis.map((k) => {
               const Icon = k.icon
               return (
-                <div key={k.label} className="card p-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className={`grid h-10 w-10 place-items-center rounded-xl ${k.tint}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className={`pill ${k.up ? 'bg-emerald-soft text-emerald' : 'bg-canvas text-tx-soft'}`}>
-                      {k.up ? <ArrowUpRight className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {k.chip}
-                    </span>
+                <div key={k.label} className="card p-4">
+                  <div className="flex items-start justify-between">
+                    <span className="text-xs font-medium text-tx-soft">{k.label}</span>
+                    <Icon className="h-4 w-4 text-brand-dark" />
                   </div>
-                  <div className="mt-4 stat-num text-2xl text-tx">{k.value}</div>
-                  <div className="text-sm font-semibold text-tx">{k.label}</div>
-                  <div className="text-xs text-tx-soft">{k.sub}</div>
+                  <div className="mt-2 stat-num text-2xl text-tx">{k.value}</div>
+                  {k.delta != null && (
+                    <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-brand-dark">
+                      <TrendingUp className="h-3.5 w-3.5" /> +{k.delta} tento měsíc
+                    </div>
+                  )}
                 </div>
               )
             })}
           </section>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            {/* PŘEHLED PIPELINE */}
-            <section className="card p-6 lg:col-span-3">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h3 className="font-display text-lg font-bold text-tx">Pipeline podle fází</h3>
-                  <p className="text-sm text-tx-soft">Hodnota leadů v jednotlivých fázích</p>
-                </div>
-                <button onClick={() => onNavigate('pipeline')} className="text-sm font-semibold text-brand-dark hover:underline">
-                  Detail
-                </button>
+          {/* Výkon + Pipeline */}
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+            <div className="card p-5 lg:col-span-3">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-display text-lg font-bold text-tx">Přehled výkonu</h3>
+                <span className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-tx-soft">Tento rok <ChevronDown className="h-3.5 w-3.5" /></span>
               </div>
-              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-                {/* donut */}
-                <div className="relative h-44 w-44 shrink-0">
-                  <svg viewBox="0 0 176 176" className="h-full w-full -rotate-90">
-                    <circle cx="88" cy="88" r="75" fill="none" stroke="#EEF0F4" strokeWidth="22" />
-                    {(() => {
-                      const C = 2 * Math.PI * 75
-                      let acc = 0
-                      return stageData.map((s) => {
-                        const dash = (s.val / stageTotal) * C
-                        const el = (
-                          <circle
-                            key={s.key}
-                            cx="88"
-                            cy="88"
-                            r="75"
-                            fill="none"
-                            stroke={s.accent}
-                            strokeWidth="22"
-                            strokeDasharray={`${dash} ${C - dash}`}
-                            strokeDashoffset={-acc}
-                            strokeLinecap="butt"
-                          >
-                            <title>{`${s.label}: ${formatCZK(s.val, true)}`}</title>
-                          </circle>
-                        )
-                        acc += dash
-                        return el
-                      })
-                    })()}
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-display text-lg font-bold text-tx">{formatCZK(pipelineValue + wonValue, true)}</span>
-                    <span className="text-[11px] text-tx-faint">celková hodnota</span>
+              <PerfChart data={perf} />
+            </div>
+
+            <div className="card p-5 lg:col-span-2">
+              <h3 className="mb-4 font-display text-lg font-bold text-tx">Pipeline obchodů</h3>
+              <div className="flex items-center gap-4">
+                <Funnel data={funnel} />
+                <div className="flex-1 space-y-2.5">
+                  {funnel.map((f) => (
+                    <div key={f.label} className="border-b border-line pb-1.5">
+                      <div className="text-xs text-tx-soft">{f.label}</div>
+                      <div className="stat-num text-lg text-tx">{f.value}</div>
+                    </div>
+                  ))}
+                  <div>
+                    <div className="text-xs text-tx-soft">Konverze</div>
+                    <div className="stat-num text-lg text-brand-dark">{conversion} %</div>
                   </div>
                 </div>
-
-                {/* legenda */}
-                <div className="flex-1 space-y-2">
-                  {stageData.map((s) => {
-                    const pct = Math.round((s.val / stageTotal) * 100)
-                    return (
-                      <div key={s.key} className="flex items-center gap-3 text-sm">
-                        <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: s.accent }} />
-                        <span className="font-medium text-tx">{s.label}</span>
-                        <span className="text-tx-faint">· {s.items.length}</span>
-                        <span className="ml-auto font-mono text-[13px] font-semibold text-tx-soft">{formatCZK(s.val, true)}</span>
-                        <span className="w-9 text-right text-xs text-tx-faint">{pct}%</span>
-                      </div>
-                    )
-                  })}
-                </div>
               </div>
-            </section>
+            </div>
+          </section>
 
-            {/* NEJNOVĚJŠÍ POPTÁVKY */}
-            <section className="card p-6 lg:col-span-2">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-display text-lg font-bold text-tx">Nejnovější poptávky</h3>
-                <button onClick={() => onNavigate('leads')} className="text-sm font-semibold text-brand-dark hover:underline">
-                  Vše
-                </button>
+          {/* Aktivity + Kalendář */}
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <div className="card p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-display text-lg font-bold text-tx">Aktivity</h3>
+                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Zobrazit vše</button>
               </div>
-              <ul className="space-y-1">
-                {leads.slice(0, 5).map((l) => (
-                  <li key={l.id} className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-canvas">
-                    <Avatar name={l.name || '?'} size={38} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-tx">{l.name || 'Bez jména'}</div>
-                      <div className="truncate text-xs text-tx-soft">{l.message || l.location || l.source}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono text-[13px] font-semibold text-tx">{formatCZK(leadValue(l), true)}</div>
-                      <div className="text-[11px] text-tx-faint">{relativeDays(l.created_at)}</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
+              <ActivityList events={todayEvents} leads={leads} onOpen={(id) => { const l = leads.find((x) => x.id === id); if (l) openLead(l) }} onEmpty={() => onNavigate('calendar')} />
+            </div>
 
-          {/* TOP DOPORUČITELÉ */}
-          {referrers.length > 0 && (
-            <section className="card p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand-dark"><Gift className="h-5 w-5" /></span>
-                <div>
-                  <h3 className="font-display text-lg font-bold text-tx">Top doporučitelé</h3>
-                  <p className="text-sm text-tx-soft">Klienti, kteří vám přivádějí další obchody</p>
-                </div>
+            <div className="card p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-display text-lg font-bold text-tx">Kalendář</h3>
+                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Zobrazit celý</button>
               </div>
-              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {referrers.map((r, i) => (
-                  <li key={r.lead.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-gold">{i + 1}</span>
-                    <Avatar name={r.lead.name || '?'} size={36} />
-                    <div className="min-w-0 flex-1">
-                      <button onClick={() => openLead(r.lead)} className="truncate text-sm font-bold text-tx hover:text-brand-dark hover:underline">{r.lead.name || 'Bez jména'}</button>
-                      <div className="text-xs text-tx-soft">{r.count} {r.count === 1 ? 'doporučení' : r.count < 5 ? 'doporučení' : 'doporučení'}</div>
-                    </div>
-                    <span className="font-mono text-[13px] font-bold text-emerald">{formatCZK(r.value, true)}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+              <MiniCalendar now={now} events={events} todayEvents={todayEvents} leads={leads} />
+            </div>
+          </section>
+
+          {/* Nejnovější nemovitosti */}
+          <section className="card overflow-hidden">
+            <div className="flex items-center justify-between p-5 pb-3">
+              <h3 className="font-display text-lg font-bold text-tx">Nejnovější nemovitosti</h3>
+              <button onClick={() => onNavigate('properties')} className="text-sm font-semibold text-brand-dark hover:underline">Zobrazit všechny</button>
+            </div>
+            {listings.length === 0 ? (
+              <p className="px-5 pb-6 text-sm text-tx-faint">Zatím žádné nemovitosti. Přidejte první v sekci Nemovitosti.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px]">
+                  <thead>
+                    <tr className="border-y border-line text-left text-[11px] font-bold uppercase tracking-wider text-tx-faint">
+                      <th className="px-5 py-2.5">Nemovitost</th>
+                      <th className="px-5 py-2.5">Typ</th>
+                      <th className="px-5 py-2.5">Lokalita</th>
+                      <th className="px-5 py-2.5">Cena</th>
+                      <th className="px-5 py-2.5">Stav</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {listings.slice(0, 4).map((l) => {
+                      const sm = statusMeta(l.status)
+                      return (
+                        <tr key={l.id} className="cursor-pointer transition hover:bg-canvas" onClick={() => onNavigate('properties')}>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-11 w-14 shrink-0 overflow-hidden rounded-lg bg-canvas">
+                                {l.main_image ? <img src={l.main_image} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full w-full place-items-center text-tx-faint"><Building2 className="h-4 w-4" /></div>}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-bold text-tx">{l.title}</div>
+                                {l.reference_number && <div className="text-xs text-tx-faint">{l.reference_number}</div>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-sm text-tx-soft">{propertyTypeLabel(l.property_type)}</td>
+                          <td className="px-5 py-3 text-sm text-tx-soft">{l.location}</td>
+                          <td className="px-5 py-3 font-mono text-sm font-semibold text-tx">{formatListingPrice(l.price, l.price_note, l.offer_type)}</td>
+                          <td className="px-5 py-3"><span className={`pill ${sm.cls}`}>{sm.label}</span></td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* Spodní souhrn */}
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <BottomStat icon={Users} value={String(uniqueContacts)} label="Celkem kontaktů" hint={`+${newContactsMonth} tento měsíc`} />
+            <BottomStat icon={Home} value={String(activeProps)} label="Aktivních nemovitostí" hint={`${listings.length} celkem`} />
+            <BottomStat icon={Coins} value={formatCZK(provizeYtd, true)} label="Celková provize (YTD)" hint={`${won.length} obchodů`} />
+            <BottomStat icon={ClipboardList} value={String(taskDue)} label="Úkolů k vyřízení" hint={`${todayEvents.length} dnes`} />
+          </section>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Sub-komponenty ───
+
+function PerfChart({ data }: { data: { label: string; value: number }[] }): JSX.Element {
+  const W = 560, H = 240, padL = 48, padR = 14, padT = 14, padB = 30
+  const innerW = W - padL - padR, innerH = H - padT - padB
+  const rawMax = Math.max(...data.map((d) => d.value), 1)
+  const niceMax = Math.max(400000, Math.ceil(rawMax / 100000) * 100000)
+  const x = (i: number): number => padL + innerW * (i / (data.length - 1))
+  const y = (v: number): number => padT + innerH * (1 - v / niceMax)
+  const pts = data.map((d, i) => `${x(i)},${y(d.value)}`).join(' ')
+  const ticks = Array.from({ length: 5 }, (_, i) => Math.round((niceMax / 4) * i))
+  const fmtK = (v: number): string => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
+      {ticks.map((t) => (
+        <g key={t}>
+          <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="#EEF0F4" strokeWidth="1" />
+          <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="fill-tx-faint" fontSize="11">{fmtK(t)}</text>
+        </g>
+      ))}
+      <polyline points={pts} fill="none" stroke="#C1A263" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {data.map((d, i) => (
+        <g key={i}>
+          <circle cx={x(i)} cy={y(d.value)} r="4" fill="#C1A263" stroke="#fff" strokeWidth="2" />
+          <text x={x(i)} y={H - 10} textAnchor="middle" className="fill-tx-faint" fontSize="11">{d.label}</text>
+        </g>
+      ))}
+    </svg>
+  )
+}
+
+function Funnel({ data }: { data: { label: string; value: number }[] }): JSX.Element {
+  const W = 150, H = 170
+  const colors = ['#D4B26F', '#C1A263', '#A8884E', '#91753C']
+  const widths = [1, 0.74, 0.5, 0.28, 0.12]
+  const bandH = H / 4
+  const cx = W / 2
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-[150px] w-[130px] shrink-0">
+      {data.map((_, i) => {
+        const wTop = widths[i] * W, wBot = widths[i + 1] * W
+        const yTop = i * bandH, yBot = (i + 1) * bandH - 3
+        const pts = `${cx - wTop / 2},${yTop} ${cx + wTop / 2},${yTop} ${cx + wBot / 2},${yBot} ${cx - wBot / 2},${yBot}`
+        return <polygon key={i} points={pts} fill={colors[i]} />
+      })}
+    </svg>
+  )
+}
+
+function ActivityList({ events, leads, onOpen, onEmpty }: {
+  events: EventItem[]; leads: { id: string; name: string | null }[]; onOpen: (leadId: string) => void; onEmpty: () => void
+}): JSX.Element {
+  if (events.length === 0) {
+    return (
+      <button onClick={onEmpty} className="w-full rounded-xl bg-canvas py-8 text-center text-sm text-tx-faint hover:text-brand-dark">
+        Dnes žádné aktivity — naplánujte schůzku nebo hovor.
+      </button>
+    )
+  }
+  const leadName = (id: string | null): string | null => leads.find((l) => l.id === id)?.name ?? null
+  return (
+    <ul className="space-y-1">
+      {events.slice(0, 5).map((e) => {
+        const meta = eventTypeMeta(e.type)
+        const Icon = meta.icon
+        const ln = leadName(e.lead_id)
+        return (
+          <li key={e.id}>
+            <button onClick={() => e.lead_id && onOpen(e.lead_id)} className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-canvas">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: `${meta.color}1a`, color: meta.color }}><Icon className="h-4 w-4" /></span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-tx">{e.title}</div>
+                {ln && <div className="truncate text-xs text-tx-soft">{ln}</div>}
+              </div>
+              <span className="shrink-0 font-mono text-[13px] font-semibold text-tx-soft">{e.all_day ? '—' : eventTime(e)}</span>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function MiniCalendar({ now, events, todayEvents, leads }: {
+  now: Date; events: EventItem[]; todayEvents: EventItem[]; leads: { id: string; name: string | null }[]
+}): JSX.Element {
+  const year = now.getFullYear(), month = now.getMonth()
+  const first = new Date(year, month, 1)
+  const startOffset = (first.getDay() + 6) % 7 // pondělí = 0
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells: (number | null)[] = [...Array(startOffset).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  const hasEvent = (day: number): boolean => events.some((e) => { const d = new Date(e.start_at); return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day })
+  const leadName = (id: string | null): string | null => leads.find((l) => l.id === id)?.name ?? null
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_1fr]">
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <ChevronLeft className="h-4 w-4 text-tx-faint" />
+          <span className="text-sm font-bold capitalize text-tx">{now.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}</span>
+          <ChevronRight className="h-4 w-4 text-tx-faint" />
+        </div>
+        <div className="grid grid-cols-7 gap-0.5 text-center">
+          {DAY_NAMES.map((d) => <div key={d} className="py-1 text-[10px] font-bold uppercase text-tx-faint">{d}</div>)}
+          {cells.map((day, i) => {
+            if (day === null) return <div key={i} />
+            const isToday = day === now.getDate()
+            return (
+              <div key={i} className={`relative mx-auto grid h-7 w-7 place-items-center rounded-full text-xs ${isToday ? 'bg-brand-dark font-bold text-white' : 'text-tx'}`}>
+                {day}
+                {!isToday && hasEvent(day) && <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-brand-dark" />}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="border-line sm:border-l sm:pl-4">
+        {todayEvents.length === 0 ? (
+          <p className="py-4 text-sm text-tx-faint">Dnes nemáte žádné události.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {todayEvents.slice(0, 4).map((e) => (
+              <li key={e.id} className="flex gap-2.5">
+                <span className="w-10 shrink-0 font-mono text-[12px] font-bold text-brand-dark">{e.all_day ? '—' : eventTime(e)}</span>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-tx">{e.title}</div>
+                  {leadName(e.lead_id) && <div className="truncate text-xs text-tx-soft">{leadName(e.lead_id)}</div>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function BottomStat({ icon: Icon, value, label, hint }: { icon: typeof Users; value: string; label: string; hint: string }): JSX.Element {
+  return (
+    <div className="card flex items-center gap-3 p-4">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-brand/40 text-brand-dark"><Icon className="h-5 w-5" /></span>
+      <div className="min-w-0">
+        <div className="stat-num text-xl text-tx">{value}</div>
+        <div className="truncate text-xs font-medium text-tx-soft">{label}</div>
+        <div className="truncate text-[11px] font-semibold text-brand-dark">{hint}</div>
+      </div>
     </div>
   )
 }

@@ -26,14 +26,8 @@ export function Login(): JSX.Element {
       <div className="relative w-full max-w-sm">
         {/* logo */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[.06] text-gold ring-1 ring-white/10 backdrop-blur">
-            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" aria-hidden="true">
-              <path d="M5 19.5V11l7-6 7 6v8.5" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M10 19.5v-4a2 2 0 0 1 4 0v4Z" fill="currentColor" />
-            </svg>
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">BeReEst CRM</h1>
-          <p className="mt-1 text-sm text-white/50">Přihlaste se do realitního pultu</p>
+          <img src="./aurea-logo.png" alt="AUREA — Real Estate CRM" className="mb-3 h-24 w-auto object-contain" />
+          <p className="text-sm text-white/50">Přihlaste se do realitního pultu</p>
         </div>
 
         <form onSubmit={submit} className="space-y-3 rounded-2xl bg-white/[.05] p-5 ring-1 ring-white/10 backdrop-blur">

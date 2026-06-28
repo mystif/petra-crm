@@ -46,7 +46,11 @@
       transition active:scale-[.98] disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand text-ink hover:bg-brand-strong shadow-[0_4px_14px_rgba(190,175,135,.45)];
+    @apply btn text-white shadow-[0_4px_14px_rgba(145,117,60,.40)];
+    background-image: linear-gradient(to right, #91753c, #c1a263);
+  }
+  .btn-primary:hover {
+    background-image: linear-gradient(to right, #c1a263, #d4b26f);
   }
   .btn-ghost {
     @apply btn bg-white text-tx border border-line hover:border-brand/50 hover:text-brand-dark;
@@ -60,7 +64,7 @@
   }
   .nav-item.active {
     @apply bg-white/[.08] text-white;
-    box-shadow: inset 2px 0 0 #e6c78b;
+    box-shadow: inset 2px 0 0 #c1a263;
   }
   .input {
     @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm outline-none
@@ -75,10 +79,10 @@
   /* Zlaté záře přes tmavou #1E1E1E — jemný profesionální gradient */
   .aurora {
     background:
-      radial-gradient(60% 120% at 15% 10%, rgba(230, 199, 139, 0.30) 0%, transparent 55%),
-      radial-gradient(50% 120% at 90% 0%, rgba(230, 199, 139, 0.16) 0%, transparent 55%),
-      radial-gradient(80% 140% at 60% 120%, rgba(230, 199, 139, 0.10) 0%, transparent 50%),
-      linear-gradient(120deg, #2a2a2a, #1e1e1e);
+      radial-gradient(60% 120% at 15% 10%, rgba(212, 178, 111, 0.28) 0%, transparent 55%),
+      radial-gradient(50% 120% at 90% 0%, rgba(193, 162, 99, 0.16) 0%, transparent 55%),
+      radial-gradient(80% 140% at 60% 120%, rgba(145, 117, 60, 0.12) 0%, transparent 50%),
+      linear-gradient(120deg, #1a1a1a, #0d0d0d);
   }
   .grain {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");

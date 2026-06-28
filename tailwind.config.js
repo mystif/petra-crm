@@ -4,27 +4,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Hlavní tmavá (#1E1E1E) + odstíny pro jemný gradient
+        // Tmavé plochy (sidebar + box s asistentkou): #1A1A1A / #0D0D0D
         ink: {
-          DEFAULT: '#1E1E1E',
-          soft: '#2A2A2A',
-          line: '#383838'
+          DEFAULT: '#1A1A1A',
+          soft: '#0D0D0D',
+          line: '#2E2A22'
         },
-        // Hlavní zlatá (#E6C78B)
+        // Zlatá paleta (gradient #91753C → #C1A263, hover #D4B26F)
         gold: {
-          DEFAULT: '#E6C78B',
-          soft: '#F7EFDD',
-          dark: '#C9A86A'
+          DEFAULT: '#C1A263',
+          soft: '#F4ECDC',
+          dark: '#91753C',
+          hover: '#D4B26F'
         },
         canvas: '#F5F6FA',
         surface: '#FFFFFF',
         line: '#E7E9F1',
-        // Akcent celé aplikace = zlatá #E6C78B (dark = čitelný text na bílé)
+        // Akcent aplikace = zlatá; dark = čitelný text na světlém
         brand: {
-          DEFAULT: '#E6C78B',
-          strong: '#D4B271',
-          soft: '#F7EFDD',
-          dark: '#8A6E32'
+          DEFAULT: '#C1A263',
+          strong: '#B0925A',
+          soft: '#F4ECDC',
+          dark: '#91753C'
         },
         emerald: { DEFAULT: '#0FA968', soft: '#E3F6EE' },
         amber: { DEFAULT: '#E8920C', soft: '#FCF1DD' },

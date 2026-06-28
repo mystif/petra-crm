@@ -61,17 +61,8 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
 
       <div className="relative flex h-full flex-col scroll-dark">
         {/* logo */}
-        <div className="flex items-center gap-3 px-5 pb-2 pt-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[.06] text-gold ring-1 ring-white/10 backdrop-blur">
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-              <path d="M5 19.5V11l7-6 7 6v8.5" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M10 19.5v-4a2 2 0 0 1 4 0v4Z" fill="currentColor" />
-            </svg>
-          </div>
-          <div className="leading-tight">
-            <div className="font-display text-[17px] font-bold tracking-tight">BeReEst CRM</div>
-            <div className="text-[11px] font-medium text-white/45">Realitní pult</div>
-          </div>
+        <div className="px-5 pb-1 pt-6">
+          <img src="./aurea-logo.png" alt="AUREA — Real Estate CRM" className="h-16 w-auto object-contain" />
         </div>
 
         {/* rychlé hledání */}
