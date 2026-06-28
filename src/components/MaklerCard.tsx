@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, Camera, Coins, TrendingUp, TrendingDown, User } from 'lucide-react'
+import { Loader2, Camera, Coins, TrendingUp, TrendingDown, User, LogOut, KeyRound, ShieldCheck } from 'lucide-react'
 import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
+import { useAuth } from '../lib/authContext'
 import { useMakler } from '../lib/maklerContext'
 import { updateMakler, type Makler } from '../lib/makler'
 import { uploadPhoto, photoUrl } from '../lib/photos'
@@ -9,12 +10,27 @@ import { formatCZK } from '../lib/format'
 
 export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element | null {
   const { leads } = useLeads()
+  const { session, signOut, changePassword } = useAuth()
   const { makler, setMakler } = useMakler()
   const [form, setForm] = useState<Partial<Makler>>({})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  const [pwOpen, setPwOpen] = useState(false)
+  const [pw, setPw] = useState('')
+  const [pwBusy, setPwBusy] = useState(false)
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const savePassword = async (): Promise<void> => {
+    if (pw.length < 6) return setPwMsg({ ok: false, text: 'Heslo musí mít alespoň 6 znaků.' })
+    setPwBusy(true); setPwMsg(null)
+    const { error } = await changePassword(pw)
+    setPwBusy(false)
+    if (error) setPwMsg({ ok: false, text: error })
+    else { setPwMsg({ ok: true, text: 'Heslo změněno.' }); setPw(''); setPwOpen(false) }
+  }
 
   useEffect(() => {
     if (open) setForm(makler ?? {})
@@ -149,6 +165,40 @@ export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => vo
             <textarea className="input min-h-[90px] resize-y" value={form.signature ?? ''} onChange={(e) => set({ signature: e.target.value })} />
           </div>
         </div>
+      </div>
+
+      {/* účet / přihlášení */}
+      <div className="mt-5 rounded-2xl border border-line p-4">
+        <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-tx-faint">
+          <ShieldCheck className="h-3.5 w-3.5" /> Účet
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm">
+            <div className="font-semibold text-tx">{session?.user.email}</div>
+            <div className="text-xs text-tx-faint">Přihlášený uživatel</div>
+          </div>
+          <div className="flex gap-2">
+            <button className="btn-soft py-1.5 text-sm" onClick={() => { setPwOpen((o) => !o); setPwMsg(null) }}>
+              <KeyRound className="h-4 w-4" /> Změnit heslo
+            </button>
+            <button className="btn py-1.5 text-sm bg-rose/10 text-rose hover:bg-rose/20" onClick={signOut}>
+              <LogOut className="h-4 w-4" /> Odhlásit se
+            </button>
+          </div>
+        </div>
+
+        {pwOpen && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+            <input
+              className="input flex-1" type="password" autoComplete="new-password"
+              placeholder="Nové heslo (min. 6 znaků)" value={pw} onChange={(e) => setPw(e.target.value)}
+            />
+            <button className="btn-primary py-2 text-sm" onClick={savePassword} disabled={pwBusy}>
+              {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Uložit heslo
+            </button>
+          </div>
+        )}
+        {pwMsg && <p className={`mt-2 text-sm font-medium ${pwMsg.ok ? 'text-emerald' : 'text-rose'}`}>{pwMsg.text}</p>}
       </div>
     </Modal>
   )

@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { Sidebar, type Page } from './components/Sidebar'
 import { MobileNav } from './components/MobileNav'
 import { MaklerCard } from './components/MaklerCard'
+import { Login } from './components/Login'
+import { AuthProvider, useAuth } from './lib/authContext'
 import { LeadsProvider } from './lib/leadsContext'
 import { EventsProvider } from './lib/eventsContext'
 import { MaklerProvider } from './lib/maklerContext'
@@ -18,6 +21,28 @@ import { Automatizace } from './pages/Automatizace'
 import { Templates } from './pages/Templates'
 
 export default function App(): JSX.Element {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
+  )
+}
+
+/** Brána přihlášení — bez session ukáže Login, data se načítají až po přihlášení. */
+function AuthGate(): JSX.Element {
+  const { session, loading } = useAuth()
+  if (loading) {
+    return (
+      <div className="grid h-screen place-items-center bg-canvas">
+        <Loader2 className="h-7 w-7 animate-spin text-brand-dark" />
+      </div>
+    )
+  }
+  if (!session) return <Login />
+  return <CRMApp />
+}
+
+function CRMApp(): JSX.Element {
   const [page, setPage] = useState<Page>('dashboard')
   const [leadsFilter, setLeadsFilter] = useState<LeadsFilter>('vse')
   const [agentOpen, setAgentOpen] = useState(false)
