@@ -26,7 +26,7 @@ export function Login(): JSX.Element {
       <div className="relative w-full max-w-sm">
         {/* logo */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <img src="./aurea-logo.png" alt="AUREA — Real Estate CRM" className="mb-3 h-24 w-auto object-contain" />
+          <img src="./logo-crm.png" alt="AUREA — Real Estate CRM" className="mb-3 h-auto w-52 object-contain" />
           <p className="text-sm text-white/50">Přihlaste se do realitního pultu</p>
         </div>
 
