@@ -7,6 +7,7 @@ import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
 import { useMakler } from '../lib/maklerContext'
 import { isOverdue, sameDay } from '../lib/events'
+import { isReferrer } from '../lib/leadDisplay'
 
 const PRIMARY: { id: Page; icon: ComponentType<{ className?: string }>; label: string }[] = [
   { id: 'dashboard', icon: LayoutGrid, label: 'Přehled' },
@@ -32,7 +33,7 @@ export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps):
   const { makler, avatarUrl } = useMakler()
   const [moreOpen, setMoreOpen] = useState(false)
 
-  const fresh = leads.filter((l) => l.crm_status === 'novy').length
+  const fresh = leads.filter((l) => l.crm_status === 'novy' && !isReferrer(l)).length
   const taskDue = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), new Date()))).length
   const moreActive = MORE_PAGES.includes(current)
 

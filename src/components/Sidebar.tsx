@@ -21,6 +21,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useSearch } from '../lib/searchContext'
 import { useMakler } from '../lib/maklerContext'
 import { isOverdue, sameDay } from '../lib/events'
+import { isReferrer } from '../lib/leadDisplay'
 
 export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'tasks' | 'calendar' | 'automatizace' | 'templates'
 
@@ -48,7 +49,7 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
   const { makler, avatarUrl } = useMakler()
   const [helpOpen, setHelpOpen] = useState(false)
   // Odznak u Poptávek = počet nových (nezpracovaných) leadů.
-  const freshCount = leads.filter((l) => l.crm_status === 'novy').length
+  const freshCount = leads.filter((l) => l.crm_status === 'novy' && !isReferrer(l)).length
   // Odznak u Úkolů = dnešní + po termínu (nesplněné).
   const taskCount = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), new Date()))).length
 

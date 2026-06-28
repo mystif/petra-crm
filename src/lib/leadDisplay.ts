@@ -40,8 +40,14 @@ export function sourceStyle(source: string | null): { cls: string; icon: typeof 
   }
 }
 
+/** Doporučitel = člověk, který jen přivádí klienty (sám o nic nemá zájem). */
+export function isReferrer(lead: Lead): boolean {
+  return lead.lead_type === 'doporucitel'
+}
+
 /** Role kontaktu odvozená z typu obchodu. */
 export function contactRole(lead: Lead): string {
+  if (isReferrer(lead)) return 'Doporučitel'
   switch (lead.deal_type) {
     case 'prodej':
       return 'Prodávající'

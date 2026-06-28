@@ -9,7 +9,7 @@ import { useListings } from '../lib/listingsContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { CLOSED_STAGES } from '../lib/supabase'
 import { formatCZK } from '../lib/format'
-import { leadValue } from '../lib/leadDisplay'
+import { leadValue, isReferrer } from '../lib/leadDisplay'
 import { eventTypeMeta, isOverdue, sameDay, eventTime, type EventItem } from '../lib/events'
 import { statusMeta, formatListingPrice, propertyTypeLabel } from '../lib/listings'
 import type { Page } from '../components/Sidebar'
@@ -28,9 +28,11 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const yearStart = new Date(now.getFullYear(), 0, 1)
 
-  const open = leads.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
-  const won = leads.filter((l) => l.crm_status === 'uzavreno')
-  const fresh = leads.filter((l) => l.crm_status === 'novy')
+  // Doporučitelé jsou kontakty, ne obchody → z KPI obchodů je vyřadíme.
+  const dealLeads = leads.filter((l) => !isReferrer(l))
+  const open = dealLeads.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
+  const won = dealLeads.filter((l) => l.crm_status === 'uzavreno')
+  const fresh = dealLeads.filter((l) => l.crm_status === 'novy')
   const uniqueContacts = new Set(leads.map((l) => (l.email || l.phone || l.id).toLowerCase())).size
   const inMonth = (iso: string | null): boolean => !!iso && new Date(iso) >= monthStart
 
@@ -48,7 +50,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   ]
 
   // Pipeline trychtýř
-  const cnt = (k: string): number => leads.filter((l) => l.crm_status === k).length
+  const cnt = (k: string): number => dealLeads.filter((l) => l.crm_status === k).length
   const funnel = [
     { label: 'Nové', value: cnt('novy') },
     { label: 'Jednání', value: cnt('kontaktovan') + cnt('schuzka') },

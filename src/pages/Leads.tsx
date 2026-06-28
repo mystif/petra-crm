@@ -9,7 +9,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGE_MAP, CLOSED_STAGES, type Lead } from '../lib/supabase'
 import { formatCZK, relativeDays, formatDate, followUpState } from '../lib/format'
-import { sourceStyle, isEstimate, whatsappUrl } from '../lib/leadDisplay'
+import { sourceStyle, isEstimate, whatsappUrl, isReferrer } from '../lib/leadDisplay'
 
 export type LeadsFilter = 'vse' | 'poptavka' | 'odhad' | 'followup'
 
@@ -36,18 +36,20 @@ export function Leads({ filter, onFilter }: { filter: LeadsFilter; onFilter: (f:
   const [toDelete, setToDelete] = useState<Lead | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const list = leads.filter((l) => {
+  // Doporučitelé nejsou poptávky → patří do Kontaktů, ne sem.
+  const activeLeads = leads.filter((l) => !isReferrer(l))
+  const list = activeLeads.filter((l) => {
     if (filter === 'odhad') return isEstimate(l)
     if (filter === 'poptavka') return !isEstimate(l)
     if (filter === 'followup') return isFollowUpDue(l)
     return true
   })
 
-  const dueCount = leads.filter(isFollowUpDue).length
+  const dueCount = activeLeads.filter(isFollowUpDue).length
   const tabs: { id: LeadsFilter; label: string; count: number }[] = [
-    { id: 'vse', label: 'Vše', count: leads.length },
-    { id: 'poptavka', label: 'Poptávky', count: leads.filter((l) => !isEstimate(l)).length },
-    { id: 'odhad', label: 'Odhady ceny', count: leads.filter((l) => isEstimate(l)).length },
+    { id: 'vse', label: 'Vše', count: activeLeads.length },
+    { id: 'poptavka', label: 'Poptávky', count: activeLeads.filter((l) => !isEstimate(l)).length },
+    { id: 'odhad', label: 'Odhady ceny', count: activeLeads.filter((l) => isEstimate(l)).length },
     { id: 'followup', label: 'K vyřízení', count: dueCount }
   ]
 

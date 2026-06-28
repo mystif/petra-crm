@@ -31,9 +31,10 @@ const ROLE_STYLE: Record<string, string> = {
   Kupující: 'bg-sky-soft text-sky',
   Prodávající: 'bg-emerald-soft text-emerald',
   Pronajímatel: 'bg-brand-soft text-brand-dark',
-  Zájemce: 'bg-amber-soft text-amber'
+  Zájemce: 'bg-amber-soft text-amber',
+  Doporučitel: 'bg-ink text-gold'
 }
-const ROLES = ['Vše', 'Kupující', 'Prodávající', 'Pronajímatel', 'Zájemce'] as const
+const ROLES = ['Vše', 'Kupující', 'Prodávající', 'Pronajímatel', 'Zájemce', 'Doporučitel'] as const
 
 /** Barva štítku (tagu) — VIP/Investor zlatě, ostatní neutrálně. */
 function tagStyle(tag: string): string {

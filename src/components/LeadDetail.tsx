@@ -9,7 +9,7 @@ import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
 import { STAGES, type Lead, type StageKey } from '../lib/supabase'
 import { formatCZK, formatDateTime, formatDate, followUpState } from '../lib/format'
-import { isEstimate, whatsappUrl, mapUrl, PRIORITIES } from '../lib/leadDisplay'
+import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
@@ -390,6 +390,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               )}
 
               <div className="mt-2 flex flex-wrap items-center gap-2">
+                {isReferrer(lead) && <span className="pill bg-ink text-gold"><Share2 className="h-3 w-3" /> Doporučitel</span>}
                 {lead.gdpr_consent ? (
                   <span className="pill bg-emerald-soft text-emerald"><ShieldCheck className="h-3 w-3" /> GDPR potvrzeno</span>
                 ) : (

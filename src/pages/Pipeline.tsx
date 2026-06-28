@@ -9,7 +9,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGES, CLOSED_STAGES, type StageKey, type Lead } from '../lib/supabase'
 import { formatCZK, formatDate, followUpState } from '../lib/format'
-import { propertyLabel, leadValue, hueFromId, mapUrl, priorityMeta, lastContactInfo } from '../lib/leadDisplay'
+import { propertyLabel, leadValue, hueFromId, mapUrl, priorityMeta, lastContactInfo, isReferrer } from '../lib/leadDisplay'
 import { photoUrl } from '../lib/photos'
 import { addActivity } from '../lib/activity'
 
@@ -28,8 +28,10 @@ export function Pipeline(): JSX.Element {
   const [overStage, setOverStage] = useState<StageKey | null>(null)
   const [commissionLead, setCommissionLead] = useState<Lead | null>(null)
 
-  const totalOpen = leads.filter((l) => !CLOSED_STAGES.includes(l.crm_status)).reduce((s, l) => s + leadValue(l), 0)
-  const maxVal = Math.max(1, ...STAGES.map((s) => leads.filter((l) => l.crm_status === s.key).reduce((a, l) => a + leadValue(l), 0)))
+  // Doporučitelé nejsou obchody → do pipeline nepatří.
+  const dealLeads = leads.filter((l) => !isReferrer(l))
+  const totalOpen = dealLeads.filter((l) => !CLOSED_STAGES.includes(l.crm_status)).reduce((s, l) => s + leadValue(l), 0)
+  const maxVal = Math.max(1, ...STAGES.map((s) => dealLeads.filter((l) => l.crm_status === s.key).reduce((a, l) => a + leadValue(l), 0)))
 
   function drop(stage: StageKey): void {
     if (dragId) {
@@ -48,7 +50,7 @@ export function Pipeline(): JSX.Element {
     <div className="flex h-full flex-col">
       <Topbar
         title="Pipeline"
-        subtitle={`Otevřená hodnota ${formatCZK(totalOpen, true)} · ${leads.length} leadů`}
+        subtitle={`Otevřená hodnota ${formatCZK(totalOpen, true)} · ${dealLeads.length} leadů`}
         showSearch={false}
         actions={<button className="btn-primary" onClick={openNewLead}><Plus className="h-4 w-4" /> Nový lead</button>}
       />
@@ -61,7 +63,7 @@ export function Pipeline(): JSX.Element {
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
           <div className="flex h-full min-w-max gap-4">
             {STAGES.map((stage) => {
-              const items = leads.filter((l) => l.crm_status === stage.key)
+              const items = dealLeads.filter((l) => l.crm_status === stage.key)
               const value = items.reduce((a, l) => a + leadValue(l), 0)
               const meter = (value / maxVal) * 100
               const isOver = overStage === stage.key
