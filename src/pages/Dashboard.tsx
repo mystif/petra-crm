@@ -100,14 +100,14 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             {kpis.map((k) => {
               const Icon = k.icon
               return (
-                <div key={k.label} className="card p-4">
+                <div key={k.label} className="rounded-2xl bg-[#1A1A1A] p-4 ring-1 ring-white/5 shadow-card">
                   <div className="flex items-start justify-between">
-                    <span className="text-xs font-medium text-tx-soft">{k.label}</span>
-                    <Icon className="h-4 w-4 text-brand-dark" />
+                    <span className="text-xs font-medium text-white/55">{k.label}</span>
+                    <Icon className="h-4 w-4 text-gold" />
                   </div>
-                  <div className="mt-2 stat-num text-2xl text-tx">{k.value}</div>
+                  <div className="mt-2 stat-num text-2xl text-white">{k.value}</div>
                   {k.delta != null && (
-                    <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-brand-dark">
+                    <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-gold">
                       <TrendingUp className="h-3.5 w-3.5" /> +{k.delta} tento měsíc
                     </div>
                   )}
@@ -368,12 +368,12 @@ function MiniCalendar({ now, events, todayEvents, leads }: {
 
 function BottomStat({ icon: Icon, value, label, hint }: { icon: typeof Users; value: string; label: string; hint: string }): JSX.Element {
   return (
-    <div className="card flex items-center gap-3 p-4">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-brand/40 text-brand-dark"><Icon className="h-5 w-5" /></span>
+    <div className="flex items-center gap-3 rounded-2xl bg-[#1A1A1A] p-4 ring-1 ring-white/5 shadow-card">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><Icon className="h-5 w-5" /></span>
       <div className="min-w-0">
-        <div className="stat-num text-xl text-tx">{value}</div>
-        <div className="truncate text-xs font-medium text-tx-soft">{label}</div>
-        <div className="truncate text-[11px] font-semibold text-brand-dark">{hint}</div>
+        <div className="stat-num text-xl text-white">{value}</div>
+        <div className="truncate text-xs font-medium text-white/55">{label}</div>
+        <div className="truncate text-[11px] font-semibold text-gold">{hint}</div>
       </div>
     </div>
   )
