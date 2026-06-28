@@ -57,8 +57,8 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
     <aside className="relative hidden w-[252px] shrink-0 flex-col overflow-hidden bg-[#0D0D0D] text-white md:flex">
       <div className="relative flex h-full flex-col scroll-dark">
         {/* logo */}
-        <div className="px-5 pb-1 pt-6">
-          <img src="./aurea-logo.png" alt="AUREA — Real Estate CRM" className="h-16 w-auto object-contain" />
+        <div className="px-4 pb-2 pt-5">
+          <img src="./logo-crm.png" alt="AUREA — Real Estate CRM" className="mx-auto h-auto w-3/4 object-contain" />
         </div>
 
         {/* rychlé hledání */}
