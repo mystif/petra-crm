@@ -5,6 +5,7 @@ import {
   Users,
   CheckSquare,
   CalendarDays,
+  Building2,
   Search,
   Plus,
   Mail,
@@ -21,13 +22,14 @@ import { useSearch } from '../lib/searchContext'
 import { useMakler } from '../lib/maklerContext'
 import { isOverdue, sameDay } from '../lib/events'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'tasks' | 'calendar' | 'automatizace' | 'templates'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'tasks' | 'calendar' | 'automatizace' | 'templates'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
   { id: 'pipeline', label: 'Pipeline', icon: KanbanSquare },
   { id: 'leads', label: 'Poptávky', icon: Inbox },
   { id: 'contacts', label: 'Kontakty', icon: Users },
+  { id: 'properties', label: 'Nemovitosti', icon: Building2 },
   { id: 'tasks', label: 'Úkoly', icon: CheckSquare },
   { id: 'calendar', label: 'Kalendář', icon: CalendarDays }
 ]

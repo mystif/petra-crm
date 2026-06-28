@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Phone, Mail, MapPin, Send, CalendarClock, Loader2, CheckCircle2, XCircle, MessageSquarePlus,
   Clock, StickyNote, Cog, ImagePlus, Star, X, Trash2, Pencil, ShieldCheck, Cake, Coins,
-  MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift
+  MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift, Building2
 } from 'lucide-react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
@@ -19,6 +19,7 @@ import { eventTypeMeta, type EventType } from '../lib/events'
 import { ScorePanel } from './LeadScore'
 import { referralsBy, referrerOf } from '../lib/referrals'
 import { useLeadDetail } from '../lib/leadDetailContext'
+import { useListings } from '../lib/listingsContext'
 
 function dayLabel(iso: string): string {
   const d = new Date(iso); d.setHours(0, 0, 0, 0)
@@ -55,6 +56,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const { leads, moveStage, patch, remove } = useLeads()
   const { makler } = useMakler()
   const { openLead } = useLeadDetail()
+  const { listings } = useListings()
   const lead = leads.find((l) => l.id === initialLead.id) ?? initialLead
 
   const [templates, setTemplates] = useState<Template[]>([])
@@ -191,6 +193,10 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
 
   const saveReferrer = async (val: string): Promise<void> => {
     await patch(lead.id, { doporucil_id: val || null })
+  }
+
+  const saveProperty = async (val: string): Promise<void> => {
+    await patch(lead.id, { property_id: val || null })
   }
 
   /** Otevře editaci kontaktu s aktuálními hodnotami leadu. */
@@ -480,6 +486,13 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 {leads.filter((l) => l.id !== lead.id).map((l) => <option key={l.id} value={l.id}>{l.name || 'Bez jména'}</option>)}
               </select>
             </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Building2 className="h-3.5 w-3.5" /> Nemovitost (zájem)</label>
+              <select className="input" value={lead.property_id ?? ''} onChange={(e) => saveProperty(e.target.value)}>
+                <option value="">— žádná —</option>
+                {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* doporučení — kdo přivedl + co tento člověk přinesl */}
@@ -650,6 +663,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
         <EventForm
           open
           initialLeadId={lead.id}
+          initialPropertyId={lead.property_id}
           initialType={eventType}
           initialTitle={`${eventTypeMeta(eventType).label} — ${lead.name ?? ''}`.trim().replace(/—\s*$/, '').trim()}
           onClose={() => setEventType(null)}

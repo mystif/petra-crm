@@ -63,6 +63,7 @@ export interface Lead {
   priorita: string | null // 'horky' | 'stredni' | 'dlouhodoby'
   last_contact_at: string | null
   doporucil_id: string | null // kdo tento lead doporučil (jiný lead)
+  property_id: string | null // nemovitost, o kterou má lead zájem
 }
 
 // --- API ---

@@ -7,6 +7,7 @@ import { Login } from './components/Login'
 import { AuthProvider, useAuth } from './lib/authContext'
 import { LeadsProvider } from './lib/leadsContext'
 import { EventsProvider } from './lib/eventsContext'
+import { ListingsProvider } from './lib/listingsContext'
 import { MaklerProvider } from './lib/maklerContext'
 import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
@@ -17,6 +18,7 @@ import { Leads, type LeadsFilter } from './pages/Leads'
 import { Contacts } from './pages/Contacts'
 import { Tasks } from './pages/Tasks'
 import { Calendar } from './pages/Calendar'
+import { Nemovitosti } from './pages/Nemovitosti'
 import { Automatizace } from './pages/Automatizace'
 import { Templates } from './pages/Templates'
 
@@ -57,6 +59,7 @@ function CRMApp(): JSX.Element {
   return (
     <LeadsProvider>
       <EventsProvider>
+      <ListingsProvider>
       <MaklerProvider>
       <LeadDetailProvider>
       <NewLeadProvider>
@@ -68,6 +71,7 @@ function CRMApp(): JSX.Element {
           {page === 'pipeline' && <Pipeline />}
           {page === 'leads' && <Leads filter={leadsFilter} onFilter={setLeadsFilter} />}
           {page === 'contacts' && <Contacts />}
+          {page === 'properties' && <Nemovitosti />}
           {page === 'tasks' && <Tasks />}
           {page === 'calendar' && <Calendar />}
           {page === 'automatizace' && <Automatizace />}
@@ -80,6 +84,7 @@ function CRMApp(): JSX.Element {
       </NewLeadProvider>
       </LeadDetailProvider>
       </MaklerProvider>
+      </ListingsProvider>
       </EventsProvider>
     </LeadsProvider>
   )

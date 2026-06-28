@@ -24,6 +24,7 @@ export interface EventItem {
   reminder_min: number | null
   done: boolean
   result: string | null
+  property_id: string | null
 }
 
 export interface EventTypeMeta {

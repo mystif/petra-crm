@@ -3,6 +3,7 @@ import { Loader2, Trash2, Clock3, Link2 } from 'lucide-react'
 import { Modal } from './Modal'
 import { useEvents } from '../lib/eventsContext'
 import { useLeads } from '../lib/leadsContext'
+import { useListings } from '../lib/listingsContext'
 import { EVENT_TYPES, type EventType, type EventItem } from '../lib/events'
 import { lastContactInfo } from '../lib/leadDisplay'
 import { relativeDays } from '../lib/format'
@@ -46,20 +47,23 @@ interface EventFormProps {
   initialLeadId?: string | null
   initialType?: EventType
   initialTitle?: string
+  initialPropertyId?: string | null
   /** Zavolá se po vytvoření nové události (pro zápis do historie leadu apod.). */
   onSaved?: (e: EventItem) => void
 }
 
 export function EventForm({
-  open, onClose, event, initialStart, initialLeadId, initialType, initialTitle, onSaved
+  open, onClose, event, initialStart, initialLeadId, initialType, initialTitle, initialPropertyId, onSaved
 }: EventFormProps): JSX.Element | null {
   const { add, patch, remove } = useEvents()
   const { leads } = useLeads()
+  const { listings } = useListings()
   const editing = !!event
 
   const [type, setType] = useState<EventType>(event?.type ?? initialType ?? 'prohlidka')
   const [title, setTitle] = useState(event?.title ?? initialTitle ?? '')
   const [leadId, setLeadId] = useState<string>(event?.lead_id ?? initialLeadId ?? '')
+  const [propertyId, setPropertyId] = useState<string>(event?.property_id ?? initialPropertyId ?? '')
   const [start, setStart] = useState<string>(
     event ? toLocalInput(event.start_at) : initialStart ? toLocalInput(fromLocalInput(initialStart) || initialStart) : ''
   )
@@ -93,7 +97,8 @@ export function EventForm({
         location: location.trim() || null,
         note: note.trim() || null,
         reminder_min: reminder,
-        result: result || null
+        result: result || null,
+        property_id: propertyId || null
       }
       if (editing && event) await patch(event.id, payload)
       else {
@@ -162,10 +167,20 @@ export function EventForm({
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="např. Prohlídka bytu 3+kk Smíchov" autoFocus />
         </Field>
 
-        <Field label="Klient (lead)" full>
+        <Field label="Klient (lead)">
           <select className="input" value={leadId} onChange={(e) => pickLead(e.target.value)}>
             <option value="">— bez vazby —</option>
             {leads.map((l) => <option key={l.id} value={l.id}>{l.name || 'Bez jména'}{l.location ? ` · ${l.location}` : ''}</option>)}
+          </select>
+        </Field>
+        <Field label="Nemovitost">
+          <select className="input" value={propertyId} onChange={(e) => {
+            setPropertyId(e.target.value)
+            const p = listings.find((x) => x.id === e.target.value)
+            if (p && !location) setLocation(p.location)
+          }}>
+            <option value="">— bez vazby —</option>
+            {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
           </select>
         </Field>
 
