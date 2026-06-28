@@ -26,15 +26,15 @@ export function AnnaBriefing({ onNavigate }: { onNavigate: (p: Page) => void }):
     <section className="card overflow-hidden">
       {/* hlavička s Annou */}
       <div className="relative text-white">
-        <div className="absolute inset-0 aurora" />
-        <div className="absolute inset-0 grain opacity-[0.07] mix-blend-overlay" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, #1A1A1A 42%, #5e4d28 78%, #91753C 100%)' }} />
+        <div className="absolute inset-0 grain opacity-[0.05] mix-blend-overlay" />
         <div className="relative flex items-center gap-4 p-5 sm:p-6">
           <div className="relative shrink-0">
             <img
               src="./asistentka-anna.jpg" alt="Asistentka Anna"
-              className="h-16 w-16 rounded-full object-cover ring-2 ring-gold/60 sm:h-[72px] sm:w-[72px]"
+              className="h-16 w-16 rounded-full object-cover ring-2 ring-[#C1A263] sm:h-[72px] sm:w-[72px]"
             />
-            <span className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-gold text-ink ring-2 ring-ink">
+            <span className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-[#C1A263] text-ink ring-2 ring-ink">
               <Sparkles className="h-3.5 w-3.5" />
             </span>
           </div>
