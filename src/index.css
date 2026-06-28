@@ -60,10 +60,10 @@
   }
   .nav-item {
     @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-gold
-      transition hover:bg-white/[.06] hover:text-white;
+      transition hover:bg-white/[.06] hover:text-[#D4B26F];
   }
   .nav-item.active {
-    @apply bg-white/[.08] text-white;
+    @apply bg-white/[.08] text-[#D4B26F];
     box-shadow: inset 2px 0 0 #c1a263;
   }
   .input {

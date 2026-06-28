@@ -54,11 +54,7 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
 
   return (
     <>
-    <aside className="relative hidden w-[252px] shrink-0 flex-col overflow-hidden bg-ink text-white md:flex">
-      {/* atmosférický gradient + jemné zrno */}
-      <div className="pointer-events-none absolute inset-0 aurora opacity-90" />
-      <div className="pointer-events-none absolute inset-0 grain opacity-[0.06] mix-blend-overlay" />
-
+    <aside className="relative hidden w-[252px] shrink-0 flex-col overflow-hidden bg-[#0D0D0D] text-white md:flex">
       <div className="relative flex h-full flex-col scroll-dark">
         {/* logo */}
         <div className="px-5 pb-1 pt-6">
