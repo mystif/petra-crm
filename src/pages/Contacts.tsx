@@ -4,6 +4,7 @@ import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
+import { useLeadDetail } from '../lib/leadDetailContext'
 import { useNewLead } from '../lib/newLeadContext'
 import { formatDate, relativeDays, followUpState } from '../lib/format'
 import { contactRole, leadValue } from '../lib/leadDisplay'
@@ -12,6 +13,7 @@ import { fetchSavedContacts, type SavedContact } from '../lib/contacts'
 
 interface DerivedContact {
   key: string
+  leadId: string | null // odkaz na lead pro otevření karty (null = jen uložený kontakt)
   name: string
   phone: string | null
   email: string | null
@@ -66,7 +68,12 @@ function exportContactsCsv(rows: DerivedContact[]): void {
 
 export function Contacts(): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
+  const { openLead } = useLeadDetail()
   const { open: openNewLead } = useNewLead()
+  const openContact = (leadId: string | null): void => {
+    const l = leadId ? leads.find((x) => x.id === leadId) : null
+    if (l) openLead(l)
+  }
   const [query, setQuery] = useState('')
   const [role, setRole] = useState<(typeof ROLES)[number]>('Vše')
   const [saved, setSaved] = useState<SavedContact[]>([])
@@ -100,6 +107,7 @@ export function Contacts(): JSX.Element {
       const tags = uniq([...arr.flatMap((l) => l.tags ?? []), contactRole(primary)])
       out.push({
         key,
+        leadId: primary.id,
         name: primary.name || 'Bez jména',
         phone: primary.phone,
         email: primary.email,
@@ -122,6 +130,7 @@ export function Contacts(): JSX.Element {
       if (!groups.has(key)) {
         out.push({
           key,
+          leadId: null,
           name: c.name || 'Bez jména',
           phone: c.phone,
           email: c.email,
@@ -210,7 +219,7 @@ export function Contacts(): JSX.Element {
               <>
               {/* mobil: karty */}
               <ul className="space-y-2.5 md:hidden">
-                {filtered.map((c) => <ContactCard key={c.key} c={c} />)}
+                {filtered.map((c) => <ContactCard key={c.key} c={c} onOpen={() => openContact(c.leadId)} />)}
               </ul>
 
               {/* desktop: tabulka */}
@@ -233,7 +242,7 @@ export function Contacts(): JSX.Element {
                       const lcDays = Math.floor((Date.now() - new Date(c.lastContact).getTime()) / 86_400_000)
                       const fuState = followUpState(c.nextFollowUp)
                       return (
-                        <tr key={c.key} className="group transition hover:bg-canvas">
+                        <tr key={c.key} onClick={() => openContact(c.leadId)} className={`group transition hover:bg-canvas ${c.leadId ? 'cursor-pointer' : ''}`}>
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-3">
                               <Avatar name={c.name} size={38} />
@@ -243,7 +252,7 @@ export function Contacts(): JSX.Element {
                                   {c.gdpr && <ShieldCheck className="h-3.5 w-3.5 text-emerald" aria-label="GDPR potvrzeno" />}
                                 </div>
                                 {c.email ? (
-                                  <a href={`mailto:${c.email}`} className="flex items-center gap-1 truncate text-xs text-tx-soft hover:text-brand-dark">
+                                  <a href={`mailto:${c.email}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 truncate text-xs text-tx-soft hover:text-brand-dark">
                                     <Mail className="h-3 w-3" /> {c.email}
                                   </a>
                                 ) : c.city ? <div className="text-xs text-tx-faint">{c.city}</div> : null}
@@ -254,6 +263,7 @@ export function Contacts(): JSX.Element {
                             {c.phone ? (
                               <a
                                 href={`tel:${c.phone.replace(/\s/g, '')}`}
+                                onClick={(e) => e.stopPropagation()}
                                 className="flex items-center gap-2 whitespace-nowrap font-mono text-[13px] text-tx-soft transition hover:text-brand-dark"
                               >
                                 <Phone className="h-3.5 w-3.5 text-tx-faint" />
@@ -289,9 +299,9 @@ export function Contacts(): JSX.Element {
                             </div>
                           </td>
                           <td className="px-5 py-3 text-right">
-                            <button className="grid h-8 w-8 place-items-center rounded-lg text-tx-faint opacity-0 transition hover:bg-line group-hover:opacity-100">
+                            <span className="grid h-8 w-8 place-items-center rounded-lg text-tx-faint opacity-0 transition group-hover:opacity-100">
                               <MoreHorizontal className="h-4 w-4" />
-                            </button>
+                            </span>
                           </td>
                         </tr>
                       )
@@ -309,11 +319,11 @@ export function Contacts(): JSX.Element {
 }
 
 /** Kompaktní karta kontaktu pro mobilní zobrazení. */
-function ContactCard({ c }: { c: DerivedContact }): JSX.Element {
+function ContactCard({ c, onOpen }: { c: DerivedContact; onOpen: () => void }): JSX.Element {
   const lcDays = Math.floor((Date.now() - new Date(c.lastContact).getTime()) / 86_400_000)
   const fuState = followUpState(c.nextFollowUp)
   return (
-    <li className="card p-3.5">
+    <li className={`card p-3.5 ${c.leadId ? 'cursor-pointer' : ''}`} onClick={onOpen}>
       <div className="flex items-center gap-3">
         <Avatar name={c.name} size={42} />
         <div className="min-w-0 flex-1">
@@ -349,12 +359,12 @@ function ContactCard({ c }: { c: DerivedContact }): JSX.Element {
       {(c.phone || c.email) && (
         <div className="mt-3 flex gap-2 border-t border-line pt-3">
           {c.phone && (
-            <a href={`tel:${c.phone.replace(/\s/g, '')}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-canvas py-2 text-sm font-semibold text-tx-soft transition active:bg-line">
+            <a href={`tel:${c.phone.replace(/\s/g, '')}`} onClick={(e) => e.stopPropagation()} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-canvas py-2 text-sm font-semibold text-tx-soft transition active:bg-line">
               <Phone className="h-4 w-4" /> Volat
             </a>
           )}
           {c.email && (
-            <a href={`mailto:${c.email}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-canvas py-2 text-sm font-semibold text-tx-soft transition active:bg-line">
+            <a href={`mailto:${c.email}`} onClick={(e) => e.stopPropagation()} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-canvas py-2 text-sm font-semibold text-tx-soft transition active:bg-line">
               <Mail className="h-4 w-4" /> E-mail
             </a>
           )}

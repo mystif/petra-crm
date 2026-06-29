@@ -443,27 +443,56 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             )}
           </div>
 
-          {/* priorita / fáze / follow-up */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-tx-faint">Priorita</label>
-              <select className="input" value={lead.priorita ?? ''} onChange={(e) => savePriorita(e.target.value)}>
-                <option value="">— žádná —</option>
-                {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
-              </select>
+          {/* klasifikace — nákup / prodej / pronájem / doporučení */}
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-tx-faint">Klasifikace</label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { key: 'koupě', label: 'Nákup' },
+                { key: 'prodej', label: 'Prodej' },
+                { key: 'pronájem', label: 'Pronájem' },
+                { key: 'doporuceni', label: 'Doporučení' }
+              ].map((c) => {
+                const active = isReferrer(lead) ? c.key === 'doporuceni' : (lead.deal_type ?? '') === c.key
+                return (
+                  <button
+                    key={c.key}
+                    onClick={() => c.key === 'doporuceni'
+                      ? patch(lead.id, { lead_type: 'doporucitel', deal_type: null })
+                      : patch(lead.id, { lead_type: 'poptavka', deal_type: c.key })}
+                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${active ? (c.key === 'doporuceni' ? 'bg-ink text-gold' : 'bg-ink text-white') : 'border border-line bg-white text-tx-soft hover:text-tx'}`}
+                  >
+                    {c.label}
+                  </button>
+                )
+              })}
             </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Cog className="h-3.5 w-3.5" /> Fáze</label>
-              <select className="input" value={lead.crm_status} onChange={(e) => changeStage(e.target.value as StageKey)}>
-                {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><CalendarClock className="h-3.5 w-3.5" /> Follow-up</label>
-              <input type="date" className="input" value={followUp} onChange={(e) => saveFollowUp(e.target.value)} />
-              {followUpStatus && <div className={`mt-1 text-xs font-semibold ${followUpStatus.cls}`}>{followUpStatus.text}</div>}
-            </div>
+            {isReferrer(lead) && <p className="mt-1.5 text-xs text-tx-soft">Jen doporučitel — eviduje se v Kontaktech a nezobrazuje se v pipeline.</p>}
           </div>
+
+          {/* priorita / fáze / follow-up — jen u reálných obchodů */}
+          {!isReferrer(lead) && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-tx-faint">Priorita</label>
+                <select className="input" value={lead.priorita ?? ''} onChange={(e) => savePriorita(e.target.value)}>
+                  <option value="">— žádná —</option>
+                  {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Cog className="h-3.5 w-3.5" /> Fáze</label>
+                <select className="input" value={lead.crm_status} onChange={(e) => changeStage(e.target.value as StageKey)}>
+                  {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><CalendarClock className="h-3.5 w-3.5" /> Follow-up</label>
+                <input type="date" className="input" value={followUp} onChange={(e) => saveFollowUp(e.target.value)} />
+                {followUpStatus && <div className={`mt-1 text-xs font-semibold ${followUpStatus.cls}`}>{followUpStatus.text}</div>}
+              </div>
+            </div>
+          )}
 
           {isClosed && (
             <div className="rounded-xl border border-emerald/30 bg-emerald-soft/50 p-4">
