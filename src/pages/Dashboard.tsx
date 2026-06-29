@@ -1,4 +1,5 @@
-import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, ChevronDown,
+import { useState } from 'react'
+import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, TrendingDown,
   ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Gift } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
@@ -20,15 +21,25 @@ import type { LeadsFilter } from './Leads'
 const MONTHS = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
 const DAY_NAMES = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne']
 
+/** Procentuální změna current vs previous; null = nelze spočítat (minulé období 0). */
+function pct(cur: number, prev: number): number | null {
+  if (prev === 0) return cur > 0 ? 100 : null
+  return Math.round(((cur - prev) / prev) * 100)
+}
+
 export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsFilter) => void }): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
   const { events } = useEvents()
   const { listings } = useListings()
   const { openLead } = useLeadDetail()
 
+  const [period, setPeriod] = useState<'mesic' | 'rok'>('mesic')
+
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   const yearStart = new Date(now.getFullYear(), 0, 1)
+  const lastYearStart = new Date(now.getFullYear() - 1, 0, 1)
 
   // Doporučitelé jsou kontakty, ne obchody → z KPI obchodů je vyřadíme.
   const dealLeads = leads.filter((l) => !isReferrer(l))
@@ -37,18 +48,22 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const fresh = dealLeads.filter((l) => l.crm_status === 'novy')
   const uniqueContacts = new Set(leads.map((l) => (l.email || l.phone || l.id).toLowerCase())).size
   const inMonth = (iso: string | null): boolean => !!iso && new Date(iso) >= monthStart
+  const inRange = (iso: string | null, s: Date, e: Date): boolean => { if (!iso) return false; const d = new Date(iso); return d >= s && d < e }
 
   const provizeMonth = won.filter((l) => inMonth(l.crm_updated_at)).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const provizeLastMonth = won.filter((l) => inRange(l.crm_updated_at, lastMonthStart, monthStart)).reduce((s, l) => s + Number(l.provize || 0), 0)
   const provizeYtd = won.filter((l) => l.crm_updated_at && new Date(l.crm_updated_at) >= yearStart).reduce((s, l) => s + Number(l.provize || 0), 0)
   const newContactsMonth = new Set(leads.filter((l) => inMonth(l.created_at)).map((l) => (l.email || l.phone || l.id).toLowerCase())).size
+  const provizePctM = pct(provizeMonth, provizeLastMonth)
 
-  // KPI řada
+  // KPI řada (každá karta má ukazatel změny)
+  const monthTrend = (n: number): { text: string; positive: boolean } => ({ text: `+${n} tento měsíc`, positive: true })
   const kpis = [
-    { label: 'Nové kontakty', value: String(newContactsMonth), icon: Users, delta: newContactsMonth },
-    { label: 'Aktivní obchody', value: String(open.length), icon: Briefcase, delta: open.filter((l) => inMonth(l.created_at)).length },
-    { label: 'Nové poptávky', value: String(fresh.length), icon: MessageSquare, delta: fresh.filter((l) => inMonth(l.created_at)).length },
-    { label: 'Uzavřené obchody', value: String(won.filter((l) => inMonth(l.crm_updated_at)).length), icon: CheckCircle2, delta: won.filter((l) => inMonth(l.crm_updated_at)).length },
-    { label: 'Provize (měsíc)', value: formatCZK(provizeMonth, true), icon: Coins, delta: null }
+    { label: 'Nové kontakty', value: String(newContactsMonth), icon: Users, trend: monthTrend(newContactsMonth) },
+    { label: 'Aktivní obchody', value: String(open.length), icon: Briefcase, trend: monthTrend(open.filter((l) => inMonth(l.created_at)).length) },
+    { label: 'Nové poptávky', value: String(fresh.length), icon: MessageSquare, trend: monthTrend(fresh.filter((l) => inMonth(l.created_at)).length) },
+    { label: 'Uzavřené obchody', value: String(won.filter((l) => inMonth(l.crm_updated_at)).length), icon: CheckCircle2, trend: monthTrend(won.filter((l) => inMonth(l.crm_updated_at)).length) },
+    { label: 'Provize (měsíc)', value: formatCZK(provizeMonth, true), icon: Coins, trend: provizePctM == null ? null : { text: `${provizePctM >= 0 ? '+' : ''}${provizePctM} % vs minulý`, positive: provizePctM >= 0 } }
   ]
 
   // Pipeline trychtýř
@@ -59,18 +74,44 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
     { label: 'Nabídka', value: cnt('nabidka') },
     { label: 'Uzavřené', value: cnt('uzavreno') }
   ]
-  const funnelTop = Math.max(1, funnel[0].value || open.length)
-  const conversion = funnelTop > 0 ? Math.round((funnel[3].value / Math.max(1, funnel.reduce((s, f) => s + f.value, 0))) * 1000) / 10 : 0
+  const conversion = Math.round((funnel[3].value / Math.max(1, funnel.reduce((s, f) => s + f.value, 0))) * 1000) / 10
 
-  // Výkon — provize po měsících (posledních 6 měsíců)
-  const perf = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
-    const next = new Date(d.getFullYear(), d.getMonth() + 1, 1)
-    const value = won
-      .filter((l) => l.crm_updated_at && new Date(l.crm_updated_at) >= d && new Date(l.crm_updated_at) < next)
-      .reduce((s, l) => s + Number(l.provize || 0), 0)
-    return { label: MONTHS[d.getMonth()], value }
-  })
+  // Přehled výkonu — škálovatelný dle období (tento měsíc / tento rok)
+  const periodStart = period === 'mesic' ? monthStart : yearStart
+  const prevStart = period === 'mesic' ? lastMonthStart : lastYearStart
+  const prevEnd = periodStart
+  const wonSum = (s: Date, e: Date, fn: (l: typeof won[number]) => number): number =>
+    won.filter((l) => inRange(l.crm_updated_at, s, e)).reduce((a, l) => a + fn(l), 0)
+  const valOf = (l: typeof won[number]): number => leadValue(l)
+  const provOf = (l: typeof won[number]): number => Number(l.provize || 0)
+  const meetingsIn = (s: Date, e: Date): number => events.filter((ev) => (ev.type === 'schuzka' || ev.type === 'prohlidka') && inRange(ev.start_at, s, e)).length
+  const convRate = (s: Date, e: Date): number => {
+    const created = dealLeads.filter((l) => inRange(l.created_at, s, e)).length
+    return created > 0 ? Math.round((won.filter((l) => inRange(l.crm_updated_at, s, e)).length / created) * 100) : 0
+  }
+  const perfMetrics = [
+    { label: 'Obrat', value: formatCZK(wonSum(periodStart, now, valOf), true), change: pct(wonSum(periodStart, now, valOf), wonSum(prevStart, prevEnd, valOf)) },
+    { label: 'Provize', value: formatCZK(wonSum(periodStart, now, provOf), true), change: pct(wonSum(periodStart, now, provOf), wonSum(prevStart, prevEnd, provOf)) },
+    { label: 'Počet schůzek', value: String(meetingsIn(periodStart, now)), change: pct(meetingsIn(periodStart, now), meetingsIn(prevStart, prevEnd)) },
+    { label: 'Konverze lead → obchod', value: `${convRate(periodStart, now)} %`, change: pct(convRate(periodStart, now), convRate(prevStart, prevEnd)) }
+  ]
+
+  // Graf obratu v čase dle období
+  const series = period === 'rok'
+    ? Array.from({ length: 12 }, (_, m) => {
+        const s = new Date(now.getFullYear(), m, 1), e = new Date(now.getFullYear(), m + 1, 1)
+        return { label: MONTHS[m], value: wonSum(s, e, valOf) }
+      })
+    : (() => {
+        const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+        const out: { label: string; value: number }[] = []
+        for (let d = 1; d <= days; d += 7) {
+          const s = new Date(now.getFullYear(), now.getMonth(), d)
+          const e = new Date(now.getFullYear(), now.getMonth(), Math.min(d + 7, days + 1))
+          out.push({ label: `${d}.`, value: wonSum(s, e, valOf) })
+        }
+        return out
+      })()
 
   const todayEvents = events.filter((e) => sameDay(new Date(e.start_at), now)).sort((a, b) => a.start_at.localeCompare(b.start_at))
   const taskDue = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), now))).length
@@ -104,9 +145,9 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
                     <Icon className="h-4 w-4 text-gold" />
                   </div>
                   <div className="mt-2 stat-num text-2xl text-white">{k.value}</div>
-                  {k.delta != null && (
-                    <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-gold">
-                      <TrendingUp className="h-3.5 w-3.5" /> +{k.delta} tento měsíc
+                  {k.trend && (
+                    <div className={`mt-1 flex items-center gap-1 text-xs font-semibold ${k.trend.positive ? 'text-gold' : 'text-rose'}`}>
+                      {k.trend.positive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />} {k.trend.text}
                     </div>
                   )}
                 </div>
@@ -119,9 +160,25 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             <div className="card p-5 lg:col-span-3">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="font-display text-lg font-bold text-tx">Přehled výkonu</h3>
-                <span className="flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-tx-soft">Tento rok <ChevronDown className="h-3.5 w-3.5" /></span>
+                <div className="flex gap-0.5 rounded-lg border border-line bg-canvas p-0.5">
+                  <button onClick={() => setPeriod('mesic')} className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${period === 'mesic' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Tento měsíc</button>
+                  <button onClick={() => setPeriod('rok')} className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${period === 'rok' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Tento rok</button>
+                </div>
               </div>
-              <PerfChart data={perf} />
+              <div className="flex flex-col gap-4 lg:flex-row">
+                <div className="min-w-0 flex-1"><PerfChart data={series} /></div>
+                <div className="grid grid-cols-2 gap-2.5 lg:w-52 lg:grid-cols-1">
+                  {perfMetrics.map((m) => (
+                    <div key={m.label} className="rounded-xl border border-line p-3">
+                      <div className="text-[11px] font-medium text-tx-soft">{m.label}</div>
+                      <div className="stat-num mt-0.5 text-lg text-tx">{m.value}</div>
+                      <div className={`mt-0.5 flex items-center gap-1 text-[11px] font-semibold ${m.change == null ? 'text-tx-faint' : m.change >= 0 ? 'text-brand-dark' : 'text-rose'}`}>
+                        {m.change == null ? '—' : <>{m.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {m.change >= 0 ? '+' : ''}{m.change} %</>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="card p-5 lg:col-span-2">
