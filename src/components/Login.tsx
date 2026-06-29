@@ -19,7 +19,7 @@ export function Login(): JSX.Element {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink p-6 text-white">
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-ink p-6 text-white" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
       <div className="pointer-events-none absolute inset-0 aurora opacity-90" />
       <div className="pointer-events-none absolute inset-0 grain opacity-[0.06] mix-blend-overlay" />
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Sidebar, type Page } from './components/Sidebar'
 import { MobileNav } from './components/MobileNav'
+import { MobileTopBar } from './components/MobileTopBar'
 import { MaklerCard } from './components/MaklerCard'
 import { Login } from './components/Login'
 import { AuthProvider, useAuth } from './lib/authContext'
@@ -35,7 +36,7 @@ function AuthGate(): JSX.Element {
   const { session, loading } = useAuth()
   if (loading) {
     return (
-      <div className="grid h-screen place-items-center bg-canvas">
+      <div className="grid h-[100dvh] place-items-center bg-canvas">
         <Loader2 className="h-7 w-7 animate-spin text-brand-dark" />
       </div>
     )
@@ -64,18 +65,21 @@ function CRMApp(): JSX.Element {
       <LeadDetailProvider>
       <NewLeadProvider>
       <SearchProvider>
-      <div className="flex h-screen overflow-hidden bg-canvas">
+      <div className="flex h-[100dvh] overflow-hidden bg-canvas">
         <Sidebar current={page} onNavigate={go} onOpenAgent={openAgent} />
-        <main className="flex-1 overflow-hidden pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0">
-          {page === 'dashboard' && <Dashboard onNavigate={go} />}
-          {page === 'pipeline' && <Pipeline />}
-          {page === 'leads' && <Leads filter={leadsFilter} onFilter={setLeadsFilter} />}
-          {page === 'contacts' && <Contacts />}
-          {page === 'properties' && <Nemovitosti />}
-          {page === 'tasks' && <Tasks />}
-          {page === 'calendar' && <Calendar />}
-          {page === 'automatizace' && <Automatizace />}
-          {page === 'templates' && <Templates />}
+        <main className="flex flex-1 flex-col overflow-hidden pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0">
+          <MobileTopBar onOpenAgent={openAgent} />
+          <div className="min-h-0 flex-1">
+            {page === 'dashboard' && <Dashboard onNavigate={go} />}
+            {page === 'pipeline' && <Pipeline />}
+            {page === 'leads' && <Leads filter={leadsFilter} onFilter={setLeadsFilter} />}
+            {page === 'contacts' && <Contacts />}
+            {page === 'properties' && <Nemovitosti />}
+            {page === 'tasks' && <Tasks />}
+            {page === 'calendar' && <Calendar />}
+            {page === 'automatizace' && <Automatizace />}
+            {page === 'templates' && <Templates />}
+          </div>
         </main>
         <MobileNav current={page} onNavigate={go} onOpenAgent={openAgent} />
       </div>

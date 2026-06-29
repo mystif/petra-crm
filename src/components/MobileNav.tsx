@@ -41,7 +41,10 @@ export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps):
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-ink-line bg-ink pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-ink-line bg-ink md:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+      >
         {PRIMARY.map((item) => {
           const Icon = item.icon
           const active = current === item.id

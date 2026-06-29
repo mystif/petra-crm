@@ -122,7 +122,7 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Typ záznamu" full>
           <select className="input" value={form.lead_type} onChange={(e) => set({ lead_type: e.target.value as LeadType })}>
-            <option value="poptavka">Poptávka (hledá nemovitost)</option>
+            <option value="poptavka">Poptávka (hledá nebo nabízí)</option>
             <option value="odhad">Odhad ceny</option>
             <option value="doporucitel">Doporučitel (jen přivádí klienty, sám nic neřeší)</option>
           </select>
