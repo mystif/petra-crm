@@ -155,33 +155,33 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             })}
           </section>
 
-          {/* Výkon + Pipeline */}
-          <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-            <div className="card p-5 lg:col-span-3">
-              <div className="mb-4 flex items-center justify-between">
+          {/* Hlavní řada — na velkém monitoru 4 boxy vedle sebe (2×2 na střední, 1 na mobilu) */}
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-4">
+            {/* Přehled výkonu */}
+            <div className="card p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-display text-lg font-bold text-tx">Přehled výkonu</h3>
                 <div className="flex gap-0.5 rounded-lg border border-line bg-canvas p-0.5">
-                  <button onClick={() => setPeriod('mesic')} className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${period === 'mesic' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Tento měsíc</button>
-                  <button onClick={() => setPeriod('rok')} className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${period === 'rok' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Tento rok</button>
+                  <button onClick={() => setPeriod('mesic')} className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${period === 'mesic' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Měsíc</button>
+                  <button onClick={() => setPeriod('rok')} className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${period === 'rok' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Rok</button>
                 </div>
               </div>
-              <div className="flex flex-col gap-4 lg:flex-row">
-                <div className="min-w-0 flex-1"><PerfChart data={series} /></div>
-                <div className="grid grid-cols-2 gap-2.5 lg:w-52 lg:grid-cols-1">
-                  {perfMetrics.map((m) => (
-                    <div key={m.label} className="rounded-xl border border-line p-3">
-                      <div className="text-[11px] font-medium text-tx-soft">{m.label}</div>
-                      <div className="stat-num mt-0.5 text-lg text-tx">{m.value}</div>
-                      <div className={`mt-0.5 flex items-center gap-1 text-[11px] font-semibold ${m.change == null ? 'text-tx-faint' : m.change >= 0 ? 'text-brand-dark' : 'text-rose'}`}>
-                        {m.change == null ? '—' : <>{m.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {m.change >= 0 ? '+' : ''}{m.change} %</>}
-                      </div>
+              <PerfChart data={series} />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {perfMetrics.map((m) => (
+                  <div key={m.label} className="rounded-xl border border-line p-2.5">
+                    <div className="text-[11px] font-medium leading-tight text-tx-soft">{m.label}</div>
+                    <div className="stat-num mt-0.5 text-base text-tx">{m.value}</div>
+                    <div className={`mt-0.5 flex items-center gap-1 text-[11px] font-semibold ${m.change == null ? 'text-tx-faint' : m.change >= 0 ? 'text-brand-dark' : 'text-rose'}`}>
+                      {m.change == null ? '—' : <>{m.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {m.change >= 0 ? '+' : ''}{m.change} %</>}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="card p-5 lg:col-span-2">
+            {/* Pipeline obchodů */}
+            <div className="card p-5">
               <h3 className="mb-4 font-display text-lg font-bold text-tx">Pipeline obchodů</h3>
               <div className="flex items-center gap-4">
                 <Funnel data={funnel} />
@@ -199,22 +199,21 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
                 </div>
               </div>
             </div>
-          </section>
 
-          {/* Aktivity + Kalendář */}
-          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {/* Aktivity */}
             <div className="card p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-display text-lg font-bold text-tx">Aktivity</h3>
-                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Zobrazit vše</button>
+                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Vše</button>
               </div>
               <ActivityList events={todayEvents} leads={leads} onOpen={(id) => { const l = leads.find((x) => x.id === id); if (l) openLead(l) }} onEmpty={() => onNavigate('calendar')} />
             </div>
 
+            {/* Kalendář */}
             <div className="card p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-display text-lg font-bold text-tx">Kalendář</h3>
-                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Zobrazit celý</button>
+                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Celý</button>
               </div>
               <MiniCalendar now={now} events={events} todayEvents={todayEvents} leads={leads} />
             </div>
@@ -406,7 +405,7 @@ function MiniCalendar({ now, events, todayEvents, leads }: {
   const leadName = (id: string | null): string | null => leads.find((l) => l.id === id)?.name ?? null
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_1fr]">
+    <div className="space-y-3">
       <div>
         <div className="mb-2 flex items-center justify-between">
           <ChevronLeft className="h-4 w-4 text-tx-faint" />
@@ -428,9 +427,9 @@ function MiniCalendar({ now, events, todayEvents, leads }: {
         </div>
       </div>
 
-      <div className="border-line sm:border-l sm:pl-4">
+      <div className="border-t border-line pt-3">
         {todayEvents.length === 0 ? (
-          <p className="py-4 text-sm text-tx-faint">Dnes nemáte žádné události.</p>
+          <p className="py-1 text-sm text-tx-faint">Dnes nemáte žádné události.</p>
         ) : (
           <ul className="space-y-2.5">
             {todayEvents.slice(0, 4).map((e) => (
