@@ -59,7 +59,7 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
       <div className="relative flex h-full flex-col scroll-dark">
         {/* logo */}
         <div className="px-4 pb-2 pt-5">
-          <img src="./logo-crm.png" alt="AUREA — Real Estate CRM" className="mx-auto h-auto w-3/4 object-contain" />
+          <img src="./logo-crm.png" alt="AUREA — Real Estate CRM" className="mx-auto h-auto w-1/2 object-contain" />
         </div>
 
         {/* rychlé hledání */}

@@ -1,6 +1,7 @@
 import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, ChevronDown,
-  ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Ruler } from 'lucide-react'
+  ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Gift } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
+import { Avatar } from '../components/Avatar'
 import { AnnaBriefing } from '../components/AnnaBriefing'
 import { Loading, ErrorState } from '../components/States'
 import { useLeads } from '../lib/leadsContext'
@@ -10,6 +11,7 @@ import { useLeadDetail } from '../lib/leadDetailContext'
 import { CLOSED_STAGES } from '../lib/supabase'
 import { formatCZK } from '../lib/format'
 import { leadValue, isReferrer } from '../lib/leadDisplay'
+import { topReferrers } from '../lib/referrals'
 import { eventTypeMeta, isOverdue, sameDay, eventTime, type EventItem } from '../lib/events'
 import { statusMeta, formatListingPrice, propertyTypeLabel } from '../lib/listings'
 import type { Page } from '../components/Sidebar'
@@ -73,6 +75,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const todayEvents = events.filter((e) => sameDay(new Date(e.start_at), now)).sort((a, b) => a.start_at.localeCompare(b.start_at))
   const taskDue = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), now))).length
   const activeProps = listings.filter((l) => l.status === 'available').length
+  const referrers = topReferrers(leads)
 
   return (
     <div className="flex h-full flex-col">
@@ -215,6 +218,34 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             <BottomStat icon={Home} value={String(activeProps)} label="Aktivních nemovitostí" hint={`${listings.length} celkem`} />
             <BottomStat icon={Coins} value={formatCZK(provizeYtd, true)} label="Celková provize (YTD)" hint={`${won.length} obchodů`} />
             <BottomStat icon={ClipboardList} value={String(taskDue)} label="Úkolů k vyřízení" hint={`${todayEvents.length} dnes`} />
+          </section>
+
+          {/* Top doporučitelé */}
+          <section className="rounded-2xl bg-[#1A1A1A] p-5 ring-1 ring-white/5 shadow-card">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><Gift className="h-5 w-5" /></span>
+              <div>
+                <h3 className="font-display text-lg font-bold text-white">Top doporučitelé</h3>
+                <p className="text-xs text-white/55">Kdo vám přivádí obchody a kolik už přinesl</p>
+              </div>
+            </div>
+            {referrers.length === 0 ? (
+              <p className="py-2 text-sm text-white/40">Zatím žádná doporučení. Označte kontakt jako „Doporučitele" nebo vyplňte pole „Doporučil(a)" u leadu.</p>
+            ) : (
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {referrers.map((r, i) => (
+                  <li key={r.lead.id} className="flex items-center gap-3 rounded-xl bg-white/[.04] p-3">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gold text-[11px] font-bold text-ink">{i + 1}</span>
+                    <Avatar name={r.lead.name || '?'} size={34} />
+                    <div className="min-w-0 flex-1">
+                      <button onClick={() => openLead(r.lead)} className="truncate text-sm font-bold text-white hover:text-gold">{r.lead.name || 'Bez jména'}</button>
+                      <div className="text-xs text-white/55">{r.count} {r.count === 1 ? 'doporučení' : r.count < 5 ? 'doporučení' : 'doporučení'}</div>
+                    </div>
+                    <span className="shrink-0 font-mono text-sm font-bold text-gold">{formatCZK(r.value, true)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
       )}
