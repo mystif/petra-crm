@@ -1,4 +1,5 @@
-import { Sparkles, ChevronRight, CalendarDays } from 'lucide-react'
+import { useState } from 'react'
+import { Sparkles, ChevronRight, CalendarDays, Check } from 'lucide-react'
 import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
 import { useMakler } from '../lib/maklerContext'
@@ -7,14 +8,35 @@ import { buildDailyPlan } from '../lib/dailyPlan'
 import { vocative } from '../lib/vocative'
 import type { Page } from './Sidebar'
 
+const DONE_KEY = 'anna-done'
+function loadDone(dayKey: string): Set<string> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DONE_KEY) || '{}')
+    if (raw.date === dayKey && Array.isArray(raw.ids)) return new Set<string>(raw.ids)
+  } catch { /* ignore */ }
+  return new Set()
+}
+
 export function AnnaBriefing({ onNavigate }: { onNavigate: (p: Page) => void }): JSX.Element {
   const { leads } = useLeads()
   const { events } = useEvents()
   const { makler } = useMakler()
   const { openLead } = useLeadDetail()
 
+  const dayKey = new Date().toDateString()
+  const [done, setDone] = useState<Set<string>>(() => loadDone(dayKey))
+  const markDone = (id: string): void => {
+    setDone((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      localStorage.setItem(DONE_KEY, JSON.stringify({ date: dayKey, ids: [...next] }))
+      return next
+    })
+  }
+
   const plan = buildDailyPlan(leads, events)
   const osloveni = vocative(makler?.name) || 'Petro'
+  const steps = plan.steps.filter((s) => !done.has(s.id))
 
   const handleStep = (leadId: string | null): void => {
     if (!leadId) { onNavigate('calendar'); return }
@@ -53,38 +75,44 @@ export function AnnaBriefing({ onNavigate }: { onNavigate: (p: Page) => void }):
 
       {/* kroky dne */}
       <div className="space-y-2 p-4 sm:p-5">
-        {plan.steps.map((s) => {
+        {steps.map((s) => {
           const Icon = s.icon
           return (
-            <button
+            <div
               key={s.id}
-              onClick={() => handleStep(s.leadId)}
-              className="group flex w-full items-center gap-3 rounded-xl border border-line bg-white p-3 text-left transition hover:border-brand/40 hover:shadow-card"
+              className="group flex items-start gap-2.5 rounded-xl border border-line bg-white p-3 transition hover:border-brand/40 hover:shadow-card sm:gap-3"
             >
-              {s.time ? (
-                <span className="w-12 shrink-0 text-center font-mono text-[13px] font-bold text-tx">{s.time}</span>
-              ) : (
-                <span className="w-12 shrink-0" />
-              )}
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white" style={{ background: s.color }}>
-                <Icon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-bold text-tx">{s.title}</div>
-                {s.detail && <div className="truncate text-xs text-tx-soft">{s.detail}</div>}
-              </div>
-              {s.badge && (
-                <span
-                  className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold"
-                  style={{ background: `${s.color}1a`, color: s.color }}
-                >
-                  {s.badge}
+              <button
+                onClick={() => markDone(s.id)}
+                title="Označit jako hotové"
+                className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-line text-transparent transition hover:border-emerald hover:text-emerald"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+              <button onClick={() => handleStep(s.leadId)} className="flex min-w-0 flex-1 items-start gap-2.5 text-left sm:gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white" style={{ background: s.color }}>
+                  <Icon className="h-4 w-4" />
                 </span>
-              )}
-              <ChevronRight className="h-4 w-4 shrink-0 text-tx-faint transition group-hover:text-brand-dark" />
-            </button>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold leading-snug text-tx">
+                    {s.time && <span className="mr-1.5 font-mono text-tx-soft">{s.time}</span>}{s.title}
+                  </div>
+                  {s.detail && <div className="text-xs leading-snug text-tx-soft">{s.detail}</div>}
+                </div>
+                {s.badge && (
+                  <span className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: `${s.color}1a`, color: s.color }}>
+                    {s.badge}
+                  </span>
+                )}
+                <ChevronRight className="mt-1.5 hidden h-4 w-4 shrink-0 text-tx-faint transition group-hover:text-brand-dark sm:block" />
+              </button>
+            </div>
           )
         })}
+
+        {steps.length === 0 && !plan.isEmpty && (
+          <div className="rounded-xl bg-emerald-soft px-3 py-2.5 text-sm font-semibold text-emerald">Vše odškrtnuté — máte hotovo 👏</div>
+        )}
 
         {/* uzavírací doporučení od Anny */}
         <div className="flex items-start gap-2 rounded-xl bg-canvas px-3 py-2.5 text-sm text-tx-soft">
