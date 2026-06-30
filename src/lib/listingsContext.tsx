@@ -1,6 +1,7 @@
 import {
   createContext, useContext, useEffect, useState, useCallback, type ReactNode
 } from 'react'
+import { supabase } from './supabase'
 import {
   fetchListings, createListing, updateListing, deleteListing,
   type Listing, type ListingInput
@@ -40,7 +41,14 @@ export function ListingsProvider({ children }: { children: ReactNode }): JSX.Ele
     }
   }, [])
 
-  useEffect(() => { refetch() }, [refetch])
+  useEffect(() => {
+    refetch()
+    const ch = supabase
+      .channel('rt-nemovitosti')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nemovitosti' }, () => refetch())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [refetch])
 
   const add = useCallback(async (input: ListingInput) => {
     const created = await createListing(input)

@@ -26,8 +26,42 @@ function blockGeometry(e: EventItem): { top: number; height: number } {
   const s = new Date(e.start_at)
   const startMin = (s.getHours() - START_HOUR) * 60 + s.getMinutes()
   const end = e.end_at ? new Date(e.end_at) : new Date(s.getTime() + 60 * 60_000)
-  const durMin = Math.max(34, (end.getTime() - s.getTime()) / 60_000)
+  const durMin = Math.max(40, (end.getTime() - s.getTime()) / 60_000)
   return { top: Math.max(0, (startMin / 60) * HOUR_H), height: (durMin / 60) * HOUR_H }
+}
+
+function endMs(e: EventItem): number {
+  const s = new Date(e.start_at).getTime()
+  return e.end_at ? new Date(e.end_at).getTime() : s + 60 * 60_000
+}
+
+/** Rozloží překrývající se události vedle sebe do sloupců (aby se nepřekrýval text). */
+function layoutColumns(dayEvents: EventItem[]): Map<string, { col: number; cols: number }> {
+  const res = new Map<string, { col: number; cols: number }>()
+  const sorted = [...dayEvents].sort((a, b) => a.start_at.localeCompare(b.start_at) || endMs(a) - endMs(b))
+  let cluster: EventItem[] = []
+  let clusterEnd = -Infinity
+  const flush = (): void => {
+    const colEnd: number[] = []
+    const colOf = new Map<string, number>()
+    for (const e of cluster) {
+      const s = new Date(e.start_at).getTime()
+      let c = colEnd.findIndex((end) => end <= s)
+      if (c === -1) { c = colEnd.length; colEnd.push(0) }
+      colEnd[c] = endMs(e)
+      colOf.set(e.id, c)
+    }
+    for (const e of cluster) res.set(e.id, { col: colOf.get(e.id) as number, cols: colEnd.length })
+    cluster = []; clusterEnd = -Infinity
+  }
+  for (const e of sorted) {
+    const s = new Date(e.start_at).getTime()
+    if (cluster.length && s >= clusterEnd) flush()
+    cluster.push(e)
+    clusterEnd = Math.max(clusterEnd, endMs(e))
+  }
+  flush()
+  return res
 }
 
 const VIEWS: { id: View; label: string; icon: typeof CalendarRange }[] = [
@@ -163,6 +197,7 @@ function TimeGrid({ days, today, events, leadName, onSlot, onEvent }: {
         {days.map((day) => {
           const dayEvents = events.filter((e) => sameDay(new Date(e.start_at), day))
           const isToday = sameDay(day, today)
+          const layout = layoutColumns(dayEvents)
           return (
             <div key={day.toISOString()} className={`relative border-l border-line ${isToday ? 'bg-brand-soft/10' : ''}`} style={{ height: HOURS.length * HOUR_H }}>
               {HOURS.map((h) => (
@@ -173,13 +208,22 @@ function TimeGrid({ days, today, events, leadName, onSlot, onEvent }: {
                 const { top, height } = blockGeometry(e)
                 const Icon = meta.icon
                 const ln = leadName(e.lead_id)
+                const lay = layout.get(e.id) ?? { col: 0, cols: 1 }
+                const single = lay.cols === 1
                 return (
                   <button key={e.id} onClick={() => onEvent(e)}
-                    className={`absolute left-1 right-1 overflow-hidden rounded-lg border-l-[3px] px-2 py-1 text-left shadow-card transition hover:shadow-lift ${e.done ? 'opacity-55' : ''}`}
-                    style={{ top: top + 1, height: height - 2, background: `${meta.color}1a`, borderColor: meta.color }}>
-                    <div className="flex items-center gap-1 text-[11px] font-bold" style={{ color: meta.color }}><Icon className="h-3 w-3 shrink-0" /> {eventTime(e)}</div>
+                    className={`absolute overflow-hidden rounded-lg border-l-[3px] px-2 py-1 text-left shadow-card transition hover:z-10 hover:shadow-lift ${e.done ? 'opacity-55' : ''}`}
+                    style={{
+                      top: top + 1, height: height - 2,
+                      left: `calc(${(lay.col / lay.cols) * 100}% + 2px)`,
+                      width: `calc(${100 / lay.cols}% - 4px)`,
+                      background: `${meta.color}1a`, borderColor: meta.color
+                    }}>
+                    <div className="flex items-center gap-1 truncate text-[11px] font-bold" style={{ color: meta.color }}>
+                      <Icon className="h-3 w-3 shrink-0" /> {eventTime(e)}
+                    </div>
                     <div className={`truncate text-xs font-semibold text-tx ${e.done ? 'line-through' : ''}`}>{e.title}</div>
-                    {ln && height > 52 && <div className="truncate text-[11px] text-tx-soft">{ln}</div>}
+                    {ln && single && height > 56 && <div className="truncate text-[11px] text-tx-soft">{ln}</div>}
                   </button>
                 )
               })}
@@ -211,7 +255,7 @@ function MonthGrid({ anchor, today, events, onDay, onEvent }: {
           const isToday = sameDay(day, today)
           const dayEvents = events.filter((e) => sameDay(new Date(e.start_at), day)).sort((a, b) => a.start_at.localeCompare(b.start_at))
           return (
-            <div key={i} className={`min-h-[90px] border-b border-r border-line p-1 ${i % 7 === 0 ? 'border-l' : ''} ${inMonth ? '' : 'bg-canvas/50'}`}>
+            <div key={i} className={`flex min-h-[90px] flex-col overflow-hidden border-b border-r border-line p-1 ${i % 7 === 0 ? 'border-l' : ''} ${inMonth ? '' : 'bg-canvas/50'}`}>
               <button onClick={() => onDay(day)} className={`mb-0.5 grid h-6 w-6 place-items-center rounded-full text-xs font-semibold transition hover:bg-brand-soft ${isToday ? 'bg-brand-dark text-white' : inMonth ? 'text-tx' : 'text-tx-faint'}`}>
                 {day.getDate()}
               </button>

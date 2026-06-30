@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode
 } from 'react'
-import { fetchLeads, updateLeadStage, updateLead, type Lead, type StageKey } from './supabase'
+import { supabase, fetchLeads, updateLeadStage, updateLead, type Lead, type StageKey } from './supabase'
 import { deleteLeadKeepContact } from './leadActions'
 
 interface LeadsState {
@@ -46,6 +46,12 @@ export function LeadsProvider({ children }: { children: ReactNode }): JSX.Elemen
 
   useEffect(() => {
     refetch()
+    // Realtime — nový/změněný lead se projeví hned (web i mobil).
+    const ch = supabase
+      .channel('rt-leadyCRM')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leadyCRM' }, () => refetch())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
   }, [refetch])
 
   // Optimistický přesun fáze — UI reaguje hned, při chybě se vrátí zpět.

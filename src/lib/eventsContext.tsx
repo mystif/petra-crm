@@ -1,6 +1,7 @@
 import {
   createContext, useContext, useEffect, useState, useCallback, type ReactNode
 } from 'react'
+import { supabase } from './supabase'
 import {
   fetchEvents, createEvent, updateEvent, deleteEvent,
   type EventItem, type EventInput
@@ -42,7 +43,14 @@ export function EventsProvider({ children }: { children: ReactNode }): JSX.Eleme
     }
   }, [])
 
-  useEffect(() => { refetch() }, [refetch])
+  useEffect(() => {
+    refetch()
+    const ch = supabase
+      .channel('rt-udalosti')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'udalosti' }, () => refetch())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [refetch])
 
   const add = useCallback(async (input: EventInput) => {
     const created = await createEvent(input)

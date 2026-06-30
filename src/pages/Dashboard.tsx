@@ -58,10 +58,10 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
 
   // KPI řada (každá karta má ukazatel změny)
   const monthTrend = (n: number): { text: string; positive: boolean } => ({ text: `+${n} tento měsíc`, positive: true })
-  const kpis = [
-    { label: 'Nové kontakty', value: String(newContactsMonth), icon: Users, trend: monthTrend(newContactsMonth) },
-    { label: 'Aktivní obchody', value: String(open.length), icon: Briefcase, trend: monthTrend(open.filter((l) => inMonth(l.created_at)).length) },
-    { label: 'Nové poptávky', value: String(fresh.length), icon: MessageSquare, trend: monthTrend(fresh.filter((l) => inMonth(l.created_at)).length) },
+  const kpis: { label: string; value: string; icon: typeof Users; trend: { text: string; positive: boolean } | null; nav?: Page }[] = [
+    { label: 'Nové kontakty', value: String(newContactsMonth), icon: Users, trend: monthTrend(newContactsMonth), nav: 'contacts' },
+    { label: 'Aktivní obchody', value: String(open.length), icon: Briefcase, trend: monthTrend(open.filter((l) => inMonth(l.created_at)).length), nav: 'pipeline' },
+    { label: 'Nové poptávky', value: String(fresh.length), icon: MessageSquare, trend: monthTrend(fresh.filter((l) => inMonth(l.created_at)).length), nav: 'leads' },
     { label: 'Uzavřené obchody', value: String(won.filter((l) => inMonth(l.crm_updated_at)).length), icon: CheckCircle2, trend: monthTrend(won.filter((l) => inMonth(l.crm_updated_at)).length) },
     { label: 'Provize (měsíc)', value: formatCZK(provizeMonth, true), icon: Coins, trend: provizePctM == null ? null : { text: `${provizePctM >= 0 ? '+' : ''}${provizePctM} % vs minulý`, positive: provizePctM >= 0 } }
   ]
@@ -96,19 +96,16 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
     { label: 'Konverze lead → obchod', value: `${convRate(periodStart, now)} %`, change: pct(convRate(periodStart, now), convRate(prevStart, prevEnd)) }
   ]
 
-  // Graf obratu v čase dle období
+  // Graf obratu + provize v čase dle období
+  const bucket = (s: Date, e: Date, label: string): { label: string; obrat: number; provize: number } =>
+    ({ label, obrat: wonSum(s, e, valOf), provize: wonSum(s, e, provOf) })
   const series = period === 'rok'
-    ? Array.from({ length: 12 }, (_, m) => {
-        const s = new Date(now.getFullYear(), m, 1), e = new Date(now.getFullYear(), m + 1, 1)
-        return { label: MONTHS[m], value: wonSum(s, e, valOf) }
-      })
+    ? Array.from({ length: 12 }, (_, m) => bucket(new Date(now.getFullYear(), m, 1), new Date(now.getFullYear(), m + 1, 1), MONTHS[m]))
     : (() => {
         const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-        const out: { label: string; value: number }[] = []
+        const out: { label: string; obrat: number; provize: number }[] = []
         for (let d = 1; d <= days; d += 7) {
-          const s = new Date(now.getFullYear(), now.getMonth(), d)
-          const e = new Date(now.getFullYear(), now.getMonth(), Math.min(d + 7, days + 1))
-          out.push({ label: `${d}.`, value: wonSum(s, e, valOf) })
+          out.push(bucket(new Date(now.getFullYear(), now.getMonth(), d), new Date(now.getFullYear(), now.getMonth(), Math.min(d + 7, days + 1)), `${d}.`))
         }
         return out
       })()
@@ -139,7 +136,12 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             {kpis.map((k) => {
               const Icon = k.icon
               return (
-                <div key={k.label} className="rounded-2xl bg-[#1A1A1A] p-4 ring-1 ring-white/5 shadow-card">
+                <button
+                  key={k.label}
+                  onClick={() => k.nav && onNavigate(k.nav)}
+                  disabled={!k.nav}
+                  className={`rounded-2xl bg-[#1A1A1A] p-4 text-left ring-1 ring-white/5 shadow-card transition ${k.nav ? 'cursor-pointer hover:ring-gold/40' : 'cursor-default'}`}
+                >
                   <div className="flex items-start justify-between">
                     <span className="text-xs font-medium text-white/55">{k.label}</span>
                     <Icon className="h-4 w-4 text-gold" />
@@ -150,7 +152,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
                       {k.trend.positive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />} {k.trend.text}
                     </div>
                   )}
-                </div>
+                </button>
               )
             })}
           </section>
@@ -183,20 +185,10 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             {/* Pipeline obchodů */}
             <div className="card p-5">
               <h3 className="mb-4 font-display text-lg font-bold text-tx">Pipeline obchodů</h3>
-              <div className="flex items-center gap-4">
-                <Funnel data={funnel} />
-                <div className="flex-1 space-y-2.5">
-                  {funnel.map((f) => (
-                    <div key={f.label} className="border-b border-line pb-1.5">
-                      <div className="text-xs text-tx-soft">{f.label}</div>
-                      <div className="stat-num text-lg text-tx">{f.value}</div>
-                    </div>
-                  ))}
-                  <div>
-                    <div className="text-xs text-tx-soft">Konverze</div>
-                    <div className="stat-num text-lg text-brand-dark">{conversion} %</div>
-                  </div>
-                </div>
+              <Funnel data={funnel} />
+              <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
+                <span className="text-sm font-semibold text-tx-soft">Konverze lead → obchod</span>
+                <span className="stat-num text-xl text-brand-dark">{conversion} %</span>
               </div>
             </div>
 
@@ -311,49 +303,66 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
 
 // ─── Sub-komponenty ───
 
-function PerfChart({ data }: { data: { label: string; value: number }[] }): JSX.Element {
+function PerfChart({ data }: { data: { label: string; obrat: number; provize: number }[] }): JSX.Element {
   const W = 560, H = 240, padL = 48, padR = 14, padT = 14, padB = 30
   const innerW = W - padL - padR, innerH = H - padT - padB
-  const rawMax = Math.max(...data.map((d) => d.value), 1)
+  const rawMax = Math.max(...data.map((d) => Math.max(d.obrat, d.provize)), 1)
   const niceMax = Math.max(400000, Math.ceil(rawMax / 100000) * 100000)
-  const x = (i: number): number => padL + innerW * (i / (data.length - 1))
+  const x = (i: number): number => padL + innerW * (i / (Math.max(1, data.length - 1)))
   const y = (v: number): number => padT + innerH * (1 - v / niceMax)
-  const pts = data.map((d, i) => `${x(i)},${y(d.value)}`).join(' ')
+  const line = (key: 'obrat' | 'provize'): string => data.map((d, i) => `${x(i)},${y(d[key])}`).join(' ')
   const ticks = Array.from({ length: 5 }, (_, i) => Math.round((niceMax / 4) * i))
   const fmtK = (v: number): string => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))
+  const OBRAT = '#C1A263', PROVIZE = '#1A1A1A'
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
-      {ticks.map((t) => (
-        <g key={t}>
-          <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="#EEF0F4" strokeWidth="1" />
-          <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="fill-tx-faint" fontSize="11">{fmtK(t)}</text>
-        </g>
-      ))}
-      <polyline points={pts} fill="none" stroke="#C1A263" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      {data.map((d, i) => (
-        <g key={i}>
-          <circle cx={x(i)} cy={y(d.value)} r="4" fill="#C1A263" stroke="#fff" strokeWidth="2" />
-          <text x={x(i)} y={H - 10} textAnchor="middle" className="fill-tx-faint" fontSize="11">{d.label}</text>
-        </g>
-      ))}
-    </svg>
+    <div>
+      <div className="mb-1 flex items-center gap-4 text-[11px] font-semibold text-tx-soft">
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: OBRAT }} /> Obrat</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: PROVIZE }} /> Provize</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="#EEF0F4" strokeWidth="1" />
+            <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="fill-tx-faint" fontSize="11">{fmtK(t)}</text>
+          </g>
+        ))}
+        <polyline points={line('obrat')} fill="none" stroke={OBRAT} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={line('provize')} fill="none" stroke={PROVIZE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {data.map((d, i) => (
+          <g key={i}>
+            <circle cx={x(i)} cy={y(d.obrat)} r="3.5" fill={OBRAT} stroke="#fff" strokeWidth="1.5" />
+            <circle cx={x(i)} cy={y(d.provize)} r="3.5" fill={PROVIZE} stroke="#fff" strokeWidth="1.5" />
+            <text x={x(i)} y={H - 10} textAnchor="middle" className="fill-tx-faint" fontSize="11">{d.label}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
   )
 }
 
 function Funnel({ data }: { data: { label: string; value: number }[] }): JSX.Element {
-  const W = 150, H = 170
-  const colors = ['#D4B26F', '#C1A263', '#A8884E', '#91753C']
-  const widths = [1, 0.74, 0.5, 0.28, 0.12]
-  const bandH = H / 4
+  const W = 360, H = 280
+  const colors = ['#D4B26F', '#C1A263', '#A8884E', '#7E6736']
+  const widths = [1, 0.78, 0.56, 0.34, 0.14]
+  const gap = 4
+  const bandH = (H - gap * 3) / 4
   const cx = W / 2
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-[150px] w-[130px] shrink-0">
-      {data.map((_, i) => {
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
+      {data.map((d, i) => {
         const wTop = widths[i] * W, wBot = widths[i + 1] * W
-        const yTop = i * bandH, yBot = (i + 1) * bandH - 3
+        const yTop = i * (bandH + gap), yBot = yTop + bandH
         const pts = `${cx - wTop / 2},${yTop} ${cx + wTop / 2},${yTop} ${cx + wBot / 2},${yBot} ${cx - wBot / 2},${yBot}`
-        return <polygon key={i} points={pts} fill={colors[i]} />
+        const ty = yTop + bandH / 2
+        return (
+          <g key={i}>
+            <polygon points={pts} fill={colors[i]} />
+            <text x={cx} y={ty - 4} textAnchor="middle" className="fill-white" fontSize="13" fontWeight="600">{d.label}</text>
+            <text x={cx} y={ty + 16} textAnchor="middle" className="fill-white" fontSize="18" fontWeight="800">{d.value}</text>
+          </g>
+        )
       })}
     </svg>
   )

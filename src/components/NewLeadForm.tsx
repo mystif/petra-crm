@@ -98,6 +98,7 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
       onCreated()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Uložení selhalo.')
+    } finally {
       setSaving(false)
     }
   }

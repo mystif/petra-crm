@@ -17,6 +17,14 @@ interface Props {
 
 const num = (v: string): number | null => (v.trim() ? Number(v.replace(/\s/g, '')) : null)
 
+const CUSTOM_FEAT_KEY = 'listing-custom-features'
+function loadCustomFeatures(): { value: string; label: string }[] {
+  try { const r = JSON.parse(localStorage.getItem(CUSTOM_FEAT_KEY) || '[]'); return Array.isArray(r) ? r : [] } catch { return [] }
+}
+function featSlug(label: string): string {
+  return label.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'feat'
+}
+
 /** Cesta v bucketu z veřejné URL (kvůli mazání souboru). */
 function pathFromUrl(url: string): string | null {
   const marker = `/public/${BUCKET}/`
@@ -60,12 +68,30 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
 
   const [showMore, setShowMore] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
+  const [customFeatures, setCustomFeatures] = useState<{ value: string; label: string }[]>(loadCustomFeatures)
+  const [newFeat, setNewFeat] = useState('')
+  const allFeatures = [...FEATURES, ...customFeatures]
+
   const toggleFeature = (v: string): void =>
     setFeatures((f) => (f.includes(v) ? f.filter((x) => x !== v) : [...f, v]))
+
+  const addFeature = (): void => {
+    const label = newFeat.trim()
+    if (!label) return
+    const value = featSlug(label)
+    if (!allFeatures.some((f) => f.value === value)) {
+      const next = [...customFeatures, { value, label }]
+      setCustomFeatures(next)
+      try { localStorage.setItem(CUSTOM_FEAT_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+    }
+    if (!features.includes(value)) toggleFeature(value)
+    setNewFeat('')
+  }
 
   const handleFiles = async (files: FileList | null): Promise<void> => {
     if (!files || files.length === 0) return
@@ -170,7 +196,12 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
       {/* fotky */}
       <div className="mb-4">
         <label className="mb-1 block text-sm font-semibold text-tx-soft">Fotky <span className="text-tx-faint">· první = hlavní (na kartě)</span></label>
-        <div className="flex flex-wrap gap-2">
+        <div
+          className={`flex flex-wrap gap-2 rounded-xl p-1 transition ${dragOver ? 'bg-brand-soft ring-2 ring-brand/50' : ''}`}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false) }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
+        >
           {images.map((url, i) => (
             <div key={url} className="group relative h-24 w-32 overflow-hidden rounded-xl border border-line">
               <img src={url} alt="" className="h-full w-full object-cover" />
@@ -182,11 +213,11 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
             </div>
           ))}
           <button onClick={() => fileInput.current?.click()} disabled={uploading} className="grid h-24 w-32 place-items-center rounded-xl border-2 border-dashed border-line text-tx-faint transition hover:border-brand/50 hover:text-brand-dark">
-            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="flex flex-col items-center gap-1 text-xs font-semibold"><ImagePlus className="h-5 w-5" /> Přidat</span>}
+            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="flex flex-col items-center gap-1 px-1 text-center text-xs font-semibold"><ImagePlus className="h-5 w-5" /> Přidat / přetáhnout</span>}
           </button>
           <input ref={fileInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
         </div>
-        <p className="mt-1 text-[11px] text-tx-faint">Velké fotky se automaticky zmenší pod 1,5 MB.</p>
+        <p className="mt-1 text-[11px] text-tx-faint">Přetáhněte fotky sem nebo klikněte. Velké se automaticky zmenší pod 1,5 MB.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -274,7 +305,7 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-tx-soft">Vybavení</label>
             <div className="flex flex-wrap gap-1.5">
-              {FEATURES.map((f) => {
+              {allFeatures.map((f) => {
                 const on = features.includes(f.value)
                 return (
                   <button key={f.value} onClick={() => toggleFeature(f.value)} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${on ? 'bg-ink text-white' : 'border border-line bg-white text-tx-soft hover:text-tx'}`}>
@@ -283,6 +314,15 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
                 )
               })}
             </div>
+            <div className="mt-2 flex gap-2">
+              <input
+                className="input flex-1" value={newFeat} onChange={(e) => setNewFeat(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFeature() } }}
+                placeholder="Přidat vlastní vybavení (např. Krb)…"
+              />
+              <button className="btn-soft py-2 text-sm" onClick={addFeature}>Přidat</button>
+            </div>
+            <p className="mt-1 text-[11px] text-tx-faint">Nově přidané vybavení zůstane k dispozici i pro další nemovitosti.</p>
           </div>
         </div>
       )}
