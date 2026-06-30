@@ -19,7 +19,7 @@ function loadDone(dayKey: string): Set<string> {
 
 export function AnnaBriefing({ onNavigate }: { onNavigate: (p: Page) => void }): JSX.Element {
   const { leads } = useLeads()
-  const { events } = useEvents()
+  const { events, toggleDone } = useEvents()
   const { makler } = useMakler()
   const { openLead } = useLeadDetail()
 
@@ -83,7 +83,7 @@ export function AnnaBriefing({ onNavigate }: { onNavigate: (p: Page) => void }):
               className="group flex items-start gap-2.5 rounded-xl border border-line bg-white p-3 transition hover:border-brand/40 hover:shadow-card sm:gap-3"
             >
               <button
-                onClick={() => markDone(s.id)}
+                onClick={() => s.eventId ? toggleDone(s.eventId) : markDone(s.id)}
                 title="Označit jako hotové"
                 className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-line text-transparent transition hover:border-emerald hover:text-emerald"
               >

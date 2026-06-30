@@ -16,6 +16,7 @@ export interface PlanStep {
   icon: LucideIcon
   color: string
   leadId: string | null
+  eventId?: string // u kroků navázaných na událost → lze označit jako hotové reálně
 }
 
 export interface DailyPlan {
@@ -67,7 +68,7 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
   for (const e of pastDue) {
     const ln = leadName(e.lead_id)
     steps.push({
-      id: 'pe-' + e.id, kind: 'overdue', time: null,
+      id: 'pe-' + e.id, eventId: e.id, kind: 'overdue', time: null,
       title: e.title, detail: ln, badge: 'Po termínu',
       icon: AlertCircle, color: '#E5484D', leadId: e.lead_id
     })
@@ -85,7 +86,7 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
     const meta = eventTypeMeta(e.type)
     const ln = leadName(e.lead_id)
     steps.push({
-      id: 'ev-' + e.id, kind: 'meeting', time: e.all_day ? null : eventTime(e),
+      id: 'ev-' + e.id, eventId: e.id, kind: 'meeting', time: e.all_day ? null : eventTime(e),
       title: e.title, detail: [ln, e.location].filter(Boolean).join(' · ') || null, badge: meta.label,
       icon: meta.icon, color: meta.color, leadId: e.lead_id
     })
