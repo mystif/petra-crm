@@ -109,7 +109,7 @@ export function Calendar(): JSX.Element {
         title="Kalendář"
         subtitle="Prohlídky, schůzky a follow-upy"
         showSearch={false}
-        actions={<button className="btn-primary" onClick={() => openNew()}><Plus className="h-4 w-4" /> Nová událost</button>}
+        actions={<button className="btn-primary" onClick={() => openNew()} title="Nová událost" aria-label="Nová událost"><Plus className="h-4 w-4" /> <span className="hidden md:inline">Nová událost</span></button>}
       />
 
       {loading ? (

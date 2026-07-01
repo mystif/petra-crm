@@ -57,7 +57,7 @@ export function Tasks(): JSX.Element {
         title="Úkoly"
         subtitle={`${counts.dnes} na dnešek · ${counts.poterminu} po termínu`}
         showSearch={false}
-        actions={<button className="btn-primary" onClick={openNew}><Plus className="h-4 w-4" /> Nový úkol</button>}
+        actions={<button className="btn-primary" onClick={openNew} title="Nový úkol" aria-label="Nový úkol"><Plus className="h-4 w-4" /> <span className="hidden md:inline">Nový úkol</span></button>}
       />
 
       {loading ? (

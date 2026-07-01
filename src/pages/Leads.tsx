@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Phone, Mail, MapPin, ArrowRight, CalendarClock, MessageCircle, Trash2, Loader2, ShieldCheck } from 'lucide-react'
+import { Phone, Mail, MapPin, ArrowRight, CalendarClock, MessageCircle, Trash2, Loader2, ShieldCheck, Plus } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Modal } from '../components/Modal'
@@ -58,7 +58,7 @@ export function Leads({ filter, onFilter }: { filter: LeadsFilter; onFilter: (f:
       <Topbar
         title="Poptávky"
         subtitle="Leady z webových formulářů a žádosti o odhad"
-        actions={<button className="btn-primary" onClick={openNewLead}>Přidat poptávku</button>}
+        actions={<button className="btn-primary" onClick={openNewLead} title="Přidat poptávku" aria-label="Přidat poptávku"><Plus className="h-4 w-4" /> <span className="hidden md:inline">Přidat poptávku</span></button>}
       />
 
       <div className="flex-1 overflow-y-auto p-8">

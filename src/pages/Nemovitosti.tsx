@@ -58,7 +58,7 @@ export function Nemovitosti(): JSX.Element {
         title="Nemovitosti"
         subtitle={`${listings.length} ${listings.length === 1 ? 'nabídka' : 'nabídek'} · zveřejněno na webu`}
         showSearch={false}
-        actions={<button className="btn-primary" onClick={openNew}><Plus className="h-4 w-4" /> Nová nemovitost</button>}
+        actions={<button className="btn-primary" onClick={openNew} title="Nová nemovitost" aria-label="Nová nemovitost"><Plus className="h-4 w-4" /> <span className="hidden md:inline">Nová nemovitost</span></button>}
       />
 
       {loading ? (

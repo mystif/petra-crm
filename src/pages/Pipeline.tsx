@@ -52,7 +52,7 @@ export function Pipeline(): JSX.Element {
         title="Pipeline"
         subtitle={`Otevřená hodnota ${formatCZK(totalOpen, true)} · ${dealLeads.length} leadů`}
         showSearch={false}
-        actions={<button className="btn-primary" onClick={openNewLead}><Plus className="h-4 w-4" /> Nový lead</button>}
+        actions={<button className="btn-primary" onClick={openNewLead} title="Nový lead" aria-label="Nový lead"><Plus className="h-4 w-4" /> <span className="hidden md:inline">Nový lead</span></button>}
       />
 
       {loading ? (
