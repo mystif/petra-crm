@@ -62,3 +62,16 @@ export async function removePhotoFile(path: string): Promise<void> {
   const { error } = await supabase.storage.from(BUCKET).remove([path])
   if (error) throw new Error(error.message)
 }
+
+/** Cesta v bucketu z veřejné URL (nebo null, když URL nepatří našemu bucketu). */
+export function pathFromPublicUrl(url: string): string | null {
+  const marker = `/public/${BUCKET}/`
+  const i = url.indexOf(marker)
+  return i >= 0 ? url.slice(i + marker.length) : null
+}
+
+/** Hromadné smazání fotek z bucketu (best-effort). */
+export async function removePhotoFiles(paths: string[]): Promise<void> {
+  if (paths.length === 0) return
+  await supabase.storage.from(BUCKET).remove(paths)
+}

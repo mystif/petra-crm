@@ -15,6 +15,7 @@ import { leadValue, isReferrer } from '../lib/leadDisplay'
 import { topReferrers } from '../lib/referrals'
 import { eventTypeMeta, isOverdue, sameDay, eventTime, type EventItem } from '../lib/events'
 import { statusMeta, formatListingPrice, propertyTypeLabel } from '../lib/listings'
+import { WebStatusDot } from '../components/WebStatusLight'
 import type { Page } from '../components/Sidebar'
 import type { LeadsFilter } from './Leads'
 
@@ -243,7 +244,10 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
                                 {l.main_image ? <img src={l.main_image} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full w-full place-items-center text-tx-faint"><Building2 className="h-4 w-4" /></div>}
                               </div>
                               <div className="min-w-0">
-                                <div className="truncate text-sm font-bold text-tx">{l.title}</div>
+                                <div className="flex items-center gap-1.5">
+                                  <WebStatusDot value={l.web_status} />
+                                  <div className="truncate text-sm font-bold text-tx">{l.title}</div>
+                                </div>
                                 {l.reference_number && <div className="text-xs text-tx-faint">{l.reference_number}</div>}
                               </div>
                             </div>

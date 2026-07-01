@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Plus, Building2, MapPin, Star, Users, Ruler, ExternalLink } from 'lucide-react'
+import { Plus, Building2, MapPin, Star, Users, Ruler, ExternalLink, Trash2, Loader2 } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { ListingForm } from '../components/ListingForm'
 import { WebStatusLight } from '../components/WebStatusLight'
+import { pathFromPublicUrl, removePhotoFiles } from '../lib/photos'
 import { useListings } from '../lib/listingsContext'
 import { useLeads } from '../lib/leadsContext'
 import {
@@ -15,10 +16,27 @@ type Filter = 'all' | Listing['status']
 const WEB_BASE = 'https://www.petrazabranska.com/nemovitosti'
 
 export function Nemovitosti(): JSX.Element {
-  const { listings, loading, error, refetch, patch } = useListings()
+  const { listings, loading, error, refetch, patch, remove } = useListings()
   const { leads } = useLeads()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const setWebStatus = (l: Listing, v: WebStatus): void => { void patch(l.id, { web_status: v }) }
+
+  const deleteListing = async (l: Listing): Promise<void> => {
+    if (!window.confirm(`Opravdu smazat nemovitost „${l.title}"?\n\nSmaže se z databáze i webu včetně všech fotek. Akci nelze vrátit.`)) return
+    setDeletingId(l.id)
+    try {
+      const paths = [l.main_image, ...(l.images ?? [])]
+        .map(pathFromPublicUrl)
+        .filter((p): p is string => !!p)
+      if (paths.length) await removePhotoFiles([...new Set(paths)])
+      await remove(l.id)
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Nemovitost se nepodařilo smazat.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
   const [filter, setFilter] = useState<Filter>('all')
   const [editing, setEditing] = useState<Listing | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -100,13 +118,24 @@ export function Nemovitosti(): JSX.Element {
                         <div onClick={(e) => e.stopPropagation()} title="Viditelnost na webu">
                           <WebStatusLight value={l.web_status} onChange={(v) => setWebStatus(l, v)} size={11} showLabel />
                         </div>
-                        <a
-                          href={`${WEB_BASE}/${l.slug}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
-                          title="Zobrazit na webu"
-                          className="flex shrink-0 items-center gap-1 rounded-lg border border-line px-2 py-1 text-xs font-semibold text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" /> Web
-                        </a>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <a
+                            href={`${WEB_BASE}/${l.slug}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
+                            title="Zobrazit na webu"
+                            className="flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-xs font-semibold text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> Web
+                          </a>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); void deleteListing(l) }}
+                            disabled={deletingId === l.id}
+                            title="Smazat nemovitost"
+                            aria-label="Smazat nemovitost"
+                            className="grid h-7 w-7 place-items-center rounded-lg border border-line text-tx-faint transition hover:border-rose/40 hover:bg-rose-soft hover:text-rose disabled:opacity-50"
+                          >
+                            {deletingId === l.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </article>

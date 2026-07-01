@@ -47,3 +47,16 @@ export function WebStatusLight({ value, onChange, showLabel = false, size = 12, 
     </div>
   )
 }
+
+/** Read-only tečka semaforu — jen ukazuje stav (bez textu, bez přepínání). */
+export function WebStatusDot({ value, size = 9, className = '' }: { value: WebStatus; size?: number; className?: string }): JSX.Element {
+  const s = WEB_STATUSES.find((x) => x.value === value) ?? WEB_STATUSES[0]
+  return (
+    <span
+      title={`${s.label} — ${s.hint}`}
+      aria-label={s.label}
+      className={`inline-block shrink-0 rounded-full ${className}`}
+      style={{ width: size, height: size, background: s.color, boxShadow: `0 0 4px ${s.color}` }}
+    />
+  )
+}
