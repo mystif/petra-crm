@@ -68,11 +68,12 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
 
   // Pipeline trychtýř
   const cnt = (k: string): number => dealLeads.filter((l) => l.crm_status === k).length
+  const sumStage = (...ks: string[]): number => dealLeads.filter((l) => ks.includes(l.crm_status)).reduce((s, l) => s + leadValue(l), 0)
   const funnel = [
-    { label: 'Nové', value: cnt('novy') },
-    { label: 'Jednání', value: cnt('kontaktovan') + cnt('schuzka') },
-    { label: 'Nabídka', value: cnt('nabidka') },
-    { label: 'Uzavřené', value: cnt('uzavreno') }
+    { label: 'Nové', value: cnt('novy'), amount: sumStage('novy') },
+    { label: 'Jednání', value: cnt('kontaktovan') + cnt('schuzka'), amount: sumStage('kontaktovan', 'schuzka') },
+    { label: 'Nabídka', value: cnt('nabidka'), amount: sumStage('nabidka') },
+    { label: 'Uzavřené', value: cnt('uzavreno'), amount: sumStage('uzavreno') }
   ]
   const conversion = Math.round((funnel[3].value / Math.max(1, funnel.reduce((s, f) => s + f.value, 0))) * 1000) / 10
 
@@ -342,7 +343,13 @@ function PerfChart({ data }: { data: { label: string; obrat: number; provize: nu
   )
 }
 
-function Funnel({ data }: { data: { label: string; value: number }[] }): JSX.Element {
+function funnelAmount(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace('.', ',')} mil. Kč`
+  if (v >= 1_000) return `${Math.round(v / 1_000)} tis. Kč`
+  return v > 0 ? `${v} Kč` : ''
+}
+
+function Funnel({ data }: { data: { label: string; value: number; amount: number }[] }): JSX.Element {
   const W = 360, H = 280
   const colors = ['#D4B26F', '#C1A263', '#A8884E', '#7E6736']
   const widths = [1, 0.78, 0.56, 0.34, 0.14]
@@ -356,11 +363,13 @@ function Funnel({ data }: { data: { label: string; value: number }[] }): JSX.Ele
         const yTop = i * (bandH + gap), yBot = yTop + bandH
         const pts = `${cx - wTop / 2},${yTop} ${cx + wTop / 2},${yTop} ${cx + wBot / 2},${yBot} ${cx - wBot / 2},${yBot}`
         const ty = yTop + bandH / 2
+        const amt = funnelAmount(d.amount)
         return (
           <g key={i}>
             <polygon points={pts} fill={colors[i]} />
-            <text x={cx} y={ty - 4} textAnchor="middle" className="fill-white" fontSize="13" fontWeight="600">{d.label}</text>
-            <text x={cx} y={ty + 16} textAnchor="middle" className="fill-white" fontSize="18" fontWeight="800">{d.value}</text>
+            <text x={cx} y={ty - 12} textAnchor="middle" className="fill-white" fontSize="13" fontWeight="600">{d.label}</text>
+            <text x={cx} y={ty + 8} textAnchor="middle" className="fill-white" fontSize="18" fontWeight="800">{d.value}</text>
+            {amt && <text x={cx} y={ty + 24} textAnchor="middle" className="fill-white/85" fontSize="11" fontWeight="500">{amt}</text>}
           </g>
         )
       })}
