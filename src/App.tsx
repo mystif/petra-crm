@@ -20,8 +20,7 @@ import { Contacts } from './pages/Contacts'
 import { Tasks } from './pages/Tasks'
 import { Calendar } from './pages/Calendar'
 import { Nemovitosti } from './pages/Nemovitosti'
-import { Automatizace } from './pages/Automatizace'
-import { Templates } from './pages/Templates'
+import { Marketing } from './pages/Marketing'
 
 export default function App(): JSX.Element {
   return (
@@ -75,8 +74,7 @@ function CRMApp(): JSX.Element {
             {page === 'properties' && <Nemovitosti />}
             {page === 'tasks' && <Tasks />}
             {page === 'calendar' && <Calendar />}
-            {page === 'automatizace' && <Automatizace />}
-            {page === 'templates' && <Templates />}
+            {page === 'marketing' && <Marketing />}
           </div>
         </main>
         <MobileNav current={page} onNavigate={go} />

@@ -11,7 +11,7 @@ import {
   type Template
 } from '../lib/email'
 
-export function Templates(): JSX.Element {
+export function Templates({ embedded = false }: { embedded?: boolean } = {}): JSX.Element {
   const [list, setList] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,14 +31,21 @@ export function Templates(): JSX.Element {
 
   return (
     <div className="flex h-full flex-col">
-      <Topbar
-        title="Email Follow-up"
-        subtitle="Šablony e-mailů pro follow-up a oslovení"
-        showSearch={false}
-        actions={<button className="btn-primary" onClick={() => setEditing('new')}><Plus className="h-4 w-4" /> Nová šablona</button>}
-      />
+      {!embedded && (
+        <Topbar
+          title="Email Follow-up"
+          subtitle="Šablony e-mailů pro follow-up a oslovení"
+          showSearch={false}
+          actions={<button className="btn-primary" onClick={() => setEditing('new')}><Plus className="h-4 w-4" /> Nová šablona</button>}
+        />
+      )}
 
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        {embedded && (
+          <div className="mb-5 flex justify-end">
+            <button className="btn-primary" onClick={() => setEditing('new')}><Plus className="h-4 w-4" /> Nová šablona</button>
+          </div>
+        )}
         {loading ? (
           <Loading />
         ) : error ? (

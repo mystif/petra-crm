@@ -8,8 +8,7 @@ import {
   Building2,
   Search,
   Plus,
-  Mail,
-  Zap,
+  Megaphone,
   LifeBuoy
 } from 'lucide-react'
 import { useState } from 'react'
@@ -21,7 +20,7 @@ import { useSearch } from '../lib/searchContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'tasks' | 'calendar' | 'automatizace' | 'templates'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'tasks' | 'calendar' | 'marketing'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -115,16 +114,10 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
             Ostatní
           </div>
           <button
-            onClick={() => onNavigate('automatizace')}
-            className={`nav-item w-full ${current === 'automatizace' ? 'active' : ''}`}
+            onClick={() => onNavigate('marketing')}
+            className={`nav-item w-full ${current === 'marketing' ? 'active' : ''}`}
           >
-            <Zap className="h-[18px] w-[18px]" /> Automatizace
-          </button>
-          <button
-            onClick={() => onNavigate('templates')}
-            className={`nav-item w-full ${current === 'templates' ? 'active' : ''}`}
-          >
-            <Mail className="h-[18px] w-[18px]" /> Email Follow-up
+            <Megaphone className="h-[18px] w-[18px]" /> Marketing
           </button>
           <button onClick={() => setHelpOpen(true)} className="nav-item w-full">
             <LifeBuoy className="h-[18px] w-[18px]" /> Podpora

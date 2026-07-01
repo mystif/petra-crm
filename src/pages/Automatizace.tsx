@@ -13,7 +13,7 @@ const STEP_ICON: Record<string, typeof UserPlus> = {
   narozeniny_email: Cake
 }
 
-export function Automatizace(): JSX.Element {
+export function Automatizace({ embedded = false }: { embedded?: boolean } = {}): JSX.Element {
   const [rules, setRules] = useState<Rule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,11 +42,13 @@ export function Automatizace(): JSX.Element {
 
   return (
     <div className="flex h-full flex-col">
-      <Topbar
-        title="Automatizace"
-        subtitle={loading ? 'Pravidla, která pracují za vás' : `${activeCount} z ${rules.length} pravidel aktivních`}
-        showSearch={false}
-      />
+      {!embedded && (
+        <Topbar
+          title="Automatizace"
+          subtitle={loading ? 'Pravidla, která pracují za vás' : `${activeCount} z ${rules.length} pravidel aktivních`}
+          showSearch={false}
+        />
+      )}
 
       {loading ? (
         <Loading />

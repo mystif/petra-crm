@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutGrid, KanbanSquare, Inbox, CheckSquare, CalendarDays, MoreHorizontal, Users, Building2, Mail, Zap, LifeBuoy, X } from 'lucide-react'
+import { LayoutGrid, KanbanSquare, Inbox, CheckSquare, CalendarDays, MoreHorizontal, Users, Building2, Megaphone, LifeBuoy, X } from 'lucide-react'
 import type { ComponentType, ReactNode } from 'react'
 import type { Page } from './Sidebar'
 import { Avatar } from './Avatar'
@@ -18,7 +18,7 @@ const PRIMARY: { id: Page; icon: ComponentType<{ className?: string }>; label: s
 ]
 
 // Stránky dostupné přes „Víc".
-const MORE_PAGES: Page[] = ['contacts', 'properties', 'automatizace', 'templates']
+const MORE_PAGES: Page[] = ['contacts', 'properties', 'marketing']
 
 interface MobileNavProps {
   current: Page
@@ -84,8 +84,7 @@ export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element 
             <div className="px-3 pb-3">
               <SheetRow icon={Users} label="Kontakty" active={current === 'contacts'} onClick={() => go('contacts')} />
               <SheetRow icon={Building2} label="Nemovitosti" active={current === 'properties'} onClick={() => go('properties')} />
-              <SheetRow icon={Zap} label="Automatizace" active={current === 'automatizace'} onClick={() => go('automatizace')} />
-              <SheetRow icon={Mail} label="Email Follow-up" active={current === 'templates'} onClick={() => go('templates')} />
+              <SheetRow icon={Megaphone} label="Marketing" active={current === 'marketing'} onClick={() => go('marketing')} />
               <SheetRow icon={LifeBuoy} label="Podpora" href="mailto:jirka.zabransky@gmail.com?subject=Petra%20CRM%20%E2%80%93%20podpora" />
 
               <button
