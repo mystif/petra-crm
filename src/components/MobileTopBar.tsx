@@ -10,7 +10,7 @@ export function MobileTopBar(): JSX.Element {
         className="flex h-14 items-center justify-between"
         style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}
       >
-        <img src="./logo-crm.png" alt="AUREA — Real Estate CRM" className="h-9 w-auto object-contain" />
+        <img src="./logo-mobil.png" alt="AUREA — Real Estate CRM" className="h-8 w-auto object-contain" />
         <button onClick={openAgent} aria-label="Profil makléře" className="rounded-full ring-2 ring-gold/60 transition active:scale-95">
           <Avatar name={makler?.name || 'Petra Zábranská'} src={avatarUrl} size={38} />
         </button>
