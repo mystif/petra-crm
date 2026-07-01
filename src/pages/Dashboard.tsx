@@ -16,6 +16,7 @@ import { topReferrers } from '../lib/referrals'
 import { eventTypeMeta, isOverdue, sameDay, eventTime, type EventItem } from '../lib/events'
 import { statusMeta, formatListingPrice, propertyTypeLabel } from '../lib/listings'
 import { WebStatusDot } from '../components/WebStatusLight'
+import { Weather } from '../components/Weather'
 import type { Page } from '../components/Sidebar'
 import type { LeadsFilter } from './Leads'
 
@@ -121,7 +122,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
     <div className="flex h-full flex-col">
       <Topbar
         title="Přehled"
-        subtitle="Souhrn vašeho realitního byznysu"
+        titleAside={<Weather />}
       />
 
       {loading ? (
