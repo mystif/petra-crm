@@ -8,10 +8,10 @@ import { updateMakler, type Makler } from '../lib/makler'
 import { uploadPhoto, photoUrl } from '../lib/photos'
 import { formatCZK } from '../lib/format'
 
-export function MaklerCard({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element | null {
+export function MaklerCard(): JSX.Element | null {
   const { leads } = useLeads()
   const { session, signOut, changePassword } = useAuth()
-  const { makler, setMakler } = useMakler()
+  const { makler, setMakler, agentOpen: open, closeAgent: onClose } = useMakler()
   const [form, setForm] = useState<Partial<Makler>>({})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)

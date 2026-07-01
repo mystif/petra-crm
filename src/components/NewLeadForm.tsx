@@ -17,6 +17,13 @@ const DEAL_OPTIONS: { value: string; label: string }[] = [
   { value: 'prodej', label: 'Prodej' },
   { value: 'pronájem', label: 'Pronájem' }
 ]
+const SOURCE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Web', label: 'Web (formulář)' },
+  { value: 'Sreality', label: 'Sreality' },
+  { value: 'Telefonát', label: 'Telefonát' },
+  { value: 'Email', label: 'Email' },
+  { value: 'Dopis', label: 'Dopis' }
+]
 
 type LeadType = 'poptavka' | 'odhad' | 'doporucitel'
 
@@ -31,6 +38,7 @@ interface FormState {
   price: string
   crm_status: StageKey
   priorita: string
+  source: string
   doporucil_id: string
   follow_up_at: string
   message: string
@@ -47,6 +55,7 @@ const EMPTY: FormState = {
   price: '',
   crm_status: 'novy',
   priorita: '',
+  source: 'Telefonát',
   doporucil_id: '',
   follow_up_at: '',
   message: ''
@@ -90,7 +99,7 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
         crm_status: isRef ? 'novy' : form.crm_status,
         priorita: isRef ? null : (form.priorita || null),
         doporucil_id: form.doporucil_id || null,
-        source: isRef ? 'Doporučitel' : (form.doporucil_id ? 'Doporučení' : 'Ručně'),
+        source: isRef ? 'Doporučitel' : (form.doporucil_id ? 'Doporučení' : form.source),
         follow_up_at: isRef ? null : (form.follow_up_at || null),
         message: form.message.trim() || null
       })
@@ -173,7 +182,11 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
                 {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
               </select>
             </Field>
-            <div className="hidden sm:block" />
+            <Field label="Odkud přišel">
+              <select className="input" value={form.source} onChange={(e) => set({ source: e.target.value })} disabled={!!form.doporucil_id}>
+                {SOURCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </Field>
           </>
         )}
 

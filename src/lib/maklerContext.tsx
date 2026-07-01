@@ -8,6 +8,10 @@ interface MaklerState {
   refetch: () => Promise<void>
   /** Veřejná URL profilové fotky makléře, nebo null. */
   avatarUrl: string | null
+  /** Karta makléře (profil) — stav otevření a ovládání. */
+  agentOpen: boolean
+  openAgent: () => void
+  closeAgent: () => void
 }
 
 const MaklerContext = createContext<MaklerState | null>(null)
@@ -20,6 +24,9 @@ export function useMakler(): MaklerState {
 
 export function MaklerProvider({ children }: { children: ReactNode }): JSX.Element {
   const [makler, setMakler] = useState<Makler | null>(null)
+  const [agentOpen, setAgentOpen] = useState(false)
+  const openAgent = useCallback(() => setAgentOpen(true), [])
+  const closeAgent = useCallback(() => setAgentOpen(false), [])
 
   const refetch = useCallback(async () => {
     try {
@@ -36,7 +43,7 @@ export function MaklerProvider({ children }: { children: ReactNode }): JSX.Eleme
   const avatarUrl = makler?.photo_path ? photoUrl(makler.photo_path) : null
 
   return (
-    <MaklerContext.Provider value={{ makler, setMakler, refetch, avatarUrl }}>
+    <MaklerContext.Provider value={{ makler, setMakler, refetch, avatarUrl, agentOpen, openAgent, closeAgent }}>
       {children}
     </MaklerContext.Provider>
   )

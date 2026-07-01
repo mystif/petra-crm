@@ -23,14 +23,13 @@ const MORE_PAGES: Page[] = ['contacts', 'properties', 'automatizace', 'templates
 interface MobileNavProps {
   current: Page
   onNavigate: (p: Page) => void
-  onOpenAgent: () => void
 }
 
 /** Spodní lišta pro mobil — vyšší dotykové cíle s popisky + sheet „Víc". */
-export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps): JSX.Element {
+export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element {
   const { leads } = useLeads()
   const { events } = useEvents()
-  const { makler, avatarUrl } = useMakler()
+  const { makler, avatarUrl, openAgent } = useMakler()
   const [moreOpen, setMoreOpen] = useState(false)
 
   const fresh = leads.filter((l) => l.crm_status === 'novy' && !isReferrer(l)).length
@@ -90,7 +89,7 @@ export function MobileNav({ current, onNavigate, onOpenAgent }: MobileNavProps):
               <SheetRow icon={LifeBuoy} label="Podpora" href="mailto:jirka.zabransky@gmail.com?subject=Petra%20CRM%20%E2%80%93%20podpora" />
 
               <button
-                onClick={() => { setMoreOpen(false); onOpenAgent() }}
+                onClick={() => { setMoreOpen(false); openAgent() }}
                 className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-canvas"
               >
                 <Avatar name={makler?.name || 'Petra Zábranská'} src={avatarUrl} size={40} />

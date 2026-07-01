@@ -199,6 +199,10 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     await patch(lead.id, { property_id: val || null })
   }
 
+  const saveSource = async (val: string): Promise<void> => {
+    await patch(lead.id, { source: val || null })
+  }
+
   /** Otevře editaci kontaktu s aktuálními hodnotami leadu. */
   const startEditContact = (): void => {
     setPhoneVal(lead.phone ?? '')
@@ -521,6 +525,18 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               <select className="input" value={lead.property_id ?? ''} onChange={(e) => saveProperty(e.target.value)}>
                 <option value="">— žádná —</option>
                 {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Navigation className="h-3.5 w-3.5" /> Odkud přišel</label>
+              <select className="input" value={lead.source ?? ''} onChange={(e) => saveSource(e.target.value)}>
+                <option value="">— neuvedeno —</option>
+                {(() => {
+                  const opts = ['Web', 'Sreality', 'Telefonát', 'Email', 'Dopis']
+                  const cur = lead.source ?? ''
+                  const list = cur && !opts.includes(cur) ? [cur, ...opts] : opts
+                  return list.map((s) => <option key={s} value={s}>{s}</option>)
+                })()}
               </select>
             </div>
           </div>

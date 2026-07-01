@@ -13,13 +13,11 @@ import {
   LifeBuoy
 } from 'lucide-react'
 import { useState } from 'react'
-import { Avatar } from './Avatar'
 import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
 import { useNewLead } from '../lib/newLeadContext'
 import { useSearch } from '../lib/searchContext'
-import { useMakler } from '../lib/maklerContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
@@ -38,15 +36,13 @@ const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
 interface SidebarProps {
   current: Page
   onNavigate: (p: Page) => void
-  onOpenAgent: () => void
 }
 
-export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX.Element {
+export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
   const { leads } = useLeads()
   const { events } = useEvents()
   const { open: openNewLead } = useNewLead()
   const { openSearch } = useSearch()
-  const { makler, avatarUrl } = useMakler()
   const [helpOpen, setHelpOpen] = useState(false)
   // Odznak u Poptávek = počet nových (nezpracovaných) leadů.
   const freshCount = leads.filter((l) => l.crm_status === 'novy' && !isReferrer(l)).length
@@ -134,19 +130,6 @@ export function Sidebar({ current, onNavigate, onOpenAgent }: SidebarProps): JSX
             <LifeBuoy className="h-[18px] w-[18px]" /> Podpora
           </button>
         </nav>
-
-        {/* profil makléře — otevře kartu makléře */}
-        <button
-          onClick={onOpenAgent}
-          className="m-3 flex items-center gap-3 rounded-xl bg-white/[.06] p-2.5 text-left ring-1 ring-white/10 transition hover:bg-white/[.1]"
-        >
-          <Avatar name={makler?.name || 'Petra Zábranská'} src={avatarUrl} size={36} />
-          <div className="min-w-0 leading-tight">
-            <div className="truncate text-sm font-semibold">{makler?.name || 'Petra Zábranská'}</div>
-            <div className="truncate text-[11px] text-white/45">Realitní makléřka</div>
-          </div>
-          <div className="ml-auto h-2 w-2 rounded-full bg-emerald shadow-[0_0_8px_#0FA968]" />
-        </button>
       </div>
     </aside>
 

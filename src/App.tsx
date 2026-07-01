@@ -48,8 +48,6 @@ function AuthGate(): JSX.Element {
 function CRMApp(): JSX.Element {
   const [page, setPage] = useState<Page>('dashboard')
   const [leadsFilter, setLeadsFilter] = useState<LeadsFilter>('vse')
-  const [agentOpen, setAgentOpen] = useState(false)
-  const openAgent = (): void => setAgentOpen(true)
 
   // Navigace s volitelným „ohniskem" — banner follow-upu rovnou nastaví filtr Poptávek.
   const go = (p: Page, focus?: LeadsFilter): void => {
@@ -66,9 +64,9 @@ function CRMApp(): JSX.Element {
       <NewLeadProvider>
       <SearchProvider>
       <div className="flex h-[100dvh] overflow-hidden bg-canvas">
-        <Sidebar current={page} onNavigate={go} onOpenAgent={openAgent} />
+        <Sidebar current={page} onNavigate={go} />
         <main className="flex flex-1 flex-col overflow-hidden pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0">
-          <MobileTopBar onOpenAgent={openAgent} />
+          <MobileTopBar />
           <div className="min-h-0 flex-1">
             {page === 'dashboard' && <Dashboard onNavigate={go} />}
             {page === 'pipeline' && <Pipeline />}
@@ -81,9 +79,9 @@ function CRMApp(): JSX.Element {
             {page === 'templates' && <Templates />}
           </div>
         </main>
-        <MobileNav current={page} onNavigate={go} onOpenAgent={openAgent} />
+        <MobileNav current={page} onNavigate={go} />
       </div>
-      <MaklerCard open={agentOpen} onClose={() => setAgentOpen(false)} />
+      <MaklerCard />
       </SearchProvider>
       </NewLeadProvider>
       </LeadDetailProvider>

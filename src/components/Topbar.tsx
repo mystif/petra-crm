@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useSearch } from '../lib/searchContext'
 import { useLeads } from '../lib/leadsContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
+import { useMakler } from '../lib/maklerContext'
 import { CLOSED_STAGES, type Lead } from '../lib/supabase'
 import { Avatar } from './Avatar'
 import { relativeDays, formatDate } from '../lib/format'
@@ -19,6 +20,7 @@ export function Topbar({ title, subtitle, actions, showSearch = true }: TopbarPr
   const { openSearch } = useSearch()
   const { leads } = useLeads()
   const { openLead } = useLeadDetail()
+  const { makler, avatarUrl, openAgent } = useMakler()
   const [notifOpen, setNotifOpen] = useState(false)
 
   // Notifikace: follow-upy k vyřízení + nové (nezpracované) leady.
@@ -104,6 +106,19 @@ export function Topbar({ title, subtitle, actions, showSearch = true }: TopbarPr
         </div>
 
         {actions}
+
+        {/* profil makléře — jen desktop, otevře kartu makléře */}
+        <button
+          onClick={openAgent}
+          aria-label="Profil makléře"
+          className="ml-1 hidden items-center gap-2.5 rounded-xl border border-line bg-white py-1.5 pl-1.5 pr-3 transition hover:border-brand/40 md:flex"
+        >
+          <Avatar name={makler?.name || 'Petra Zábranská'} src={avatarUrl} size={32} />
+          <div className="min-w-0 text-left leading-tight">
+            <div className="truncate text-sm font-semibold text-tx">{makler?.name || 'Petra Zábranská'}</div>
+            <div className="truncate text-[11px] text-tx-faint">Realitní makléřka</div>
+          </div>
+        </button>
       </div>
     </header>
   )
