@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import { Loader2, ImagePlus, Star, X, Trash2, ChevronDown, Globe } from 'lucide-react'
 import { Modal } from './Modal'
+import { WebStatusLight } from './WebStatusLight'
 import { useListings } from '../lib/listingsContext'
 import {
   PROPERTY_TYPES, STATUSES, OFFER_TYPES, CONDITIONS, CONSTRUCTIONS, OWNERSHIPS, FEATURES,
-  makeSlug, type Listing, type PropertyType, type ListingStatus, type OfferType
+  webStatusMeta, makeSlug, type Listing, type PropertyType, type ListingStatus, type OfferType, type WebStatus
 } from '../lib/listings'
 import { uploadPhoto, photoUrl, BUCKET } from '../lib/photos'
 import { supabase } from '../lib/supabase'
@@ -40,6 +41,7 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
   const [offer, setOffer] = useState<OfferType>(listing?.offer_type ?? 'sale')
   const [ptype, setPtype] = useState<PropertyType>(listing?.property_type ?? 'apartment')
   const [status, setStatus] = useState<ListingStatus>(listing?.status ?? 'available')
+  const [webStatus, setWebStatus] = useState<WebStatus>(listing?.web_status ?? 'online')
   const [price, setPrice] = useState(String(listing?.price ?? ''))
   const [priceNote, setPriceNote] = useState(listing?.price_note ?? '')
   const [location, setLocation] = useState(listing?.location ?? '')
@@ -127,6 +129,7 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
       offer_type: offer,
       property_type: ptype,
       status,
+      web_status: webStatus,
       price: num(price),
       price_note: priceNote.trim() || null,
       location: location.trim(),
@@ -188,7 +191,11 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
           <button className="btn-ghost" onClick={onClose}>Zrušit</button>
           <button className="btn-primary" onClick={save} disabled={saving || uploading}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-            {saving ? 'Ukládám…' : editing ? 'Uložit a zveřejnit' : 'Vytvořit a zveřejnit'}
+            {saving
+              ? 'Ukládám…'
+              : webStatus === 'online'
+                ? (editing ? 'Uložit a zveřejnit' : 'Vytvořit a zveřejnit')
+                : (editing ? 'Uložit' : 'Vytvořit koncept')}
           </button>
         </>
       }
@@ -327,8 +334,17 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
         </div>
       )}
 
+      {/* viditelnost na webu — semafor */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line p-3">
+        <div>
+          <div className="text-sm font-semibold text-tx">Viditelnost na webu</div>
+          <div className="text-[11px] text-tx-faint">{webStatusMeta(webStatus).hint}</div>
+        </div>
+        <WebStatusLight value={webStatus} onChange={setWebStatus} showLabel size={22} />
+      </div>
+
       {/* nastavení webu */}
-      <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-line p-3">
+      <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border border-line p-3">
         <label className="flex items-center gap-2 text-sm font-semibold text-tx">
           <input type="checkbox" className="h-4 w-4 accent-brand-dark" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
           Doporučená (nahoře na webu)

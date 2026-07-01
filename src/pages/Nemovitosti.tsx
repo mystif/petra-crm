@@ -3,10 +3,11 @@ import { Plus, Building2, MapPin, Star, Users, Ruler, ExternalLink } from 'lucid
 import { Topbar } from '../components/Topbar'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { ListingForm } from '../components/ListingForm'
+import { WebStatusLight } from '../components/WebStatusLight'
 import { useListings } from '../lib/listingsContext'
 import { useLeads } from '../lib/leadsContext'
 import {
-  STATUSES, statusMeta, propertyTypeLabel, offerTypeLabel, formatListingPrice, type Listing
+  STATUSES, statusMeta, propertyTypeLabel, offerTypeLabel, formatListingPrice, type Listing, type WebStatus
 } from '../lib/listings'
 
 type Filter = 'all' | Listing['status']
@@ -14,8 +15,10 @@ type Filter = 'all' | Listing['status']
 const WEB_BASE = 'https://www.petrazabranska.com/nemovitosti'
 
 export function Nemovitosti(): JSX.Element {
-  const { listings, loading, error, refetch } = useListings()
+  const { listings, loading, error, refetch, patch } = useListings()
   const { leads } = useLeads()
+
+  const setWebStatus = (l: Listing, v: WebStatus): void => { void patch(l.id, { web_status: v }) }
   const [filter, setFilter] = useState<Filter>('all')
   const [editing, setEditing] = useState<Listing | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -75,6 +78,9 @@ export function Nemovitosti(): JSX.Element {
                       <span className={`pill absolute left-2.5 top-2.5 ${sm.cls}`}>{sm.label}</span>
                       {l.featured && <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-ink"><Star className="h-3 w-3" /> Doporučená</span>}
                       <span className="absolute bottom-2.5 left-2.5 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">{offerTypeLabel(l.offer_type)} · {propertyTypeLabel(l.property_type)}</span>
+                      <div className="absolute bottom-2.5 right-2.5" onClick={(e) => e.stopPropagation()}>
+                        <WebStatusLight value={l.web_status} onChange={(v) => setWebStatus(l, v)} size={16} />
+                      </div>
                     </div>
                     <div className="p-4">
                       <h3 className="truncate font-bold text-tx">{l.title}</h3>

@@ -6,6 +6,8 @@ import { supabase } from './supabase'
 export type PropertyType = 'house' | 'apartment' | 'commercial' | 'land'
 export type ListingStatus = 'available' | 'reserved' | 'sold'
 export type OfferType = 'sale' | 'rent'
+/** Viditelnost na webu — semafor: zelená online / oranžová koncept / červená skryto. */
+export type WebStatus = 'online' | 'draft' | 'hidden'
 
 export interface Listing {
   id: string
@@ -14,6 +16,7 @@ export interface Listing {
   title: string
   property_type: PropertyType
   status: ListingStatus
+  web_status: WebStatus
   offer_type: OfferType
   price: number | null
   price_note: string | null
@@ -56,6 +59,15 @@ export const OFFER_TYPES: { value: OfferType; label: string }[] = [
   { value: 'sale', label: 'Prodej' },
   { value: 'rent', label: 'Pronájem' }
 ]
+/** Semafor viditelnosti na webu. `color` = barva svítícího světla. */
+export const WEB_STATUSES: { value: WebStatus; label: string; hint: string; color: string }[] = [
+  { value: 'online', label: 'Online', hint: 'Zveřejněno — je vidět na webu', color: '#0FA968' },
+  { value: 'draft', label: 'Koncept', hint: 'Rozpracováno — není na webu', color: '#E0A83E' },
+  { value: 'hidden', label: 'Skryto', hint: 'Není vidět na webu', color: '#E5484D' }
+]
+export function webStatusMeta(s: string | null): { value: WebStatus; label: string; hint: string; color: string } {
+  return WEB_STATUSES.find((x) => x.value === s) ?? WEB_STATUSES[0]
+}
 export const CONDITIONS: { value: string; label: string }[] = [
   { value: 'new', label: 'Novostavba' },
   { value: 'very_good', label: 'Velmi dobrý stav' },
