@@ -78,9 +78,6 @@ export function Nemovitosti(): JSX.Element {
                       <span className={`pill absolute left-2.5 top-2.5 ${sm.cls}`}>{sm.label}</span>
                       {l.featured && <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-ink"><Star className="h-3 w-3" /> Doporučená</span>}
                       <span className="absolute bottom-2.5 left-2.5 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">{offerTypeLabel(l.offer_type)} · {propertyTypeLabel(l.property_type)}</span>
-                      <div className="absolute bottom-2.5 right-2.5" onClick={(e) => e.stopPropagation()}>
-                        <WebStatusLight value={l.web_status} onChange={(v) => setWebStatus(l, v)} size={16} />
-                      </div>
                     </div>
                     <div className="p-4">
                       <h3 className="truncate font-bold text-tx">{l.title}</h3>
@@ -99,12 +96,18 @@ export function Nemovitosti(): JSX.Element {
                           </span>
                         )}
                       </div>
-                      <a
-                        href={`${WEB_BASE}/${l.slug}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
-                        className="mt-2 flex items-center gap-1 text-xs font-semibold text-brand-dark hover:underline"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" /> Zobrazit na webu
-                      </a>
+                      <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
+                        <div onClick={(e) => e.stopPropagation()} title="Viditelnost na webu">
+                          <WebStatusLight value={l.web_status} onChange={(v) => setWebStatus(l, v)} size={11} showLabel />
+                        </div>
+                        <a
+                          href={`${WEB_BASE}/${l.slug}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
+                          title="Zobrazit na webu"
+                          className="flex shrink-0 items-center gap-1 rounded-lg border border-line px-2 py-1 text-xs font-semibold text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" /> Web
+                        </a>
+                      </div>
                     </div>
                   </article>
                 )

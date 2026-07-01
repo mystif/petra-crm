@@ -61,9 +61,9 @@ export const OFFER_TYPES: { value: OfferType; label: string }[] = [
 ]
 /** Semafor viditelnosti na webu. `color` = barva svítícího světla. */
 export const WEB_STATUSES: { value: WebStatus; label: string; hint: string; color: string }[] = [
-  { value: 'online', label: 'Online', hint: 'Zveřejněno — je vidět na webu', color: '#0FA968' },
-  { value: 'draft', label: 'Koncept', hint: 'Rozpracováno — není na webu', color: '#E0A83E' },
-  { value: 'hidden', label: 'Skryto', hint: 'Není vidět na webu', color: '#E5484D' }
+  { value: 'online', label: 'Online', hint: 'Zveřejněno — je vidět na webu', color: '#16A34A' },
+  { value: 'draft', label: 'Koncept', hint: 'Rozpracováno — není na webu', color: '#F59E0B' },
+  { value: 'hidden', label: 'Skryto', hint: 'Není vidět na webu', color: '#EF4444' }
 ]
 export function webStatusMeta(s: string | null): { value: WebStatus; label: string; hint: string; color: string } {
   return WEB_STATUSES.find((x) => x.value === s) ?? WEB_STATUSES[0]
