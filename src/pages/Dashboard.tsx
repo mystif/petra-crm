@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState, type ComponentType } from 'react'
 import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, TrendingDown,
-  ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Gift } from 'lucide-react'
+  ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Gift,
+  FileText, Clock, Percent, Wallet, Banknote, CalendarClock, Handshake, CalendarCheck2 } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { AnnaBriefing } from '../components/AnnaBriefing'
@@ -29,6 +30,37 @@ function pct(cur: number, prev: number): number | null {
   return Math.round(((cur - prev) / prev) * 100)
 }
 
+function addDays(d: Date, n: number): Date { const x = new Date(d); x.setDate(x.getDate() + n); return x }
+
+/** Kompaktní Kč: 6,5 mil. Kč / 20 tis. Kč / 0 Kč. */
+function compactKc(v: number): string {
+  if (v >= 1_000_000) {
+    const m = v / 1_000_000
+    return `${Number.isInteger(m) ? m : m.toFixed(1).replace('.', ',')} mil. Kč`
+  }
+  if (v >= 1_000) return `${Math.round(v / 1000)} tis. Kč`
+  return `${Math.round(v)} Kč`
+}
+
+/** Animovaný počet od 0 k cíli (ease-out kubika), volitelně s desetinnými místy. */
+function useCountUp(target: number, duration = 700, decimals = 0): number {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    let raf = 0
+    const t0 = performance.now()
+    const factor = Math.pow(10, decimals)
+    const tick = (now: number): void => {
+      const t = Math.min(1, (now - t0) / duration)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setVal(Math.round(target * eased * factor) / factor)
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target, duration, decimals])
+  return val
+}
+
 export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsFilter) => void }): JSX.Element {
   const { leads, loading, error, refetch } = useLeads()
   const { events } = useEvents()
@@ -36,6 +68,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const { openLead } = useLeadDetail()
 
   const [period, setPeriod] = useState<'mesic' | 'rok'>('mesic')
+  const [pipelinePeriod, setPipelinePeriod] = useState<'dnes' | 'tyden' | 'mesic' | 'rok'>('mesic')
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -68,16 +101,59 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
     { label: 'Provize (měsíc)', value: formatCZK(provizeMonth, true), icon: Coins, trend: provizePctM == null ? null : { text: `${provizePctM >= 0 ? '+' : ''}${provizePctM} % vs minulý`, positive: provizePctM >= 0 } }
   ]
 
-  // Pipeline trychtýř
-  const cnt = (k: string): number => dealLeads.filter((l) => l.crm_status === k).length
-  const sumStage = (...ks: string[]): number => dealLeads.filter((l) => ks.includes(l.crm_status)).reduce((s, l) => s + leadValue(l), 0)
-  const funnel = [
-    { label: 'Nové', value: cnt('novy'), amount: sumStage('novy') },
-    { label: 'Jednání', value: cnt('kontaktovan') + cnt('schuzka'), amount: sumStage('kontaktovan', 'schuzka') },
-    { label: 'Nabídka', value: cnt('nabidka'), amount: sumStage('nabidka') },
-    { label: 'Uzavřené', value: cnt('uzavreno'), amount: sumStage('uzavreno') }
+  // Pipeline obchodů — kohorta dle leadů VZNIKLÝCH ve zvoleném období (Dnes/Týden/Měsíc/Rok).
+  // Obchody po splatnosti / Aktivní jednání jsou vždy aktuální stav (ne historická kohorta),
+  // Uzavření tento měsíc je vždy vázané na kalendářní měsíc — nezávisle na filtru.
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const pipelineBounds = (p: typeof pipelinePeriod): { start: Date; prevStart: Date; prevEnd: Date } => {
+    if (p === 'dnes') return { start: dayStart, prevStart: addDays(dayStart, -1), prevEnd: dayStart }
+    if (p === 'tyden') { const s = addDays(dayStart, -6); return { start: s, prevStart: addDays(s, -7), prevEnd: s } }
+    if (p === 'rok') return { start: yearStart, prevStart: lastYearStart, prevEnd: yearStart }
+    return { start: monthStart, prevStart: lastMonthStart, prevEnd: monthStart }
+  }
+  const { start: cohortStart, prevStart: cohortPrevStart, prevEnd: cohortPrevEnd } = pipelineBounds(pipelinePeriod)
+  const cohort = dealLeads.filter((l) => new Date(l.created_at) >= cohortStart)
+  const prevCohort = dealLeads.filter((l) => { const d = new Date(l.created_at); return d >= cohortPrevStart && d < cohortPrevEnd })
+
+  const cCnt = (k: string): number => cohort.filter((l) => l.crm_status === k).length
+  const cSum = (...ks: string[]): number => cohort.filter((l) => ks.includes(l.crm_status)).reduce((s, l) => s + leadValue(l), 0)
+  const pipelineStagesRaw = [
+    { label: 'Nové', icon: Users, value: cCnt('novy'), amount: cSum('novy') },
+    { label: 'Jednání', icon: MessageSquare, value: cCnt('kontaktovan') + cCnt('schuzka'), amount: cSum('kontaktovan', 'schuzka') },
+    { label: 'Nabídka', icon: FileText, value: cCnt('nabidka'), amount: cSum('nabidka') },
+    { label: 'Uzavřené', icon: CheckCircle2, value: cCnt('uzavreno'), amount: cSum('uzavreno') }
   ]
-  const conversion = Math.round((funnel[3].value / Math.max(1, funnel.reduce((s, f) => s + f.value, 0))) * 1000) / 10
+  const cohortTotal = Math.max(1, pipelineStagesRaw.reduce((s, x) => s + x.value, 0))
+  const pipelineStages = pipelineStagesRaw.map((s) => ({ ...s, sharePct: Math.round((s.value / cohortTotal) * 100) }))
+
+  const convOf = (arr: typeof cohort): number => arr.length > 0 ? Math.round((arr.filter((l) => l.crm_status === 'uzavreno').length / arr.length) * 1000) / 10 : 0
+  const pipelineConversion = convOf(cohort)
+  const pipelineConversionDelta = Math.round((pipelineConversion - convOf(prevCohort)) * 10) / 10
+
+  const wonCohort = cohort.filter((l) => l.crm_status === 'uzavreno')
+  const avgDealDays = wonCohort.length > 0
+    ? Math.round(wonCohort.reduce((s, l) => s + (new Date(l.crm_updated_at || l.created_at).getTime() - new Date(l.created_at).getTime()), 0) / wonCohort.length / 86_400_000)
+    : null
+  const wonWithProvize = wonCohort.filter((l) => l.provize)
+  const avgProvize = wonWithProvize.length > 0 ? wonWithProvize.reduce((s, l) => s + Number(l.provize || 0), 0) / wonWithProvize.length : null
+  const offerReached = cohort.filter((l) => ['nabidka', 'uzavreno', 'ztraceno'].includes(l.crm_status))
+  const offerSuccessRate = offerReached.length > 0 ? Math.round((wonCohort.length / offerReached.length) * 1000) / 10 : null
+  const pipelineVolume = cohort.filter((l) => l.crm_status !== 'ztraceno').reduce((s, l) => s + leadValue(l), 0)
+  const expectedProvize = cohort.filter((l) => !CLOSED_STAGES.includes(l.crm_status)).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const overdueDeals = open.filter((l) => l.follow_up_at && new Date(l.follow_up_at) < now).length
+  const activeNegotiations = open.filter((l) => l.crm_status === 'kontaktovan' || l.crm_status === 'schuzka').length
+  const closedThisMonth = won.filter((l) => inMonth(l.crm_updated_at)).length
+
+  const pipelineKpis: { icon: ComponentType<{ className?: string }>; label: string; raw: number; format: (n: number) => string }[] = [
+    { icon: Clock, label: 'Průměrná délka obchodu', raw: avgDealDays ?? 0, format: (n) => (avgDealDays == null ? '—' : `${n} dní`) },
+    { icon: Coins, label: 'Průměrná provize', raw: avgProvize ?? 0, format: (n) => (avgProvize == null ? '—' : compactKc(n)) },
+    { icon: Percent, label: 'Úspěšnost nabídek', raw: offerSuccessRate ?? 0, format: (n) => (offerSuccessRate == null ? '—' : `${Math.round(n)} %`) },
+    { icon: Wallet, label: 'Celkový objem pipeline', raw: pipelineVolume, format: compactKc },
+    { icon: Banknote, label: 'Očekávaná provize', raw: expectedProvize, format: compactKc },
+    { icon: CalendarClock, label: 'Obchody po splatnosti', raw: overdueDeals, format: (n) => `${n}` },
+    { icon: Handshake, label: 'Aktivní jednání', raw: activeNegotiations, format: (n) => `${n}` },
+    { icon: CalendarCheck2, label: 'Uzavření tento měsíc', raw: closedThisMonth, format: (n) => `${n}` }
+  ]
 
   // Přehled výkonu — škálovatelný dle období (tento měsíc / tento rok)
   const periodStart = period === 'mesic' ? monthStart : yearStart
@@ -160,8 +236,18 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             })}
           </section>
 
-          {/* Hlavní řada — na velkém monitoru 4 boxy vedle sebe (2×2 na střední, 1 na mobilu) */}
-          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-4">
+          {/* Pipeline obchodů — plnošířkový analytický widget */}
+          <PipelineWidget
+            period={pipelinePeriod}
+            onPeriod={setPipelinePeriod}
+            stages={pipelineStages}
+            conversion={pipelineConversion}
+            conversionDelta={pipelineConversionDelta}
+            kpis={pipelineKpis}
+          />
+
+          {/* Hlavní řada — na velkém monitoru 3 boxy vedle sebe (1 na mobilu) */}
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
             {/* Přehled výkonu */}
             <div className="card p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -182,16 +268,6 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            {/* Pipeline obchodů */}
-            <div className="card p-5">
-              <h3 className="mb-4 font-display text-lg font-bold text-tx">Pipeline obchodů</h3>
-              <Funnel data={funnel} />
-              <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-                <span className="text-sm font-semibold text-tx-soft">Konverze lead → obchod</span>
-                <span className="stat-num text-xl text-brand-dark">{conversion} %</span>
               </div>
             </div>
 
@@ -348,37 +424,123 @@ function PerfChart({ data }: { data: { label: string; obrat: number; provize: nu
   )
 }
 
-function funnelAmount(v: number): string {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace('.', ',')} mil. Kč`
-  if (v >= 1_000) return `${Math.round(v / 1_000)} tis. Kč`
-  return v > 0 ? `${v} Kč` : ''
+const PIPELINE_PERIODS: { id: 'dnes' | 'tyden' | 'mesic' | 'rok'; label: string }[] = [
+  { id: 'dnes', label: 'Dnes' },
+  { id: 'tyden', label: 'Týden' },
+  { id: 'mesic', label: 'Měsíc' },
+  { id: 'rok', label: 'Rok' }
+]
+/** Odstíny zlaté pro jednotlivé stupně pipeline (nejsvětlejší → nejsytější). */
+const STAGE_SHADES = ['#D4B26F', '#C1A263', '#A8884E', '#7E6736']
+
+function PipelineWidget({ period, onPeriod, stages, conversion, conversionDelta, kpis }: {
+  period: 'dnes' | 'tyden' | 'mesic' | 'rok'
+  onPeriod: (p: 'dnes' | 'tyden' | 'mesic' | 'rok') => void
+  stages: { label: string; icon: ComponentType<{ className?: string }>; value: number; amount: number; sharePct: number }[]
+  conversion: number
+  conversionDelta: number
+  kpis: { icon: ComponentType<{ className?: string }>; label: string; raw: number; format: (n: number) => string }[]
+}): JSX.Element {
+  return (
+    <section className="card animate-rise overflow-hidden p-5 md:p-6">
+      {/* header */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-display text-xl font-bold text-tx">Pipeline obchodů</h3>
+          <p className="mt-0.5 text-sm text-tx-soft">Přehled obchodů v jednotlivých fázích prodejního procesu.</p>
+        </div>
+        <div className="flex gap-0.5 rounded-lg border border-line bg-canvas p-0.5">
+          {PIPELINE_PERIODS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onPeriod(p.id)}
+              className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${period === p.id ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* funnel */}
+      <div className="mt-5 space-y-2.5">
+        {stages.map((s, i) => <FunnelStageRow key={s.label} stage={s} shade={STAGE_SHADES[i]} delay={i * 90} />)}
+      </div>
+
+      {/* konverze — samostatná KPI karta */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-gradient-to-br from-brand-soft/60 to-transparent p-5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-dark"><TrendingUp className="h-5 w-5" /></span>
+          <div>
+            <div className="text-sm font-bold text-tx">Konverze lead → obchod</div>
+            <div className="text-xs text-tx-soft">Poměr uzavřených obchodů vůči všem získaným leadům.</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="stat-num text-3xl text-tx">{useCountUp(conversion, 800, 1).toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %</div>
+          <div className={`mt-0.5 flex items-center justify-end gap-1 text-xs font-semibold ${conversionDelta >= 0 ? 'text-emerald' : 'text-rose'}`}>
+            {conversionDelta >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            {conversionDelta >= 0 ? '+' : ''}{conversionDelta.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} % oproti minulému období
+          </div>
+        </div>
+      </div>
+
+      {/* dalších 8 KPI, 2 řady po 4 */}
+      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        {kpis.map((k, i) => <PipelineKpiCard key={k.label} kpi={k} delay={i * 60} />)}
+      </div>
+    </section>
+  )
 }
 
-function Funnel({ data }: { data: { label: string; value: number; amount: number }[] }): JSX.Element {
-  const W = 360, H = 280
-  const colors = ['#D4B26F', '#C1A263', '#A8884E', '#7E6736']
-  const widths = [1, 0.78, 0.56, 0.34, 0.14]
-  const gap = 4
-  const bandH = (H - gap * 3) / 4
-  const cx = W / 2
+function FunnelStageRow({ stage, shade, delay }: {
+  stage: { label: string; icon: ComponentType<{ className?: string }>; value: number; amount: number; sharePct: number }
+  shade: string
+  delay: number
+}): JSX.Element {
+  const Icon = stage.icon
+  const value = useCountUp(stage.value, 700)
+  const amount = useCountUp(stage.amount, 700)
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
-      {data.map((d, i) => {
-        const wTop = widths[i] * W, wBot = widths[i + 1] * W
-        const yTop = i * (bandH + gap), yBot = yTop + bandH
-        const pts = `${cx - wTop / 2},${yTop} ${cx + wTop / 2},${yTop} ${cx + wBot / 2},${yBot} ${cx - wBot / 2},${yBot}`
-        const ty = yTop + bandH / 2
-        const amt = funnelAmount(d.amount)
-        return (
-          <g key={i}>
-            <polygon points={pts} fill={colors[i]} />
-            <text x={cx} y={ty - 12} textAnchor="middle" className="fill-white" fontSize="13" fontWeight="600">{d.label}</text>
-            <text x={cx} y={ty + 8} textAnchor="middle" className="fill-white" fontSize="18" fontWeight="800">{d.value}</text>
-            {amt && <text x={cx} y={ty + 24} textAnchor="middle" className="fill-white/85" fontSize="11" fontWeight="500">{amt}</text>}
-          </g>
-        )
-      })}
-    </svg>
+    <div
+      className="group relative flex animate-pop items-center gap-4 rounded-2xl border p-4 transition-all duration-200 hover:z-10 hover:scale-[1.02] hover:shadow-lift"
+      style={{
+        animationDelay: `${delay}ms`,
+        background: `linear-gradient(135deg, ${shade}1f, ${shade}08)`,
+        borderColor: `${shade}33`,
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,.4), inset 0 -12px 20px -14px ${shade}30`
+      }}
+    >
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full" style={{ background: `${shade}26`, color: shade }}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-bold uppercase tracking-wide text-tx-soft">{stage.label}</div>
+        <div className="stat-num text-2xl text-tx">{value} <span className="text-sm font-semibold text-tx-soft">{value === 1 ? 'obchod' : value >= 2 && value <= 4 ? 'obchody' : 'obchodů'}</span></div>
+        <div className="text-sm font-semibold" style={{ color: shade }}>{compactKc(amount)}</div>
+      </div>
+      <div className="hidden shrink-0 items-center gap-2 sm:flex">
+        <span className="h-px w-8 border-t-2 border-dotted" style={{ borderColor: `${shade}80` }} />
+        <span className="animate-pop rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ animationDelay: `${delay + 150}ms`, background: `${shade}1f`, color: shade }}>
+          {stage.sharePct} % z pipeline
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function PipelineKpiCard({ kpi, delay }: {
+  kpi: { icon: ComponentType<{ className?: string }>; label: string; raw: number; format: (n: number) => string }
+  delay: number
+}): JSX.Element {
+  const Icon = kpi.icon
+  const n = useCountUp(kpi.raw, 700)
+  return (
+    <div className="animate-pop rounded-xl border border-line bg-white p-3.5 transition hover:shadow-card" style={{ animationDelay: `${delay}ms` }}>
+      <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand-dark"><Icon className="h-4 w-4" /></span>
+      <div className="stat-num mt-2 text-lg text-tx">{kpi.format(n)}</div>
+      <div className="truncate text-[11px] font-medium text-tx-soft">{kpi.label}</div>
+    </div>
   )
 }
 

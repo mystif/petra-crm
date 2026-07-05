@@ -121,6 +121,15 @@
   animation: pop 0.18s ease-out both;
 }
 
+/* Pipeline obchodů — vysunutí widgetu zdola při načtení */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-rise {
+  animation: rise 0.42s cubic-bezier(.16,1,.3,1) both;
+}
+
 /* Kalendář — plynulý přechod měsíce/týdne/dne */
 @keyframes calSlideNext {
   from { opacity: 0; transform: translateX(18px); }
