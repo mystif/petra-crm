@@ -407,6 +407,25 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
 
 // ─── Sub-komponenty ───
 
+/** Hladká křivka (Catmull-Rom → kubický Bézier) přes body [x,y]. */
+function smoothLinePath(pts: [number, number][]): string {
+  if (pts.length === 0) return ''
+  if (pts.length === 1) return `M ${pts[0][0]},${pts[0][1]}`
+  const d = [`M ${pts[0][0]},${pts[0][1]}`]
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[i + 2] ?? pts[i + 1]
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6
+    d.push(`C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0]},${p2[1]}`)
+  }
+  return d.join(' ')
+}
+
 function PerfChart({ data }: { data: { label: string; obrat: number; provize: number }[] }): JSX.Element {
   const W = 560, H = 240, padL = 48, padR = 14, padT = 14, padB = 30
   const innerW = W - padL - padR, innerH = H - padT - padB
@@ -414,10 +433,17 @@ function PerfChart({ data }: { data: { label: string; obrat: number; provize: nu
   const niceMax = Math.max(400000, Math.ceil(rawMax / 100000) * 100000)
   const x = (i: number): number => padL + innerW * (i / (Math.max(1, data.length - 1)))
   const y = (v: number): number => padT + innerH * (1 - v / niceMax)
-  const line = (key: 'obrat' | 'provize'): string => data.map((d, i) => `${x(i)},${y(d[key])}`).join(' ')
+  const baseline = y(0)
+  const pts = (key: 'obrat' | 'provize'): [number, number][] => data.map((d, i) => [x(i), y(d[key])])
+  const linePath = (key: 'obrat' | 'provize'): string => smoothLinePath(pts(key))
+  const areaPath = (key: 'obrat' | 'provize'): string => {
+    const p = pts(key)
+    if (p.length < 2) return ''
+    return `${smoothLinePath(p)} L ${p[p.length - 1][0]},${baseline} L ${p[0][0]},${baseline} Z`
+  }
   const ticks = Array.from({ length: 5 }, (_, i) => Math.round((niceMax / 4) * i))
   const fmtK = (v: number): string => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))
-  const OBRAT = '#C1A263', PROVIZE = '#1A1A1A'
+  const OBRAT = '#C6A55B', PROVIZE = '#1C1C1C'
 
   return (
     <div>
@@ -426,18 +452,39 @@ function PerfChart({ data }: { data: { label: string; obrat: number; provize: nu
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: PROVIZE }} /> Provize</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
+        <defs>
+          <linearGradient id="perf-fill-obrat" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#C6A55B" stopOpacity="0.30" />
+            <stop offset="40%" stopColor="#C6A55B" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#C6A55B" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="perf-fill-provize" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#1C1C1C" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#1C1C1C" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* jemné horizontální mřížky (bez vertikálních) */}
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="#EEF0F4" strokeWidth="1" />
+            <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="#F2F2F4" strokeWidth="1" />
             <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="fill-tx-faint" fontSize="11">{fmtK(t)}</text>
           </g>
         ))}
-        <polyline points={line('obrat')} fill="none" stroke={OBRAT} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        <polyline points={line('provize')} fill="none" stroke={PROVIZE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* výplně pod linkami (gradient končí na ose X) */}
+        <path d={areaPath('provize')} fill="url(#perf-fill-provize)" />
+        <path d={areaPath('obrat')} fill="url(#perf-fill-obrat)" />
+
+        {/* ostré linky */}
+        <path d={linePath('provize')} fill="none" stroke={PROVIZE} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={linePath('obrat')} fill="none" stroke={OBRAT} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* body + popisky osy X */}
         {data.map((d, i) => (
           <g key={i}>
-            <circle cx={x(i)} cy={y(d.obrat)} r="3.5" fill={OBRAT} stroke="#fff" strokeWidth="1.5" />
-            <circle cx={x(i)} cy={y(d.provize)} r="3.5" fill={PROVIZE} stroke="#fff" strokeWidth="1.5" />
+            <circle cx={x(i)} cy={y(d.provize)} r="3.5" fill={PROVIZE} stroke="#fff" strokeWidth="2" />
+            <circle cx={x(i)} cy={y(d.obrat)} r="3.5" fill={OBRAT} stroke="#fff" strokeWidth="2" />
             <text x={x(i)} y={H - 10} textAnchor="middle" className="fill-tx-faint" fontSize="11">{d.label}</text>
           </g>
         ))}
