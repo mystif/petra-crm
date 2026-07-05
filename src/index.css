@@ -120,3 +120,19 @@
 .animate-pop {
   animation: pop 0.18s ease-out both;
 }
+
+/* Kalendář — plynulý přechod měsíce/týdne/dne */
+@keyframes calSlideNext {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes calSlidePrev {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: none; }
+}
+.cal-slide-next {
+  animation: calSlideNext 0.22s ease-out both;
+}
+.cal-slide-prev {
+  animation: calSlidePrev 0.22s ease-out both;
+}
