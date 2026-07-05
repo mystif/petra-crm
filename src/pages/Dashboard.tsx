@@ -1,7 +1,8 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, TrendingDown,
   ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Gift,
-  FileText, Clock, Percent, Wallet, Banknote, CalendarClock, Handshake, CalendarCheck2 } from 'lucide-react'
+  FileText, Clock, Percent, Wallet, Banknote, CalendarClock, Handshake, CalendarCheck2,
+  Calendar, ChevronDown } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { AnnaBriefing } from '../components/AnnaBriefing'
@@ -40,6 +41,26 @@ function compactKc(v: number): string {
   }
   if (v >= 1_000) return `${Math.round(v / 1000)} tis. Kč`
   return `${Math.round(v)} Kč`
+}
+
+/** Uzavřená lomená čára s jemně zaoblenými rohy (Q-křivka přes vrchol). */
+function roundedPolygonPath(points: [number, number][], radius: number): string {
+  const n = points.length
+  const dist = (a: [number, number], b: [number, number]): number => Math.hypot(b[0] - a[0], b[1] - a[1])
+  const d: string[] = []
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i - 1 + n) % n]
+    const curr = points[i]
+    const next = points[(i + 1) % n]
+    const dPrev = dist(prev, curr), dNext = dist(curr, next)
+    const rP = Math.min(radius, dPrev / 2), rN = Math.min(radius, dNext / 2)
+    const p1: [number, number] = [curr[0] + (prev[0] - curr[0]) / (dPrev || 1) * rP, curr[1] + (prev[1] - curr[1]) / (dPrev || 1) * rP]
+    const p2: [number, number] = [curr[0] + (next[0] - curr[0]) / (dNext || 1) * rN, curr[1] + (next[1] - curr[1]) / (dNext || 1) * rN]
+    d.push(i === 0 ? `M ${p1[0]},${p1[1]}` : `L ${p1[0]},${p1[1]}`)
+    d.push(`Q ${curr[0]},${curr[1]} ${p2[0]},${p2[1]}`)
+  }
+  d.push('Z')
+  return d.join(' ')
 }
 
 /** Animovaný počet od 0 k cíli (ease-out kubika), volitelně s desetinnými místy. */
@@ -426,12 +447,17 @@ function PerfChart({ data }: { data: { label: string; obrat: number; provize: nu
 
 const PIPELINE_PERIODS: { id: 'dnes' | 'tyden' | 'mesic' | 'rok'; label: string }[] = [
   { id: 'dnes', label: 'Dnes' },
-  { id: 'tyden', label: 'Týden' },
-  { id: 'mesic', label: 'Měsíc' },
-  { id: 'rok', label: 'Rok' }
+  { id: 'tyden', label: 'Tento týden' },
+  { id: 'mesic', label: 'Tento měsíc' },
+  { id: 'rok', label: 'Tento rok' }
 ]
 /** Odstíny zlaté pro jednotlivé stupně pipeline (nejsvětlejší → nejsytější). */
-const STAGE_SHADES = ['#D4B26F', '#C1A263', '#A8884E', '#7E6736']
+const STAGE_SHADES = ['#E8CE9C', '#D4B26F', '#A8884E', '#7E6736']
+/** Poměrné šířky horních/dolních hran trapézů (5 hranic pro 4 stupně). */
+const FUNNEL_WIDTHS = [1, 0.82, 0.62, 0.44, 0.28]
+const FUNNEL_ROW_H = 108
+const FUNNEL_GAP = 10
+const FUNNEL_W = 700
 
 function PipelineWidget({ period, onPeriod, stages, conversion, conversionDelta, kpis }: {
   period: 'dnes' | 'tyden' | 'mesic' | 'rok'
@@ -441,46 +467,86 @@ function PipelineWidget({ period, onPeriod, stages, conversion, conversionDelta,
   conversionDelta: number
   kpis: { icon: ComponentType<{ className?: string }>; label: string; raw: number; format: (n: number) => string }[]
 }): JSX.Element {
+  const [periodOpen, setPeriodOpen] = useState(false)
+  const currentLabel = PIPELINE_PERIODS.find((p) => p.id === period)?.label ?? 'Tento měsíc'
+
   return (
     <section className="card animate-rise overflow-hidden p-5 md:p-6">
       {/* header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-display text-xl font-bold text-tx">Pipeline obchodů</h3>
-          <p className="mt-0.5 text-sm text-tx-soft">Přehled obchodů v jednotlivých fázích prodejního procesu.</p>
+          <p className="mt-0.5 text-sm text-tx-soft">Přehled jednotlivých fází a hodnot obchodu</p>
         </div>
-        <div className="flex gap-0.5 rounded-lg border border-line bg-canvas p-0.5">
-          {PIPELINE_PERIODS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => onPeriod(p.id)}
-              className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${period === p.id ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            onClick={() => setPeriodOpen((o) => !o)}
+            className="flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-2 text-sm font-semibold text-tx transition hover:border-brand/40"
+          >
+            <Calendar className="h-4 w-4 text-tx-soft" /> {currentLabel}
+            <ChevronDown className={`h-3.5 w-3.5 text-tx-soft transition ${periodOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {periodOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setPeriodOpen(false)} />
+              <div className="animate-pop absolute right-0 z-40 mt-1.5 w-40 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lift">
+                {PIPELINE_PERIODS.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { onPeriod(p.id); setPeriodOpen(false) }}
+                    className={`flex w-full items-center px-3 py-2 text-left text-sm font-semibold transition hover:bg-canvas ${period === p.id ? 'text-brand-dark' : 'text-tx-soft'}`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* funnel */}
-      <div className="mt-5 space-y-2.5">
-        {stages.map((s, i) => <FunnelStageRow key={s.label} stage={s} shade={STAGE_SHADES[i]} delay={i * 90} />)}
+      {/* funnel — trapézový trychtýř (na mobilu čitelnější zaoblené karty přes celou šířku) */}
+      <div className="mt-6 flex gap-3">
+        <div className="flex-1">
+          <div className="space-y-2.5 sm:hidden">
+            {stages.map((s, i) => <FunnelStageCardMobile key={s.label} stage={s} shade={STAGE_SHADES[i]} delay={i * 90} />)}
+          </div>
+          <div className="hidden space-y-2.5 sm:block">
+            {stages.map((s, i) => <FunnelStageRow key={s.label} stage={s} shade={STAGE_SHADES[i]} topW={FUNNEL_WIDTHS[i]} botW={FUNNEL_WIDTHS[i + 1]} delay={i * 90} />)}
+          </div>
+        </div>
+        <div className="relative hidden w-32 shrink-0 sm:block" style={{ height: FUNNEL_ROW_H * 4 + FUNNEL_GAP * 3 }}>
+          {stages.map((s, i) => {
+            const rowTop = i * (FUNNEL_ROW_H + FUNNEL_GAP)
+            const centerPct = (rowTop + FUNNEL_ROW_H / 2) / (FUNNEL_ROW_H * 4 + FUNNEL_GAP * 3) * 100
+            return (
+              <div key={s.label} className="absolute left-0 flex items-center gap-2" style={{ top: `${centerPct}%`, transform: 'translateY(-50%)' }}>
+                <span className="h-px w-6 border-t-2 border-dotted" style={{ borderColor: `${STAGE_SHADES[i]}90` }} />
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: STAGE_SHADES[i] }} />
+                <div className="animate-pop rounded-2xl bg-brand-soft/70 px-3 py-1.5 text-center" style={{ animationDelay: `${i * 90 + 200}ms` }}>
+                  <div className="text-sm font-extrabold text-brand-dark">{s.sharePct.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %</div>
+                  <div className="text-[10px] text-tx-soft">z celku</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      {/* konverze — samostatná KPI karta */}
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-gradient-to-br from-brand-soft/60 to-transparent p-5">
+      {/* konverze */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-white p-5">
         <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-dark"><TrendingUp className="h-5 w-5" /></span>
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-canvas text-tx"><TrendingUp className="h-5 w-5" /></span>
           <div>
             <div className="text-sm font-bold text-tx">Konverze lead → obchod</div>
-            <div className="text-xs text-tx-soft">Poměr uzavřených obchodů vůči všem získaným leadům.</div>
+            <div className="text-xs text-tx-soft">Poměr uzavřených obchodů vůči všem leadům</div>
           </div>
         </div>
         <div className="text-right">
           <div className="stat-num text-3xl text-tx">{useCountUp(conversion, 800, 1).toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %</div>
           <div className={`mt-0.5 flex items-center justify-end gap-1 text-xs font-semibold ${conversionDelta >= 0 ? 'text-emerald' : 'text-rose'}`}>
             {conversionDelta >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-            {conversionDelta >= 0 ? '+' : ''}{conversionDelta.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} % oproti minulému období
+            {conversionDelta >= 0 ? '+' : ''}{conversionDelta.toLocaleString('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} % vs. minulé období
           </div>
         </div>
       </div>
@@ -493,7 +559,55 @@ function PipelineWidget({ period, onPeriod, stages, conversion, conversionDelta,
   )
 }
 
-function FunnelStageRow({ stage, shade, delay }: {
+function FunnelStageRow({ stage, shade, topW, botW, delay }: {
+  stage: { label: string; icon: ComponentType<{ className?: string }>; value: number; amount: number; sharePct: number }
+  shade: string
+  topW: number
+  botW: number
+  delay: number
+}): JSX.Element {
+  const Icon = stage.icon
+  const value = useCountUp(stage.value, 700)
+  const amount = useCountUp(stage.amount, 700)
+  const W = FUNNEL_W, H = FUNNEL_ROW_H, cx = W / 2
+  const topWpx = topW * W, botWpx = botW * W
+  const path = roundedPolygonPath(
+    [[cx - topWpx / 2, 0], [cx + topWpx / 2, 0], [cx + botWpx / 2, H], [cx - botWpx / 2, H]],
+    16
+  )
+  // odsazení obsahu dovnitř podle zúžení lichoběžníku (širší nahoře → menší odsazení)
+  const indentPct = ((W - (topWpx + botWpx) / 2) / 2 / W) * 100 + 4
+  return (
+    <div
+      className="group relative animate-pop transition-transform duration-200 hover:z-10 hover:scale-[1.02]"
+      style={{ height: H, animationDelay: `${delay}ms` }}
+    >
+      <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`funnel-grad-${stage.label}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={shade} stopOpacity="0.85" />
+            <stop offset="55%" stopColor={shade} />
+            <stop offset="100%" stopColor={shade} stopOpacity="0.92" />
+          </linearGradient>
+        </defs>
+        <path d={path} fill={`url(#funnel-grad-${stage.label})`} className="drop-shadow-sm" />
+      </svg>
+      <div className="relative flex h-full items-center gap-3.5" style={{ paddingLeft: `${indentPct}%`, paddingRight: '8%' }}>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 text-white ring-1 ring-white/30">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <div className="text-[15px] font-semibold text-white/95">{stage.label}</div>
+          <div className="stat-num text-[26px] leading-tight text-white">{value}</div>
+          {amount > 0 && <div className="text-sm font-medium text-white/85">{compactKc(amount)}</div>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Mobilní varianta stupně — přes celou šířku (lichoběžník na úzké obrazovce ztrácí čitelnost). */
+function FunnelStageCardMobile({ stage, shade, delay }: {
   stage: { label: string; icon: ComponentType<{ className?: string }>; value: number; amount: number; sharePct: number }
   shade: string
   delay: number
@@ -503,27 +617,16 @@ function FunnelStageRow({ stage, shade, delay }: {
   const amount = useCountUp(stage.amount, 700)
   return (
     <div
-      className="group relative flex animate-pop items-center gap-4 rounded-2xl border p-4 transition-all duration-200 hover:z-10 hover:scale-[1.02] hover:shadow-lift"
-      style={{
-        animationDelay: `${delay}ms`,
-        background: `linear-gradient(135deg, ${shade}1f, ${shade}08)`,
-        borderColor: `${shade}33`,
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,.4), inset 0 -12px 20px -14px ${shade}30`
-      }}
+      className="flex animate-pop items-center gap-3.5 rounded-2xl p-4"
+      style={{ animationDelay: `${delay}ms`, background: `linear-gradient(135deg, ${shade}, ${shade}dd)` }}
     >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full" style={{ background: `${shade}26`, color: shade }}>
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 text-white ring-1 ring-white/30">
         <Icon className="h-5 w-5" />
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-bold uppercase tracking-wide text-tx-soft">{stage.label}</div>
-        <div className="stat-num text-2xl text-tx">{value} <span className="text-sm font-semibold text-tx-soft">{value === 1 ? 'obchod' : value >= 2 && value <= 4 ? 'obchody' : 'obchodů'}</span></div>
-        <div className="text-sm font-semibold" style={{ color: shade }}>{compactKc(amount)}</div>
-      </div>
-      <div className="hidden shrink-0 items-center gap-2 sm:flex">
-        <span className="h-px w-8 border-t-2 border-dotted" style={{ borderColor: `${shade}80` }} />
-        <span className="animate-pop rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ animationDelay: `${delay + 150}ms`, background: `${shade}1f`, color: shade }}>
-          {stage.sharePct} % z pipeline
-        </span>
+      <div className="min-w-0">
+        <div className="text-[15px] font-semibold text-white/95">{stage.label}</div>
+        <div className="stat-num text-[26px] leading-tight text-white">{value}</div>
+        {amount > 0 && <div className="text-sm font-medium text-white/85">{compactKc(amount)}</div>}
       </div>
     </div>
   )
