@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './lib/authContext'
 import { LeadsProvider } from './lib/leadsContext'
 import { EventsProvider } from './lib/eventsContext'
 import { ListingsProvider } from './lib/listingsContext'
+import { ContactsProvider } from './lib/contactsContext'
 import { MaklerProvider } from './lib/maklerContext'
 import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
@@ -58,6 +59,7 @@ function CRMApp(): JSX.Element {
     <LeadsProvider>
       <EventsProvider>
       <ListingsProvider>
+      <ContactsProvider>
       <MaklerProvider>
       <LeadDetailProvider>
       <NewLeadProvider>
@@ -84,6 +86,7 @@ function CRMApp(): JSX.Element {
       </NewLeadProvider>
       </LeadDetailProvider>
       </MaklerProvider>
+      </ContactsProvider>
       </ListingsProvider>
       </EventsProvider>
     </LeadsProvider>

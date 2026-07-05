@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react'
-import { Loader2, ImagePlus, Star, X, Trash2, ChevronDown, Globe } from 'lucide-react'
+import { Loader2, ImagePlus, Star, X, Trash2, ChevronDown, Globe, GripVertical, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Modal } from './Modal'
 import { WebStatusLight } from './WebStatusLight'
 import { useListings } from '../lib/listingsContext'
+import { useLeads } from '../lib/leadsContext'
+import { useContacts } from '../lib/contactsContext'
 import {
   PROPERTY_TYPES, STATUSES, OFFER_TYPES, CONDITIONS, CONSTRUCTIONS, OWNERSHIPS, FEATURES,
-  webStatusMeta, makeSlug, type Listing, type PropertyType, type ListingStatus, type OfferType, type WebStatus
+  webStatusMeta, humanizeFeature, makeSlug, type Listing, type PropertyType, type ListingStatus, type OfferType, type WebStatus
 } from '../lib/listings'
 import { uploadPhoto, photoUrl, BUCKET } from '../lib/photos'
 import { supabase } from '../lib/supabase'
@@ -18,12 +20,27 @@ interface Props {
 
 const num = (v: string): number | null => (v.trim() ? Number(v.replace(/\s/g, '')) : null)
 
-const CUSTOM_FEAT_KEY = 'listing-custom-features'
-function loadCustomFeatures(): { value: string; label: string }[] {
-  try { const r = JSON.parse(localStorage.getItem(CUSTOM_FEAT_KEY) || '[]'); return Array.isArray(r) ? r : [] } catch { return [] }
+// Custom vlastnosti (tagy) ukládáme rovnou jako lidský label — žádná slugifikace,
+// aby se na webu zobrazovaly s diakritikou/velkými písmeny/mezerami.
+const CUSTOM_FEAT_KEY = 'listing-custom-features-v2'
+function loadCustomFeatures(): string[] {
+  try { const r = JSON.parse(localStorage.getItem(CUSTOM_FEAT_KEY) || '[]'); return Array.isArray(r) ? r.filter((x) => typeof x === 'string') : [] } catch { return [] }
 }
-function featSlug(label: string): string {
-  return label.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'feat'
+/** Normalizace jen pro porovnání/dedup (bez diakritiky, malá písmena). */
+function normFeat(s: string): string {
+  return s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
+
+/** Reference na osobu → hodnota selectu `lead:<id>` / `contact:<id>` / ''. */
+function personRefValue(leadId: string | null | undefined, contactId: string | null | undefined): string {
+  if (leadId) return `lead:${leadId}`
+  if (contactId) return `contact:${contactId}`
+  return ''
+}
+function parsePersonRef(v: string): { lead: string | null; contact: string | null } {
+  if (v.startsWith('lead:')) return { lead: v.slice(5), contact: null }
+  if (v.startsWith('contact:')) return { lead: null, contact: v.slice(8) }
+  return { lead: null, contact: null }
 }
 
 /** Cesta v bucketu z veřejné URL (kvůli mazání souboru). */
@@ -35,6 +52,8 @@ function pathFromUrl(url: string): string | null {
 
 export function ListingForm({ open, listing, onClose }: Props): JSX.Element | null {
   const { add, patch, remove } = useListings()
+  const { leads } = useLeads()
+  const { contacts } = useContacts()
   const editing = !!listing
 
   const [title, setTitle] = useState(listing?.title ?? '')
@@ -68,16 +87,32 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
   const [refNum, setRefNum] = useState(listing?.reference_number ?? '')
   const [features, setFeatures] = useState<string[]>(listing?.features ?? [])
 
+  // Prodávající / rezervace — hodnota selectu `lead:<id>` / `contact:<id>` / ''.
+  const [seller, setSeller] = useState(personRefValue(listing?.seller_lead_id, listing?.seller_contact_id))
+  const [reservation, setReservation] = useState(personRefValue(listing?.reservation_lead_id, listing?.reservation_contact_id))
+
   const [showMore, setShowMore] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [lightbox, setLightbox] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
-  const [customFeatures, setCustomFeatures] = useState<{ value: string; label: string }[]>(loadCustomFeatures)
+  const [customFeatures, setCustomFeatures] = useState<string[]>(loadCustomFeatures)
   const [newFeat, setNewFeat] = useState('')
-  const allFeatures = [...FEATURES, ...customFeatures]
+  // Fixní vlastnosti + custom labely + případné staré slugy uložené na této nemovitosti.
+  const baseFeatures = [...FEATURES, ...customFeatures.map((l) => ({ value: l, label: l }))]
+  const allFeatures = [
+    ...baseFeatures,
+    ...features
+      .filter((v) => !baseFeatures.some((f) => f.value === v))
+      .map((v) => ({ value: v, label: humanizeFeature(v) }))
+  ]
+
+  // Zájemci = leady propojené s touto nemovitostí (pole property_id).
+  const interested = editing && listing ? leads.filter((l) => l.property_id === listing.id) : []
 
   const toggleFeature = (v: string): void =>
     setFeatures((f) => (f.includes(v) ? f.filter((x) => x !== v) : [...f, v]))
@@ -85,13 +120,16 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
   const addFeature = (): void => {
     const label = newFeat.trim()
     if (!label) return
-    const value = featSlug(label)
-    if (!allFeatures.some((f) => f.value === value)) {
-      const next = [...customFeatures, { value, label }]
+    const key = normFeat(label)
+    // Shoda s existující vlastností (fixní i custom) → jen ji zapneme (žádný duplikát).
+    const match = allFeatures.find((f) => normFeat(f.label) === key || normFeat(f.value) === key)
+    const value = match ? match.value : label
+    if (!match && !customFeatures.some((l) => normFeat(l) === key)) {
+      const next = [...customFeatures, label]
       setCustomFeatures(next)
       try { localStorage.setItem(CUSTOM_FEAT_KEY, JSON.stringify(next)) } catch { /* ignore */ }
     }
-    if (!features.includes(value)) toggleFeature(value)
+    if (!features.includes(value)) setFeatures((f) => [...f, value])
     setNewFeat('')
   }
 
@@ -118,12 +156,24 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
     const p = pathFromUrl(url)
     if (p) supabase.storage.from(BUCKET).remove([p]).catch(() => {})
   }
+  /** Přesun fotky z pozice `from` na `to` (drag & drop pořadí). První = hlavní. */
+  const moveImage = (from: number, to: number): void => {
+    if (from === to || from < 0 || to < 0) return
+    setImages((cur) => {
+      const next = [...cur]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+  }
 
   const save = async (): Promise<void> => {
     if (!title.trim()) return setErr('Vyplňte název nemovitosti.')
     if (!location.trim()) return setErr('Vyplňte lokalitu.')
     if (images.length === 0) return setErr('Nahrajte alespoň jednu fotku (použije se na webu).')
     setSaving(true); setErr(null)
+    const s = parsePersonRef(seller)
+    const r = parsePersonRef(reservation)
     const payload = {
       title: title.trim(),
       offer_type: offer,
@@ -153,7 +203,11 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
       available_from: availableFrom.trim() || null,
       monthly_costs: monthlyCosts.trim() || null,
       reference_number: refNum.trim() || null,
-      features
+      features,
+      seller_lead_id: s.lead,
+      seller_contact_id: s.contact,
+      reservation_lead_id: r.lead,
+      reservation_contact_id: r.contact
     }
     try {
       if (editing && listing) await patch(listing.id, payload)
@@ -202,20 +256,29 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
     >
       {/* fotky */}
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-semibold text-tx-soft">Fotky <span className="text-tx-faint">· první = hlavní (na kartě)</span></label>
+        <label className="mb-1 block text-sm font-semibold text-tx-soft">Fotky <span className="text-tx-faint">· první = hlavní · táhni pro změnu pořadí · klikni pro náhled</span></label>
         <div
           className={`flex flex-wrap gap-2 rounded-xl p-1 transition ${dragOver ? 'bg-brand-soft ring-2 ring-brand/50' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragOver(true) } }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false) }}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
+          onDrop={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) } }}
         >
           {images.map((url, i) => (
-            <div key={url} className="group relative h-24 w-32 overflow-hidden rounded-xl border border-line">
-              <img src={url} alt="" className="h-full w-full object-cover" />
-              {i === 0 && <span className="absolute left-1 top-1 flex items-center gap-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-ink"><Star className="h-2.5 w-2.5" /> Hlavní</span>}
+            <div
+              key={url}
+              draggable
+              onDragStart={(e) => { setDragIdx(i); e.dataTransfer.effectAllowed = 'move' }}
+              onDragOver={(e) => { e.preventDefault() }}
+              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (dragIdx !== null) moveImage(dragIdx, i); setDragIdx(null) }}
+              onDragEnd={() => setDragIdx(null)}
+              className={`group relative h-24 w-32 cursor-move overflow-hidden rounded-xl border border-line transition ${dragIdx === i ? 'opacity-40' : ''}`}
+            >
+              <img src={url} alt="" className="h-full w-full cursor-zoom-in object-cover" onClick={() => setLightbox(i)} />
+              {i === 0 && <span className="pointer-events-none absolute left-1 top-1 flex items-center gap-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-ink"><Star className="h-2.5 w-2.5" /> Hlavní</span>}
+              <span className="pointer-events-none absolute right-1 top-1 rounded bg-black/45 p-0.5 text-white opacity-0 transition group-hover:opacity-100"><GripVertical className="h-3.5 w-3.5" /></span>
               <div className="absolute inset-x-1 bottom-1 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
-                {i !== 0 && <button onClick={() => makeCover(url)} title="Nastavit jako hlavní" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-tx hover:text-brand-dark"><Star className="h-3.5 w-3.5" /></button>}
-                <button onClick={() => removeImg(url)} title="Smazat" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-rose"><X className="h-3.5 w-3.5" /></button>
+                {i !== 0 && <button onClick={(e) => { e.stopPropagation(); makeCover(url) }} title="Nastavit jako hlavní" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-tx hover:text-brand-dark"><Star className="h-3.5 w-3.5" /></button>}
+                <button onClick={(e) => { e.stopPropagation(); removeImg(url) }} title="Smazat" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-rose"><X className="h-3.5 w-3.5" /></button>
               </div>
             </div>
           ))}
@@ -273,6 +336,38 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
         <Field label="Popis" full>
           <textarea className="input min-h-[100px] resize-y" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Text inzerátu, který se zobrazí na webu…" />
         </Field>
+      </div>
+
+      {/* prodávající + rezervace */}
+      <div className="mt-4 space-y-3 rounded-xl border border-line p-3">
+        <div className="text-sm font-bold text-tx">Prodej a rezervace</div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Prodávající">
+            <PersonSelect value={seller} onChange={setSeller} leads={leads} contacts={contacts} placeholder="— nevybráno —" />
+          </Field>
+          <Field label="Rezervace">
+            <PersonSelect value={reservation} onChange={setReservation} leads={leads} contacts={contacts} placeholder="— bez rezervace —" />
+          </Field>
+        </div>
+        {editing && (
+          <div>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-tx-faint">Zájemci ({interested.length})</div>
+            {interested.length === 0 ? (
+              <p className="text-xs text-tx-faint">Zatím žádní zájemci propojení v pipeline (pole „Nemovitost" u leadu).</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {interested.map((l) => {
+                  const reserved = reservation === `lead:${l.id}`
+                  return (
+                    <span key={l.id} className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${reserved ? 'bg-brand-soft text-brand-dark' : 'bg-canvas text-tx-soft'}`}>
+                      {reserved && <BookmarkCheck className="h-3.5 w-3.5" />}{l.name || 'Bez jména'}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* další parametry */}
@@ -356,6 +451,27 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
       </div>
 
       {err && <p className="mt-3 text-sm font-medium text-rose">{err}</p>}
+
+      {/* lightbox náhledů fotek */}
+      {lightbox !== null && images[lightbox] && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4" onClick={() => setLightbox(null)}>
+          <button onClick={() => setLightbox(null)} className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"><X className="h-5 w-5" /></button>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i === null ? 0 : (i - 1 + images.length) % images.length)) }}
+                className="absolute left-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              ><ChevronLeft className="h-6 w-6" /></button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i === null ? 0 : (i + 1) % images.length)) }}
+                className="absolute right-4 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              ><ChevronRight className="h-6 w-6" /></button>
+            </>
+          )}
+          <img src={images[lightbox]} alt="" className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          <span className="absolute bottom-4 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white">{lightbox + 1} / {images.length}</span>
+        </div>
+      )}
     </Modal>
   )
 }
@@ -366,5 +482,30 @@ function Field({ label, children, full }: { label: string; children: React.React
       <label className="mb-1 block text-sm font-semibold text-tx-soft">{label}</label>
       {children}
     </div>
+  )
+}
+
+/** Výběr osoby — lead NEBO uložený kontakt. Hodnota: `lead:<id>` / `contact:<id>` / ''. */
+function PersonSelect({ value, onChange, leads, contacts, placeholder }: {
+  value: string
+  onChange: (v: string) => void
+  leads: { id: string; name: string | null }[]
+  contacts: { id: string; name: string | null }[]
+  placeholder: string
+}): JSX.Element {
+  return (
+    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{placeholder}</option>
+      {leads.length > 0 && (
+        <optgroup label="Leady / poptávky">
+          {leads.map((l) => <option key={l.id} value={`lead:${l.id}`}>{l.name || 'Bez jména'}</option>)}
+        </optgroup>
+      )}
+      {contacts.length > 0 && (
+        <optgroup label="Kontakty">
+          {contacts.map((c) => <option key={c.id} value={`contact:${c.id}`}>{c.name || 'Bez jména'}</option>)}
+        </optgroup>
+      )}
+    </select>
   )
 }

@@ -42,6 +42,11 @@ export interface Listing {
   monthly_costs: string | null
   ownership: string | null
   reference_number: string | null
+  // Prodávající a rezervace — reference na lead NEBO uložený kontakt (vždy max jedno z dvojice).
+  seller_lead_id: string | null
+  seller_contact_id: string | null
+  reservation_lead_id: string | null
+  reservation_contact_id: string | null
 }
 
 export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
@@ -115,6 +120,19 @@ export function statusMeta(s: string | null): { label: string; cls: string } {
 }
 export function offerTypeLabel(t: string | null): string {
   return OFFER_TYPES.find((x) => x.value === t)?.label ?? t ?? '—'
+}
+/** Fixní vlastnost → český label; jinak vrátí hodnotu (custom label už je čitelný). */
+export function featureLabel(v: string): string {
+  return FEATURES.find((f) => f.value === v)?.label ?? humanizeFeature(v)
+}
+/**
+ * Zlidští starý slug ('zimni_zahrada' → 'Zimni zahrada'). Pokud hodnota už je
+ * čitelný label (mezery / velká písmena / diakritika), vrátí ji beze změny.
+ */
+export function humanizeFeature(v: string): string {
+  if (!/^[a-z0-9_]+$/.test(v)) return v // už lidský label
+  const s = v.replace(/_/g, ' ')
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 /** Cena ve formátu webu: „9 490 000 Kč", u pronájmu „/ měsíc". */

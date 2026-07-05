@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Building2, MapPin, Star, Users, Ruler, ExternalLink, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Building2, MapPin, Star, Users, Ruler, ExternalLink, Trash2, Loader2, BookmarkCheck, UserRound } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { ListingForm } from '../components/ListingForm'
@@ -7,6 +7,7 @@ import { WebStatusLight } from '../components/WebStatusLight'
 import { pathFromPublicUrl, removePhotoFiles } from '../lib/photos'
 import { useListings } from '../lib/listingsContext'
 import { useLeads } from '../lib/leadsContext'
+import { useContacts } from '../lib/contactsContext'
 import {
   STATUSES, statusMeta, propertyTypeLabel, offerTypeLabel, formatListingPrice, type Listing, type WebStatus
 } from '../lib/listings'
@@ -18,6 +19,7 @@ const WEB_BASE = 'https://www.petrazabranska.com/nemovitosti'
 export function Nemovitosti(): JSX.Element {
   const { listings, loading, error, refetch, patch, remove } = useListings()
   const { leads } = useLeads()
+  const { contacts } = useContacts()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const setWebStatus = (l: Listing, v: WebStatus): void => { void patch(l.id, { web_status: v }) }
@@ -41,11 +43,22 @@ export function Nemovitosti(): JSX.Element {
   const [editing, setEditing] = useState<Listing | null>(null)
   const [formOpen, setFormOpen] = useState(false)
 
-  const interestedCount = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const l of leads) if (l.property_id) m.set(l.property_id, (m.get(l.property_id) ?? 0) + 1)
+  const interestedByProperty = useMemo(() => {
+    const m = new Map<string, { id: string; name: string | null }[]>()
+    for (const l of leads) {
+      if (!l.property_id) continue
+      const arr = m.get(l.property_id) ?? []
+      arr.push({ id: l.id, name: l.name })
+      m.set(l.property_id, arr)
+    }
     return m
   }, [leads])
+
+  const nameOf = (leadId: string | null, contactId: string | null): string | null => {
+    if (leadId) return leads.find((l) => l.id === leadId)?.name ?? null
+    if (contactId) return contacts.find((c) => c.id === contactId)?.name ?? null
+    return null
+  }
 
   const filtered = filter === 'all' ? listings : listings.filter((l) => l.status === filter)
 
@@ -86,7 +99,12 @@ export function Nemovitosti(): JSX.Element {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((l) => {
                 const sm = statusMeta(l.status)
-                const interested = interestedCount.get(l.id) ?? 0
+                const reservedName = nameOf(l.reservation_lead_id, l.reservation_contact_id)
+                const interestedList = interestedByProperty.get(l.id) ?? []
+                const people = interestedList.map((p) => ({ name: p.name || 'Bez jména', reserved: p.id === l.reservation_lead_id }))
+                if (reservedName && !people.some((p) => p.reserved)) people.unshift({ name: reservedName, reserved: true })
+                people.sort((a, b) => Number(b.reserved) - Number(a.reserved))
+                const sellerName = nameOf(l.seller_lead_id, l.seller_contact_id)
                 return (
                   <article key={l.id} className="card group cursor-pointer overflow-hidden transition hover:shadow-lift" onClick={() => openEdit(l)}>
                     <div className="relative h-44 overflow-hidden bg-canvas">
@@ -106,13 +124,31 @@ export function Nemovitosti(): JSX.Element {
                         {l.disposition && <span className="font-semibold text-tx">{l.disposition}</span>}
                         {l.area_m2 && <span className="flex items-center gap-1"><Ruler className="h-3.5 w-3.5" /> {l.area_m2} m²</span>}
                       </div>
+
+                      {sellerName && (
+                        <div className="mt-2 flex items-center gap-1.5 text-xs text-tx-soft">
+                          <UserRound className="h-3.5 w-3.5 shrink-0 text-tx-faint" /> Prodává <span className="font-semibold text-tx">{sellerName}</span>
+                        </div>
+                      )}
+
+                      {people.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-1">
+                          <Users className="h-3.5 w-3.5 shrink-0 text-tx-faint" />
+                          {people.slice(0, 3).map((p, i) => (
+                            <span
+                              key={i}
+                              title={p.reserved ? 'Rezervováno' : 'Zájemce'}
+                              className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${p.reserved ? 'bg-brand-soft text-brand-dark' : 'bg-canvas text-tx-soft'}`}
+                            >
+                              {p.reserved && <BookmarkCheck className="h-3 w-3" />}{p.name}
+                            </span>
+                          ))}
+                          {people.length > 3 && <span className="text-[11px] font-semibold text-tx-faint">+{people.length - 3}</span>}
+                        </div>
+                      )}
+
                       <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
                         <span className="font-mono text-sm font-bold text-tx">{formatListingPrice(l.price, l.price_note, l.offer_type)}</span>
-                        {interested > 0 && (
-                          <span className="flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand-dark" title="Zájemci propojení v pipeline">
-                            <Users className="h-3 w-3" /> {interested}
-                          </span>
-                        )}
                       </div>
                       <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
                         <div onClick={(e) => e.stopPropagation()} title="Viditelnost na webu">
