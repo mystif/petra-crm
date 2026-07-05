@@ -257,57 +257,58 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             })}
           </section>
 
-          {/* Pipeline obchodů — plnošířkový analytický widget */}
-          <PipelineWidget
-            period={pipelinePeriod}
-            onPeriod={setPipelinePeriod}
-            stages={pipelineStages}
-            conversion={pipelineConversion}
-            conversionDelta={pipelineConversionDelta}
-            kpis={pipelineKpis}
-          />
+          {/* Pipeline obchodů (polovina šířky) + vedle sebe navršené Přehled výkonu / Aktivity / Kalendář */}
+          <section className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <PipelineWidget
+              period={pipelinePeriod}
+              onPeriod={setPipelinePeriod}
+              stages={pipelineStages}
+              conversion={pipelineConversion}
+              conversionDelta={pipelineConversionDelta}
+              kpis={pipelineKpis}
+            />
 
-          {/* Hlavní řada — na velkém monitoru 3 boxy vedle sebe (1 na mobilu) */}
-          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
-            {/* Přehled výkonu */}
-            <div className="card p-5">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-display text-lg font-bold text-tx">Přehled výkonu</h3>
-                <div className="flex gap-0.5 rounded-lg border border-line bg-canvas p-0.5">
-                  <button onClick={() => setPeriod('mesic')} className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${period === 'mesic' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Měsíc</button>
-                  <button onClick={() => setPeriod('rok')} className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${period === 'rok' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Rok</button>
+            <div className="space-y-5">
+              {/* Přehled výkonu */}
+              <div className="card p-5">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-display text-lg font-bold text-tx">Přehled výkonu</h3>
+                  <div className="flex gap-0.5 rounded-lg border border-line bg-canvas p-0.5">
+                    <button onClick={() => setPeriod('mesic')} className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${period === 'mesic' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Měsíc</button>
+                    <button onClick={() => setPeriod('rok')} className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${period === 'rok' ? 'bg-ink text-white' : 'text-tx-soft hover:text-tx'}`}>Rok</button>
+                  </div>
+                </div>
+                <PerfChart data={series} />
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {perfMetrics.map((m) => (
+                    <div key={m.label} className="rounded-xl border border-line p-2.5">
+                      <div className="text-[11px] font-medium leading-tight text-tx-soft">{m.label}</div>
+                      <div className="stat-num mt-0.5 text-base text-tx">{m.value}</div>
+                      <div className={`mt-0.5 flex items-center gap-1 text-[11px] font-semibold ${m.change == null ? 'text-tx-faint' : m.change >= 0 ? 'text-brand-dark' : 'text-rose'}`}>
+                        {m.change == null ? '—' : <>{m.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {m.change >= 0 ? '+' : ''}{m.change} %</>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <PerfChart data={series} />
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {perfMetrics.map((m) => (
-                  <div key={m.label} className="rounded-xl border border-line p-2.5">
-                    <div className="text-[11px] font-medium leading-tight text-tx-soft">{m.label}</div>
-                    <div className="stat-num mt-0.5 text-base text-tx">{m.value}</div>
-                    <div className={`mt-0.5 flex items-center gap-1 text-[11px] font-semibold ${m.change == null ? 'text-tx-faint' : m.change >= 0 ? 'text-brand-dark' : 'text-rose'}`}>
-                      {m.change == null ? '—' : <>{m.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />} {m.change >= 0 ? '+' : ''}{m.change} %</>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Aktivity */}
-            <div className="card p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-display text-lg font-bold text-tx">Aktivity</h3>
-                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Vše</button>
+              {/* Aktivity */}
+              <div className="card p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-display text-lg font-bold text-tx">Aktivity</h3>
+                  <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Vše</button>
+                </div>
+                <ActivityList events={todayEvents} leads={leads} onOpen={(id) => { const l = leads.find((x) => x.id === id); if (l) openLead(l) }} onEmpty={() => onNavigate('calendar')} />
               </div>
-              <ActivityList events={todayEvents} leads={leads} onOpen={(id) => { const l = leads.find((x) => x.id === id); if (l) openLead(l) }} onEmpty={() => onNavigate('calendar')} />
-            </div>
 
-            {/* Kalendář */}
-            <div className="card p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-display text-lg font-bold text-tx">Kalendář</h3>
-                <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Celý</button>
+              {/* Kalendář */}
+              <div className="card p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-display text-lg font-bold text-tx">Kalendář</h3>
+                  <button onClick={() => onNavigate('calendar')} className="text-sm font-semibold text-brand-dark hover:underline">Celý</button>
+                </div>
+                <MiniCalendar now={now} events={events} todayEvents={todayEvents} leads={leads} />
               </div>
-              <MiniCalendar now={now} events={events} todayEvents={todayEvents} leads={leads} />
             </div>
           </section>
 
