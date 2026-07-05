@@ -5,12 +5,14 @@ import { WebStatusLight } from './WebStatusLight'
 import { useListings } from '../lib/listingsContext'
 import { useLeads } from '../lib/leadsContext'
 import { useContacts } from '../lib/contactsContext'
+import { mergePeople, samePerson } from '../lib/people'
+import type { SavedContact } from '../lib/contacts'
 import {
   PROPERTY_TYPES, STATUSES, OFFER_TYPES, CONDITIONS, CONSTRUCTIONS, OWNERSHIPS, FEATURES,
   webStatusMeta, humanizeFeature, makeSlug, type Listing, type PropertyType, type ListingStatus, type OfferType, type WebStatus
 } from '../lib/listings'
 import { uploadPhoto, photoUrl, BUCKET } from '../lib/photos'
-import { supabase } from '../lib/supabase'
+import { supabase, type Lead } from '../lib/supabase'
 
 interface Props {
   open: boolean
@@ -357,7 +359,8 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {interested.map((l) => {
-                  const reserved = reservation === `lead:${l.id}`
+                  const r = parsePersonRef(reservation)
+                  const reserved = samePerson({ leadId: l.id, contactId: null }, { leadId: r.lead, contactId: r.contact }, leads)
                   return (
                     <span key={l.id} className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${reserved ? 'bg-brand-soft text-brand-dark' : 'bg-canvas text-tx-soft'}`}>
                       {reserved && <BookmarkCheck className="h-3.5 w-3.5" />}{l.name || 'Bez jména'}
@@ -485,27 +488,24 @@ function Field({ label, children, full }: { label: string; children: React.React
   )
 }
 
-/** Výběr osoby — lead NEBO uložený kontakt. Hodnota: `lead:<id>` / `contact:<id>` / ''. */
+/**
+ * Výběr osoby — sjednocený adresář (lead a kontakt propojené přes kontakt_id
+ * se nabídnou jen jednou). Hodnota: `lead:<id>` / `contact:<id>` / ''.
+ */
 function PersonSelect({ value, onChange, leads, contacts, placeholder }: {
   value: string
   onChange: (v: string) => void
-  leads: { id: string; name: string | null }[]
-  contacts: { id: string; name: string | null }[]
+  leads: Lead[]
+  contacts: SavedContact[]
   placeholder: string
 }): JSX.Element {
+  const people = mergePeople(leads, contacts).sort((a, b) => a.name.localeCompare(b.name, 'cs'))
   return (
     <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">{placeholder}</option>
-      {leads.length > 0 && (
-        <optgroup label="Leady / poptávky">
-          {leads.map((l) => <option key={l.id} value={`lead:${l.id}`}>{l.name || 'Bez jména'}</option>)}
-        </optgroup>
-      )}
-      {contacts.length > 0 && (
-        <optgroup label="Kontakty">
-          {contacts.map((c) => <option key={c.id} value={`contact:${c.id}`}>{c.name || 'Bez jména'}</option>)}
-        </optgroup>
-      )}
+      {people.map((p) => (
+        <option key={p.key} value={p.contactId ? `contact:${p.contactId}` : `lead:${p.leadId}`}>{p.name}</option>
+      ))}
     </select>
   )
 }

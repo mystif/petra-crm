@@ -8,6 +8,7 @@ import { pathFromPublicUrl, removePhotoFiles } from '../lib/photos'
 import { useListings } from '../lib/listingsContext'
 import { useLeads } from '../lib/leadsContext'
 import { useContacts } from '../lib/contactsContext'
+import { personName, samePerson } from '../lib/people'
 import {
   STATUSES, statusMeta, propertyTypeLabel, offerTypeLabel, formatListingPrice, type Listing, type WebStatus
 } from '../lib/listings'
@@ -54,12 +55,6 @@ export function Nemovitosti(): JSX.Element {
     return m
   }, [leads])
 
-  const nameOf = (leadId: string | null, contactId: string | null): string | null => {
-    if (leadId) return leads.find((l) => l.id === leadId)?.name ?? null
-    if (contactId) return contacts.find((c) => c.id === contactId)?.name ?? null
-    return null
-  }
-
   const filtered = filter === 'all' ? listings : listings.filter((l) => l.status === filter)
 
   const openNew = (): void => { setEditing(null); setFormOpen(true) }
@@ -99,12 +94,15 @@ export function Nemovitosti(): JSX.Element {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((l) => {
                 const sm = statusMeta(l.status)
-                const reservedName = nameOf(l.reservation_lead_id, l.reservation_contact_id)
+                const reservedName = personName(l.reservation_lead_id, l.reservation_contact_id, leads, contacts)
                 const interestedList = interestedByProperty.get(l.id) ?? []
-                const people = interestedList.map((p) => ({ name: p.name || 'Bez jména', reserved: p.id === l.reservation_lead_id }))
+                const people = interestedList.map((p) => ({
+                  name: p.name || 'Bez jména',
+                  reserved: samePerson({ leadId: p.id, contactId: null }, { leadId: l.reservation_lead_id, contactId: l.reservation_contact_id }, leads)
+                }))
                 if (reservedName && !people.some((p) => p.reserved)) people.unshift({ name: reservedName, reserved: true })
                 people.sort((a, b) => Number(b.reserved) - Number(a.reserved))
-                const sellerName = nameOf(l.seller_lead_id, l.seller_contact_id)
+                const sellerName = personName(l.seller_lead_id, l.seller_contact_id, leads, contacts)
                 return (
                   <article key={l.id} className="card group cursor-pointer overflow-hidden transition hover:shadow-lift" onClick={() => openEdit(l)}>
                     <div className="relative h-44 overflow-hidden bg-canvas">

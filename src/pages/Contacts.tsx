@@ -83,17 +83,20 @@ export function Contacts(): JSX.Element {
     fetchSavedContacts().then(setSaved).catch(() => setSaved([]))
   }, [leads])
 
-  // Kontakty = odvozené z leadů (seskupené podle e-mailu/telefonu) + samostatně uložené.
+  // Kontakty = odvozené z leadů (seskupené podle kontakt_id, případně e-mailu/telefonu) + samostatně uložené.
+  // Lead propojený s kontaktem (kontakt_id, viz DB trigger link_lead_to_kontakt) se sloučí do JEDNÉ karty,
+  // aby jeden reálný člověk nesl více rolí (zájemce/prodávající/pronajímatel/…) místo dvou samostatných řádků.
   const contacts = useMemo<DerivedContact[]>(() => {
     const groups = new Map<string, typeof leads>()
     for (const l of leads) {
-      const key = (l.email || l.phone || l.id).toLowerCase()
+      const key = l.kontakt_id ? `k:${l.kontakt_id}` : (l.email || l.phone || l.id).toLowerCase()
       const arr = groups.get(key) ?? []
       arr.push(l)
       groups.set(key, arr)
     }
 
     const out: DerivedContact[] = []
+    const byKontaktId = new Map<string, DerivedContact>()
     for (const [key, arr] of groups) {
       const sorted = [...arr].sort((a, b) => (b.crm_updated_at || b.created_at).localeCompare(a.crm_updated_at || a.created_at))
       const primary = sorted[0]
@@ -104,8 +107,9 @@ export function Contacts(): JSX.Element {
         .filter((l) => !CLOSED_STAGES.includes(l.crm_status) && l.follow_up_at)
         .map((l) => l.follow_up_at as string)
         .sort()[0] ?? null
-      const tags = uniq([...arr.flatMap((l) => l.tags ?? []), contactRole(primary)])
-      out.push({
+      // role ze VŠECH leadů ve skupině (jeden kontakt může nést více rolí)
+      const tags = uniq([...arr.flatMap((l) => l.tags ?? []), ...arr.map((l) => contactRole(l))])
+      const dc: DerivedContact = {
         key,
         leadId: primary.id,
         name: primary.name || 'Bez jména',
@@ -121,15 +125,23 @@ export function Contacts(): JSX.Element {
         source: primary.source,
         tags,
         gdpr: arr.some((l) => !!l.gdpr_consent)
-      })
+      }
+      out.push(dc)
+      if (key.startsWith('k:')) byKontaktId.set(key.slice(2), dc)
     }
 
-    // Doplníme uložené kontakty, které už nemají aktivní lead.
+    // Doplníme uložené kontakty: pokud už mají kartu (propojený lead), jen přidáme jejich roli;
+    // jinak (kontakt bez aktivního leadu) přidáme novou kartu.
     for (const c of saved) {
+      const linked = byKontaktId.get(c.id)
+      if (linked) {
+        if (c.role && !linked.tags.includes(c.role)) linked.tags.push(c.role)
+        continue
+      }
       const key = (c.email || c.phone || c.id).toLowerCase()
       if (!groups.has(key)) {
         out.push({
-          key,
+          key: `k:${c.id}`,
           leadId: null,
           name: c.name || 'Bez jména',
           phone: c.phone,
@@ -153,7 +165,7 @@ export function Contacts(): JSX.Element {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return contacts.filter((c) => {
-      const matchRole = role === 'Vše' || c.role === role
+      const matchRole = role === 'Vše' || c.tags.includes(role)
       const matchQuery =
         !q ||
         c.name.toLowerCase().includes(q) ||
