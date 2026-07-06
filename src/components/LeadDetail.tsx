@@ -238,6 +238,14 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     await patch(lead.id, { source: val || null })
   }
 
+  // Ruční potvrzení / odvolání GDPR souhlasu + zápis do historie s časovým razítkem.
+  const toggleGdpr = async (): Promise<void> => {
+    const next = !lead.gdpr_consent
+    await patch(lead.id, { gdpr_consent: next, gdpr_consent_at: next ? new Date().toISOString() : null })
+    await addActivity(lead.id, 'system', null, next ? 'GDPR souhlas potvrzen' : 'GDPR souhlas odvolán')
+    reloadActivity()
+  }
+
   /** Otevře editaci kontaktu s aktuálními hodnotami leadu. */
   const startEditContact = (): void => {
     setPhoneVal(lead.phone ?? '')
@@ -431,9 +439,21 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {isReferrer(lead) && <span className="pill bg-ink text-gold"><Share2 className="h-3 w-3" /> Doporučitel</span>}
                 {lead.gdpr_consent ? (
-                  <span className="pill bg-emerald-soft text-emerald"><ShieldCheck className="h-3 w-3" /> GDPR potvrzeno</span>
+                  <button
+                    onClick={toggleGdpr}
+                    title={lead.gdpr_consent_at ? `Potvrzeno ${formatDateTime(lead.gdpr_consent_at)} — klikni pro odvolání` : 'Klikni pro odvolání'}
+                    className="pill bg-emerald-soft text-emerald transition hover:bg-emerald/20"
+                  >
+                    <ShieldCheck className="h-3 w-3" /> GDPR potvrzeno
+                  </button>
                 ) : (
-                  <span className="pill bg-canvas text-tx-faint"><ShieldCheck className="h-3 w-3" /> GDPR nepotvrzeno</span>
+                  <button
+                    onClick={toggleGdpr}
+                    title="Ručně potvrdit GDPR souhlas"
+                    className="pill border border-dashed border-line bg-white text-tx-soft transition hover:border-emerald/50 hover:text-emerald"
+                  >
+                    <ShieldCheck className="h-3 w-3" /> Potvrdit GDPR
+                  </button>
                 )}
               </div>
 
