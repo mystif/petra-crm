@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Search, Bell, CalendarClock, Inbox, X } from 'lucide-react'
+import { Search, Bell, CalendarClock, Inbox, X, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useSearch } from '../lib/searchContext'
 import { useLeads } from '../lib/leadsContext'
+import { useEvents } from '../lib/eventsContext'
+import { useListings } from '../lib/listingsContext'
+import { useContacts } from '../lib/contactsContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { useMakler } from '../lib/maklerContext'
 import { CLOSED_STAGES, type Lead } from '../lib/supabase'
@@ -20,10 +23,24 @@ interface TopbarProps {
 
 export function Topbar({ title, subtitle, actions, titleAside, showSearch = true }: TopbarProps): JSX.Element {
   const { openSearch } = useSearch()
-  const { leads } = useLeads()
+  const { leads, refetch: refetchLeads } = useLeads()
+  const { refetch: refetchEvents } = useEvents()
+  const { refetch: refetchListings } = useListings()
+  const { refetch: refetchContacts } = useContacts()
   const { openLead } = useLeadDetail()
   const { makler, avatarUrl, openAgent } = useMakler()
   const [notifOpen, setNotifOpen] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Data se aktualizují realtime automaticky — tlačítko je jen viditelná pojistka pro ruční obnovu.
+  const refreshAll = async (): Promise<void> => {
+    setRefreshing(true)
+    try {
+      await Promise.all([refetchLeads(), refetchEvents(), refetchListings(), refetchContacts()])
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   // Notifikace: follow-upy k vyřízení + nové (nezpracované) leady.
   const endOfToday = new Date()
@@ -60,6 +77,17 @@ export function Topbar({ title, subtitle, actions, titleAside, showSearch = true
             <kbd className="rounded-md bg-canvas px-1.5 py-0.5 text-[10px] font-semibold text-tx-faint">⌘K</kbd>
           </button>
         )}
+
+        {/* ruční obnova dat (realtime běží automaticky, tlačítko je jen pojistka) */}
+        <button
+          onClick={refreshAll}
+          disabled={refreshing}
+          title="Obnovit data"
+          aria-label="Obnovit data"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-white text-tx-soft transition hover:text-brand-dark disabled:opacity-60"
+        >
+          <RefreshCw className={`h-[18px] w-[18px] ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
 
         {/* zvonek + dropdown notifikací */}
         <div className="relative">
