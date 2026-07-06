@@ -33,7 +33,7 @@ export function Templates({ embedded = false }: { embedded?: boolean } = {}): JS
     <div className="flex h-full flex-col">
       {!embedded && (
         <Topbar
-          title="Email Follow-up"
+          title="Emailing"
           subtitle="Šablony e-mailů pro follow-up a oslovení"
           showSearch={false}
           actions={<button className="btn-primary" onClick={() => setEditing('new')}><Plus className="h-4 w-4" /> Nová šablona</button>}

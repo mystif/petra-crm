@@ -784,11 +784,11 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               {groups.map((g) => (
                 <div key={g.label}>
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-tx-faint">{g.label}</div>
-                  <ul className="space-y-3 border-l border-line pl-4">
+                  <ul className="space-y-3">
                     {g.items.map((a) => (
-                      <li key={a.id} className="relative flex gap-3">
-                        <span className="absolute -left-[25px] top-0.5"><ActIcon kind={a.kind} /></span>
-                        <div className="min-w-0 flex-1">
+                      <li key={a.id} className="flex items-start gap-3">
+                        <span className="shrink-0"><ActIcon kind={a.kind} /></span>
+                        <div className="min-w-0 flex-1 pt-0.5">
                           {a.subject && <div className="text-sm font-semibold text-tx">{a.subject}</div>}
                           {a.note && <div className="text-sm text-tx-soft">{a.note}</div>}
                           <div className="text-[11px] text-tx-faint">{timeOf(a.created_at)}</div>

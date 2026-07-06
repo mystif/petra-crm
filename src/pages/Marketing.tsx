@@ -6,7 +6,7 @@ import { Templates } from './Templates'
 
 type Tab = 'automatizace' | 'sablony'
 
-/** Marketing = Automatizace + Email Follow-up pod jednou střechou (záložky). */
+/** Marketing = Automatizace + Emailing pod jednou střechou (záložky). */
 export function Marketing(): JSX.Element {
   const [tab, setTab] = useState<Tab>('automatizace')
   return (
@@ -21,7 +21,7 @@ export function Marketing(): JSX.Element {
       <div className="sticky top-0 z-10 border-b border-line bg-canvas/80 px-4 backdrop-blur-xl md:px-8">
         <div className="flex gap-1">
           <TabBtn active={tab === 'automatizace'} onClick={() => setTab('automatizace')} icon={Zap}>Automatizace</TabBtn>
-          <TabBtn active={tab === 'sablony'} onClick={() => setTab('sablony')} icon={Mail}>Email Follow-up</TabBtn>
+          <TabBtn active={tab === 'sablony'} onClick={() => setTab('sablony')} icon={Mail}>Emailing</TabBtn>
         </div>
       </div>
 
