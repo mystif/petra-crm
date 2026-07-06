@@ -48,6 +48,7 @@ export function scoreLead(lead: Lead): LeadScore {
   if (lead.schuzka_done_at) add('Schůzka proběhla', 6)
   if (lead.foceni_done_at) add('Focení hotové', 6)
   if (lead.prohlidka_done_at) add('Prohlídka proběhla', 10)
+  if (lead.rezervace_done_at) add('Rezervace', 14)
   if (lead.smlouva_done_at) add('Smlouva podepsána', 18)
 
   // Kvalita kontaktu

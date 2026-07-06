@@ -65,10 +65,12 @@ export interface Lead {
   doporucil_id: string | null // kdo tento lead doporučil (jiný lead)
   property_id: string | null // nemovitost, o kterou má lead zájem
   kontakt_id: string | null // kanonická osoba v kontaktech (propojeno DB triggerem)
+  lead_role: string | null // 'prodavajici'|'nakupujici'|'pronajimatel'|'najemce' — kanonická klasifikace (deal_type zůstává pro web)
   // Milníky obchodu (proběhlé fáze) — ZDROJ PRAVDY o splnění; aktivita v logu je jen doprovodný append-only záznam.
   schuzka_done_at: string | null
   foceni_done_at: string | null
   prohlidka_done_at: string | null
+  rezervace_done_at: string | null
   smlouva_done_at: string | null
 }
 

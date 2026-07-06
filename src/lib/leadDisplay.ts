@@ -45,19 +45,46 @@ export function isReferrer(lead: Lead): boolean {
   return lead.lead_type === 'doporucitel'
 }
 
-/** Role kontaktu odvozená z typu obchodu. */
+export type LeadRole = 'prodavajici' | 'nakupujici' | 'pronajimatel' | 'najemce'
+
+const ROLE_LABEL: Record<LeadRole, string> = {
+  prodavajici: 'Prodávající',
+  nakupujici: 'Nakupující',
+  pronajimatel: 'Pronajímatel',
+  najemce: 'Nájemce'
+}
+/** Role → deal_type (drží se v synchronu při zápisu; pronajímatel i nájemce = 'pronájem'). */
+export const ROLE_TO_DEAL: Record<LeadRole, string> = {
+  prodavajici: 'prodej',
+  nakupujici: 'koupě',
+  pronajimatel: 'pronájem',
+  najemce: 'pronájem'
+}
+
+/** Kanonická role leadu: lead_role, jinak fallback odvozený z deal_type (web/legacy leady). */
+export function leadRole(lead: Lead): LeadRole | null {
+  if (isReferrer(lead)) return null
+  if (lead.lead_role) return lead.lead_role as LeadRole
+  switch (lead.deal_type) {
+    case 'prodej': return 'prodavajici'
+    case 'koupě': return 'nakupujici'
+    case 'pronájem': return 'najemce' // web „pronájem" = poptávka nájmu; pronajímatele nastaví makléřka ručně
+    default: return null
+  }
+}
+export function roleLabel(r: LeadRole): string { return ROLE_LABEL[r] }
+
+/** Nabízí lead nemovitost? (Prodávající / Pronajímatel) vs. poptávka (Nakupující / Nájemce). */
+export function isOffer(lead: Lead): boolean {
+  const r = leadRole(lead)
+  return r === 'prodavajici' || r === 'pronajimatel'
+}
+
+/** Role kontaktu (label) — z kanonické role leadu. */
 export function contactRole(lead: Lead): string {
   if (isReferrer(lead)) return 'Doporučitel'
-  switch (lead.deal_type) {
-    case 'prodej':
-      return 'Prodávající'
-    case 'pronájem':
-      return 'Pronajímatel'
-    case 'koupě':
-      return 'Kupující'
-    default:
-      return 'Zájemce'
-  }
+  const r = leadRole(lead)
+  return r ? ROLE_LABEL[r] : 'Zájemce'
 }
 
 /** Deterministický odstín náhledu podle id (stabilní mezi rendery). */

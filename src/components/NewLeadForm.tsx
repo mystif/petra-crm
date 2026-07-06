@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Modal } from './Modal'
 import { createLead, STAGES, type StageKey } from '../lib/supabase'
-import { PRIORITIES } from '../lib/leadDisplay'
+import { PRIORITIES, ROLE_TO_DEAL, type LeadRole } from '../lib/leadDisplay'
 import { useLeads } from '../lib/leadsContext'
 
 interface NewLeadFormProps {
@@ -12,10 +12,11 @@ interface NewLeadFormProps {
 }
 
 const PROPERTY_OPTIONS = ['byt', 'dům', 'pozemek', 'komerční', 'pronájem']
-const DEAL_OPTIONS: { value: string; label: string }[] = [
-  { value: 'koupě', label: 'Koupě' },
-  { value: 'prodej', label: 'Prodej' },
-  { value: 'pronájem', label: 'Pronájem' }
+const ROLE_OPTIONS: { value: LeadRole; label: string }[] = [
+  { value: 'prodavajici', label: 'Prodávající' },
+  { value: 'nakupujici', label: 'Nakupující' },
+  { value: 'pronajimatel', label: 'Pronajímatel' },
+  { value: 'najemce', label: 'Nájemce' }
 ]
 const SOURCE_OPTIONS: { value: string; label: string }[] = [
   { value: 'Web', label: 'Web (formulář)' },
@@ -32,7 +33,7 @@ interface FormState {
   phone: string
   email: string
   lead_type: LeadType
-  deal_type: string
+  role: LeadRole
   property_type: string
   location: string
   price: string
@@ -49,7 +50,7 @@ const EMPTY: FormState = {
   phone: '',
   email: '',
   lead_type: 'poptavka',
-  deal_type: 'koupě',
+  role: 'nakupujici',
   property_type: 'byt',
   location: '',
   price: '',
@@ -91,7 +92,8 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
         lead_type: form.lead_type,
-        deal_type: isRef ? null : (form.deal_type || null),
+        lead_role: isRef ? null : form.role,
+        deal_type: isRef ? null : ROLE_TO_DEAL[form.role],
         property_type: isRef ? null : (form.property_type || null),
         location: isRef ? null : (form.location.trim() || null),
         price: !isRef && form.lead_type === 'poptavka' ? priceNum : null,
@@ -150,9 +152,9 @@ export function NewLeadForm({ open, onClose, onCreated }: NewLeadFormProps): JSX
 
         {!isRef && (
           <>
-            <Field label="Druh obchodu">
-              <select className="input" value={form.deal_type} onChange={(e) => set({ deal_type: e.target.value })}>
-                {DEAL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <Field label="Klasifikace">
+              <select className="input" value={form.role} onChange={(e) => set({ role: e.target.value as LeadRole })}>
+                {ROLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
             <Field label="Typ nemovitosti">

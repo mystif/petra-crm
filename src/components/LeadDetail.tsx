@@ -3,14 +3,14 @@ import {
   Phone, Mail, MapPin, Send, CalendarClock, Loader2, CheckCircle2, XCircle, MessageSquarePlus,
   Clock, StickyNote, Cog, ImagePlus, Star, X, Trash2, Pencil, ShieldCheck, Cake, Coins,
   MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift, Building2,
-  Camera, FileSignature, Handshake, Check
+  Camera, FileSignature, Handshake, Check, BookmarkCheck
 } from 'lucide-react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
 import { STAGES, type Lead, type StageKey } from '../lib/supabase'
 import { formatCZK, formatDateTime, formatDate, followUpState } from '../lib/format'
-import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer } from '../lib/leadDisplay'
+import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer, leadRole, isOffer, ROLE_TO_DEAL, type LeadRole } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
@@ -48,18 +48,33 @@ function ActIcon({ kind }: { kind: ActivityKind }): JSX.Element {
   if (kind === 'meeting') return <span className="grid h-7 w-7 place-items-center rounded-full bg-[#F0E7FB] text-[#9333EA]"><Handshake className="h-3.5 w-3.5" /></span>
   if (kind === 'photoshoot') return <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-soft text-amber"><Camera className="h-3.5 w-3.5" /></span>
   if (kind === 'showing') return <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-soft text-emerald"><Home className="h-3.5 w-3.5" /></span>
+  if (kind === 'reservation') return <span className="grid h-7 w-7 place-items-center rounded-full bg-sky-soft text-sky"><BookmarkCheck className="h-3.5 w-3.5" /></span>
   if (kind === 'contract') return <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand-dark"><FileSignature className="h-3.5 w-3.5" /></span>
   if (kind === 'note') return <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-soft text-amber"><StickyNote className="h-3.5 w-3.5" /></span>
   return <span className="grid h-7 w-7 place-items-center rounded-full bg-canvas text-tx-soft"><Cog className="h-3.5 w-3.5" /></span>
 }
 
-/** Milníky obchodu — zdroj pravdy jsou timestamp sloupce na leadu. */
-const MILESTONES = [
-  { key: 'schuzka_done_at', label: 'Schůzka', kind: 'meeting', icon: Handshake },
-  { key: 'foceni_done_at', label: 'Focení', kind: 'photoshoot', icon: Camera },
-  { key: 'prohlidka_done_at', label: 'Prohlídka', kind: 'showing', icon: Home },
-  { key: 'smlouva_done_at', label: 'Smlouva', kind: 'contract', icon: FileSignature }
-] as const
+/** Milníky obchodu — zdroj pravdy jsou timestamp sloupce na leadu. Sady se liší dle role. */
+type Milestone = { key: 'schuzka_done_at' | 'prohlidka_done_at' | 'foceni_done_at' | 'rezervace_done_at' | 'smlouva_done_at'; label: string; kind: ActivityKind; icon: typeof Handshake }
+const MS: Record<string, Milestone> = {
+  schuzka: { key: 'schuzka_done_at', label: 'Schůzka', kind: 'meeting', icon: Handshake },
+  prohlidka: { key: 'prohlidka_done_at', label: 'Prohlídka', kind: 'showing', icon: Home },
+  foceni: { key: 'foceni_done_at', label: 'Focení', kind: 'photoshoot', icon: Camera },
+  rezervace: { key: 'rezervace_done_at', label: 'Rezervace', kind: 'reservation', icon: BookmarkCheck },
+  smlouva: { key: 'smlouva_done_at', label: 'Smlouva', kind: 'contract', icon: FileSignature }
+}
+// Nabídka (Prodávající/Pronajímatel): Schůzka → Prohlídka → Focení → Smlouva
+const MILESTONES_OFFER: Milestone[] = [MS.schuzka, MS.prohlidka, MS.foceni, MS.smlouva]
+// Poptávka (Nakupující/Nájemce): Schůzka → Prohlídka → Rezervace → Smlouva
+const MILESTONES_DEMAND: Milestone[] = [MS.schuzka, MS.prohlidka, MS.rezervace, MS.smlouva]
+
+/** Klasifikace v modálu — 4 role. */
+const ROLE_BTNS: { key: LeadRole; label: string }[] = [
+  { key: 'prodavajici', label: 'Prodávající' },
+  { key: 'nakupujici', label: 'Nakupující' },
+  { key: 'pronajimatel', label: 'Pronajímatel' },
+  { key: 'najemce', label: 'Nájemce' }
+]
 
 export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose: () => void }): JSX.Element {
   const { leads, moveStage, patch, remove } = useLeads()
@@ -208,8 +223,8 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     await patch(lead.id, { property_id: val || null })
   }
 
-  // Prodávaná/pronajímaná nemovitost — zdroj pravdy je nemovitost.seller_lead_id (žádný sloupec na leadu).
-  const isSeller = lead.deal_type === 'prodej' || lead.deal_type === 'pronájem'
+  // Nabízená nemovitost (Prodávající/Pronajímatel) — zdroj pravdy je nemovitost.seller_lead_id (žádný sloupec na leadu).
+  const isOfferLead = isOffer(lead)
   const sellerListing = listings.find((l) => l.seller_lead_id === lead.id) ?? null
   const saveSellerListing = async (listingId: string): Promise<void> => {
     if (sellerListing && sellerListing.id !== listingId) {
@@ -217,22 +232,38 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     }
     if (listingId) await listingsPatch(listingId, { seller_lead_id: lead.id, seller_contact_id: null })
     await addActivity(lead.id, 'system', null, listingId
-      ? `Prodávaná nemovitost: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`
-      : 'Prodávaná nemovitost odebrána')
+      ? `Nabízená nemovitost: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`
+      : 'Nabízená nemovitost odebrána')
     reloadActivity()
   }
 
+  // Sada milníků dle role (nabídka vs poptávka).
+  const milestones = isOfferLead ? MILESTONES_OFFER : MILESTONES_DEMAND
+  const nextMilestone = milestones.findIndex((m) => !lead[m.key])
+
   // Milník obchodu — set/clear timestampu na leadu + doprovodný append-only záznam do logu.
-  const toggleMilestone = async (m: typeof MILESTONES[number]): Promise<void> => {
+  const toggleMilestone = async (m: Milestone): Promise<void> => {
     const done = !!lead[m.key]
     await patch(lead.id, {
       [m.key]: done ? null : new Date().toISOString(),
       ...(done ? {} : { last_contact_at: new Date().toISOString() })
     })
+    // Rezervace ↔ nemovitost.reservation_lead_id (obousměrně, váže na nemovitost zájmu)
+    if (m.key === 'rezervace_done_at' && lead.property_id) {
+      if (done) {
+        const lst = listings.find((l) => l.id === lead.property_id)
+        if (lst && lst.reservation_lead_id === lead.id) await listingsPatch(lst.id, { reservation_lead_id: null })
+      } else {
+        await listingsPatch(lead.property_id, { reservation_lead_id: lead.id, reservation_contact_id: null })
+      }
+    }
     await addActivity(lead.id, done ? 'system' : m.kind, null, done ? `${m.label} — zrušeno` : `${m.label} proběhlo`)
     reloadActivity()
   }
-  const nextMilestone = MILESTONES.findIndex((m) => !lead[m.key])
+
+  const setRole = async (role: LeadRole): Promise<void> => {
+    await patch(lead.id, { lead_type: 'poptavka', lead_role: role, deal_type: ROLE_TO_DEAL[role] })
+  }
 
   const saveSource = async (val: string): Promise<void> => {
     await patch(lead.id, { source: val || null })
@@ -502,29 +533,28 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             )}
           </div>
 
-          {/* klasifikace — nákup / prodej / pronájem / doporučení */}
+          {/* klasifikace — 4 role + doporučitel */}
           <div>
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-tx-faint">Klasifikace</label>
             <div className="flex flex-wrap gap-1.5">
-              {[
-                { key: 'koupě', label: 'Nákup' },
-                { key: 'prodej', label: 'Prodej' },
-                { key: 'pronájem', label: 'Pronájem' },
-                { key: 'doporuceni', label: 'Doporučení' }
-              ].map((c) => {
-                const active = isReferrer(lead) ? c.key === 'doporuceni' : (lead.deal_type ?? '') === c.key
+              {ROLE_BTNS.map((c) => {
+                const active = !isReferrer(lead) && leadRole(lead) === c.key
                 return (
                   <button
                     key={c.key}
-                    onClick={() => c.key === 'doporuceni'
-                      ? patch(lead.id, { lead_type: 'doporucitel', deal_type: null })
-                      : patch(lead.id, { lead_type: 'poptavka', deal_type: c.key })}
-                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${active ? (c.key === 'doporuceni' ? 'bg-ink text-gold' : 'bg-ink text-white') : 'border border-line bg-white text-tx-soft hover:text-tx'}`}
+                    onClick={() => setRole(c.key)}
+                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${active ? 'bg-ink text-white' : 'border border-line bg-white text-tx-soft hover:text-tx'}`}
                   >
                     {c.label}
                   </button>
                 )
               })}
+              <button
+                onClick={() => patch(lead.id, { lead_type: 'doporucitel', lead_role: null, deal_type: null })}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${isReferrer(lead) ? 'bg-ink text-gold' : 'border border-line bg-white text-tx-soft hover:text-tx'}`}
+              >
+                Doporučení
+              </button>
             </div>
             {isReferrer(lead) && <p className="mt-1.5 text-xs text-tx-soft">Jen doporučitel — eviduje se v Kontaktech a nezobrazuje se v pipeline.</p>}
           </div>
@@ -575,9 +605,9 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 {leads.filter((l) => l.id !== lead.id).map((l) => <option key={l.id} value={l.id}>{l.name || 'Bez jména'}</option>)}
               </select>
             </div>
-            {isSeller ? (
+            {isOfferLead ? (
               <div>
-                <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Building2 className="h-3.5 w-3.5" /> {lead.deal_type === 'pronájem' ? 'Pronajímaná' : 'Prodávaná'} nemovitost</label>
+                <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Building2 className="h-3.5 w-3.5" /> Nabízená nemovitost</label>
                 <select className="input" value={sellerListing?.id ?? ''} onChange={(e) => saveSellerListing(e.target.value)}>
                   <option value="">— žádná —</option>
                   {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
@@ -697,7 +727,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             <div className="mb-5">
               <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><CheckCircle className="h-3.5 w-3.5" /> Milníky obchodu</div>
               <div className="flex items-stretch gap-1.5">
-                {MILESTONES.map((m, i) => {
+                {milestones.map((m, i) => {
                   const Icon = m.icon
                   const done = !!lead[m.key]
                   const isNext = !done && i === nextMilestone
@@ -721,7 +751,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                   )
                 })}
               </div>
-              {nextMilestone >= 0 && <p className="mt-1.5 text-[11px] text-tx-soft">Další krok: <b className="text-tx">{MILESTONES[nextMilestone].label}</b></p>}
+              {nextMilestone >= 0 && <p className="mt-1.5 text-[11px] text-tx-soft">Další krok: <b className="text-tx">{milestones[nextMilestone].label}</b></p>}
             </div>
           )}
 
