@@ -14,6 +14,7 @@ export interface Template {
   subject: string
   body: string
   auto_kod: string | null // 'uvitaci' = šablona rozesílaná automatizací
+  lang: 'cs' | 'en' // jazyk šablony
   created_at: string
   updated_at: string
 }
@@ -25,18 +26,18 @@ export async function fetchTemplates(): Promise<Template[]> {
 }
 
 export async function saveTemplate(
-  t: Pick<Template, 'name' | 'subject' | 'body'> & { id?: string }
+  t: Pick<Template, 'name' | 'subject' | 'body' | 'lang'> & { id?: string }
 ): Promise<void> {
   if (t.id) {
     const { error } = await supabase
       .from('email_sablony')
-      .update({ name: t.name, subject: t.subject, body: t.body, updated_at: new Date().toISOString() })
+      .update({ name: t.name, subject: t.subject, body: t.body, lang: t.lang, updated_at: new Date().toISOString() })
       .eq('id', t.id)
     if (error) throw new Error(error.message)
   } else {
     const { error } = await supabase
       .from('email_sablony')
-      .insert({ name: t.name, subject: t.subject, body: t.body })
+      .insert({ name: t.name, subject: t.subject, body: t.body, lang: t.lang })
     if (error) throw new Error(error.message)
   }
 }

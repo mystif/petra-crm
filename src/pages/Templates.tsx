@@ -61,7 +61,10 @@ export function Templates({ embedded = false }: { embedded?: boolean } = {}): JS
                     <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand-dark">
                       <Mail className="h-4 w-4" />
                     </span>
-                    <h3 className="font-bold text-tx">{t.name}</h3>
+                    <h3 className="flex items-center gap-1.5 font-bold text-tx">
+                      <span title={t.lang === 'en' ? 'Anglická šablona' : 'Česká šablona'} className="text-base leading-none">{t.lang === 'en' ? '🇬🇧' : '🇨🇿'}</span>
+                      {t.name}
+                    </h3>
                   </div>
                   <div className="flex gap-1">
                     <button className="grid h-8 w-8 place-items-center rounded-lg text-tx-soft hover:bg-canvas" onClick={() => setEditing(t)}>
@@ -139,6 +142,7 @@ function TemplateEditor({
   const [name, setName] = useState(template?.name ?? '')
   const [subject, setSubject] = useState(template?.subject ?? '')
   const [body, setBody] = useState(template?.body ?? '')
+  const [lang, setLang] = useState<'cs' | 'en'>(template?.lang ?? 'cs')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -147,7 +151,7 @@ function TemplateEditor({
     setSaving(true)
     setErr(null)
     try {
-      await saveTemplate({ id: template?.id, name, subject, body })
+      await saveTemplate({ id: template?.id, name, subject, body, lang })
       onSaved()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Uložení selhalo.')
@@ -178,6 +182,20 @@ function TemplateEditor({
             <span>Tuto šablonu posílá <b className="text-tx">automatizace</b> každému novému leadu (když je pravidlo „Uvítací e-mail" zapnuté). Změny se projeví u dalších leadů.</span>
           </div>
         )}
+        <div>
+          <label className="mb-1 block text-sm font-semibold text-tx-soft">Jazyk</label>
+          <div className="flex gap-1.5">
+            {([['cs', '🇨🇿 Česky'], ['en', '🇬🇧 English']] as const).map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => setLang(v)}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${lang === v ? 'bg-ink text-white' : 'border border-line bg-white text-tx-soft hover:text-tx'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div>
           <label className="mb-1 block text-sm font-semibold text-tx-soft">Název šablony</label>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="např. První kontakt" autoFocus />
