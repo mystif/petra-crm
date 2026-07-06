@@ -10,7 +10,7 @@ import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
 import { STAGES, type Lead, type StageKey } from '../lib/supabase'
 import { formatCZK, formatDateTime, formatDate, followUpState } from '../lib/format'
-import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer, leadRole, isOffer, ROLE_TO_DEAL, type LeadRole } from '../lib/leadDisplay'
+import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer, leadRole, isOffer, ROLE_TO_DEAL, LEAD_SOURCES, type LeadRole } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
@@ -627,9 +627,8 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               <select className="input" value={lead.source ?? ''} onChange={(e) => saveSource(e.target.value)}>
                 <option value="">— neuvedeno —</option>
                 {(() => {
-                  const opts = ['Web', 'Sreality', 'Telefonát', 'Email', 'Dopis']
                   const cur = lead.source ?? ''
-                  const list = cur && !opts.includes(cur) ? [cur, ...opts] : opts
+                  const list = cur && !LEAD_SOURCES.includes(cur) ? [cur, ...LEAD_SOURCES] : LEAD_SOURCES
                   return list.map((s) => <option key={s} value={s}>{s}</option>)
                 })()}
               </select>

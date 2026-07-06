@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Modal } from './Modal'
 import { createLead, STAGES, type StageKey } from '../lib/supabase'
-import { PRIORITIES, ROLE_TO_DEAL, type LeadRole } from '../lib/leadDisplay'
+import { PRIORITIES, ROLE_TO_DEAL, LEAD_SOURCES, type LeadRole } from '../lib/leadDisplay'
 import { useLeads } from '../lib/leadsContext'
 
 interface NewLeadFormProps {
@@ -18,13 +18,10 @@ const ROLE_OPTIONS: { value: LeadRole; label: string }[] = [
   { value: 'pronajimatel', label: 'Pronajímatel' },
   { value: 'najemce', label: 'Nájemce' }
 ]
-const SOURCE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'Web', label: 'Web (formulář)' },
-  { value: 'Sreality', label: 'Sreality' },
-  { value: 'Telefonát', label: 'Telefonát' },
-  { value: 'Email', label: 'Email' },
-  { value: 'Dopis', label: 'Dopis' }
-]
+const SOURCE_OPTIONS: { value: string; label: string }[] = LEAD_SOURCES.map((s) => ({
+  value: s,
+  label: s === 'Web' ? 'Web (formulář)' : s
+}))
 
 type LeadType = 'poptavka' | 'odhad' | 'doporucitel'
 

@@ -140,3 +140,10 @@ export function whatsappUrl(phone: string | null): string | null {
   if (digits.length < 9) return null
   return `https://wa.me/${digits}`
 }
+
+/** Zdroje leadu („Odkud přišel") — realitní portály + kontaktní kanály. Sdíleno LeadDetail i NewLeadForm. */
+export const LEAD_SOURCES = [
+  'Web', 'Sreality', 'Annonce', 'Pražské reality', 'RealHit', 'Reality.cz',
+  'Domybytypozemky', 'realityČechy', 'iDnesReality', 'Realitymix', 'Českéreality',
+  'Telefonát', 'Email', 'Dopis'
+]
