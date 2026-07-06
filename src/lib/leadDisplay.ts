@@ -147,3 +147,13 @@ export const LEAD_SOURCES = [
   'Domybytypozemky', 'realityČechy', 'iDnesReality', 'Realitymix', 'Českéreality',
   'Telefonát', 'Email', 'Dopis'
 ]
+
+/** Podíl kanceláře makléře na provizi (%). Výchozí 50 %. */
+export function officePct(lead: Lead): number {
+  const p = lead.provize_kancelar_pct
+  return p == null ? 50 : p
+}
+/** Reálná provize makléře = hrubá provize po odečtení podílu kanceláře. */
+export function maklerProvize(lead: Lead): number {
+  return Number(lead.provize || 0) * (100 - officePct(lead)) / 100
+}

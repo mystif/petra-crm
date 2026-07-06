@@ -103,6 +103,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const [priceVal, setPriceVal] = useState(String(lead[priceField] ?? ''))
   const [crmNote, setCrmNote] = useState(lead.crm_note ?? '')
   const [provizeVal, setProvizeVal] = useState(String(lead.provize ?? ''))
+  const [officePctVal, setOfficePctVal] = useState(String(lead.provize_kancelar_pct ?? 50))
 
   // editace kontaktních údajů + popisu
   const [editContact, setEditContact] = useState(false)
@@ -208,6 +209,16 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     if (next === (lead.provize ?? null)) return
     await patch(lead.id, { provize: next })
     await addActivity(lead.id, 'system', null, `Provize nastavena na ${next != null ? formatCZK(next) : '—'}`)
+    reloadActivity()
+  }
+
+  const saveOfficePct = async (): Promise<void> => {
+    let n = officePctVal ? Number(officePctVal.replace(/[^\d]/g, '')) : 50
+    n = Math.max(0, Math.min(100, isNaN(n) ? 50 : n))
+    setOfficePctVal(String(n))
+    if (n === (lead.provize_kancelar_pct ?? 50)) return
+    await patch(lead.id, { provize_kancelar_pct: n })
+    await addActivity(lead.id, 'system', null, `Podíl kanceláře nastaven na ${n} %`)
     reloadActivity()
   }
 
@@ -583,15 +594,31 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             </div>
           )}
 
-          {isClosed && (
-            <div className="rounded-xl border border-emerald/30 bg-emerald-soft/50 p-4">
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald"><Coins className="h-3.5 w-3.5" /> Provize z obchodu</label>
-              <div className="flex items-center gap-2">
-                <input className="input w-44 font-mono" inputMode="numeric" placeholder="např. 250000" value={provizeVal} onChange={(e) => setProvizeVal(e.target.value)} onBlur={saveProvize} />
-                <span className="text-xs text-tx-soft">Kč — započítá se do dashboardu a karty makléře.</span>
+          {isClosed && (() => {
+            const gross = provizeVal ? Number(provizeVal.replace(/\s/g, '')) || 0 : 0
+            const pct = Math.max(0, Math.min(100, Number(officePctVal.replace(/[^\d]/g, '')) || 0))
+            const real = gross * (100 - pct) / 100
+            return (
+              <div className="rounded-xl border border-emerald/30 bg-emerald-soft/50 p-4">
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald"><Coins className="h-3.5 w-3.5" /> Provize z obchodu</label>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <div className="mb-1 text-[11px] font-semibold text-tx-soft">Celková provize (Kč)</div>
+                    <input className="input w-40 font-mono" inputMode="numeric" placeholder="např. 250000" value={provizeVal} onChange={(e) => setProvizeVal(e.target.value)} onBlur={saveProvize} />
+                  </div>
+                  <div>
+                    <div className="mb-1 text-[11px] font-semibold text-tx-soft">Podíl kanceláře (%)</div>
+                    <input className="input w-24 font-mono" inputMode="numeric" placeholder="50" value={officePctVal} onChange={(e) => setOfficePctVal(e.target.value)} onBlur={saveOfficePct} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="mb-1 text-[11px] font-semibold text-tx-soft">Reálná provize makléře</div>
+                    <div className="stat-num text-xl text-emerald">{formatCZK(real)}</div>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-tx-soft">Do dashboardu, KPI a karty makléře se počítá <b className="text-tx">reálná provize</b> (celková po odečtení podílu kanceláře {pct} %).</p>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>

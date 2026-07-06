@@ -14,6 +14,7 @@ import { useLeadDetail } from '../lib/leadDetailContext'
 import { eventTypeMeta, EVENT_TYPES, sameDay, startOfWeek, isOverdue, eventTime, type EventItem, type EventType } from '../lib/events'
 import { STAGE_MAP, type Lead } from '../lib/supabase'
 import { formatCZK } from '../lib/format'
+import { maklerProvize } from '../lib/leadDisplay'
 
 const DAY_NAMES = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne']
 type GridView = 'den' | 'tyden' | 'mesic'
@@ -308,7 +309,7 @@ function DaySummary({ events, leadOf }: { events: EventItem[]; leadOf: (id: stri
     let sum = 0
     for (const e of events) {
       const l = leadOf(e.lead_id)
-      if (l && !seen.has(l.id)) { seen.add(l.id); sum += Number(l.provize || 0) }
+      if (l && !seen.has(l.id)) { seen.add(l.id); sum += maklerProvize(l) }
     }
     return sum
   }, [events, leadOf])
@@ -455,7 +456,7 @@ function EventCard({ event: e, lead, listing, onOpen, onCall, onNavigate, onOpen
                 </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[11px] text-tx-soft">
                   {lead?.name && <span className="flex items-center gap-1"><UserRound className="h-3 w-3" /> {lead.name}</span>}
-                  {!!lead?.provize && <span className="flex items-center gap-1 font-semibold text-emerald"><Coins className="h-3 w-3" /> {formatCZK(lead.provize)}</span>}
+                  {!!lead?.provize && <span className="flex items-center gap-1 font-semibold text-emerald"><Coins className="h-3 w-3" /> {formatCZK(maklerProvize(lead))}</span>}
                 </div>
               </div>
               {stage && <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ background: stage.accent }}>{stage.label}</span>}

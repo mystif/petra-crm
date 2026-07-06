@@ -59,7 +59,8 @@ export interface Lead {
   follow_up_at: string | null
   fotky: string[] | null
   birthdate: string | null
-  provize: number | null
+  provize: number | null // hrubá provize z obchodu (zadaná ručně)
+  provize_kancelar_pct: number | null // podíl kanceláře makléře na provizi (%), default 50
   priorita: string | null // 'horky' | 'stredni' | 'dlouhodoby'
   last_contact_at: string | null
   doporucil_id: string | null // kdo tento lead doporučil (jiný lead)

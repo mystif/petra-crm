@@ -13,7 +13,7 @@ import { useListings } from '../lib/listingsContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { CLOSED_STAGES } from '../lib/supabase'
 import { formatCZK } from '../lib/format'
-import { leadValue, isReferrer } from '../lib/leadDisplay'
+import { leadValue, isReferrer, maklerProvize } from '../lib/leadDisplay'
 import { topReferrers } from '../lib/referrals'
 import { eventTypeMeta, isOverdue, sameDay, eventTime, type EventItem } from '../lib/events'
 import { statusMeta, formatListingPrice, propertyTypeLabel } from '../lib/listings'
@@ -106,9 +106,9 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const inMonth = (iso: string | null): boolean => !!iso && new Date(iso) >= monthStart
   const inRange = (iso: string | null, s: Date, e: Date): boolean => { if (!iso) return false; const d = new Date(iso); return d >= s && d < e }
 
-  const provizeMonth = won.filter((l) => inMonth(l.crm_updated_at)).reduce((s, l) => s + Number(l.provize || 0), 0)
-  const provizeLastMonth = won.filter((l) => inRange(l.crm_updated_at, lastMonthStart, monthStart)).reduce((s, l) => s + Number(l.provize || 0), 0)
-  const provizeYtd = won.filter((l) => l.crm_updated_at && new Date(l.crm_updated_at) >= yearStart).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const provizeMonth = won.filter((l) => inMonth(l.crm_updated_at)).reduce((s, l) => s + maklerProvize(l), 0)
+  const provizeLastMonth = won.filter((l) => inRange(l.crm_updated_at, lastMonthStart, monthStart)).reduce((s, l) => s + maklerProvize(l), 0)
+  const provizeYtd = won.filter((l) => l.crm_updated_at && new Date(l.crm_updated_at) >= yearStart).reduce((s, l) => s + maklerProvize(l), 0)
   const newContactsMonth = new Set(leads.filter((l) => inMonth(l.created_at)).map((l) => (l.email || l.phone || l.id).toLowerCase())).size
   const provizePctM = pct(provizeMonth, provizeLastMonth)
 
@@ -156,11 +156,11 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
     ? Math.round(wonCohort.reduce((s, l) => s + (new Date(l.crm_updated_at || l.created_at).getTime() - new Date(l.created_at).getTime()), 0) / wonCohort.length / 86_400_000)
     : null
   const wonWithProvize = wonCohort.filter((l) => l.provize)
-  const avgProvize = wonWithProvize.length > 0 ? wonWithProvize.reduce((s, l) => s + Number(l.provize || 0), 0) / wonWithProvize.length : null
+  const avgProvize = wonWithProvize.length > 0 ? wonWithProvize.reduce((s, l) => s + maklerProvize(l), 0) / wonWithProvize.length : null
   const offerReached = cohort.filter((l) => ['nabidka', 'uzavreno', 'ztraceno'].includes(l.crm_status))
   const offerSuccessRate = offerReached.length > 0 ? Math.round((wonCohort.length / offerReached.length) * 1000) / 10 : null
   const pipelineVolume = cohort.filter((l) => l.crm_status !== 'ztraceno').reduce((s, l) => s + leadValue(l), 0)
-  const expectedProvize = cohort.filter((l) => !CLOSED_STAGES.includes(l.crm_status)).reduce((s, l) => s + Number(l.provize || 0), 0)
+  const expectedProvize = cohort.filter((l) => !CLOSED_STAGES.includes(l.crm_status)).reduce((s, l) => s + maklerProvize(l), 0)
   const overdueDeals = open.filter((l) => l.follow_up_at && new Date(l.follow_up_at) < now).length
   const activeNegotiations = open.filter((l) => l.crm_status === 'kontaktovan' || l.crm_status === 'schuzka').length
   const closedThisMonth = won.filter((l) => inMonth(l.crm_updated_at)).length
@@ -183,7 +183,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const wonSum = (s: Date, e: Date, fn: (l: typeof won[number]) => number): number =>
     won.filter((l) => inRange(l.crm_updated_at, s, e)).reduce((a, l) => a + fn(l), 0)
   const valOf = (l: typeof won[number]): number => leadValue(l)
-  const provOf = (l: typeof won[number]): number => Number(l.provize || 0)
+  const provOf = (l: typeof won[number]): number => maklerProvize(l)
   const meetingsIn = (s: Date, e: Date): number => events.filter((ev) => (ev.type === 'schuzka' || ev.type === 'prohlidka') && inRange(ev.start_at, s, e)).length
   const convRate = (s: Date, e: Date): number => {
     const created = dealLeads.filter((l) => inRange(l.created_at, s, e)).length

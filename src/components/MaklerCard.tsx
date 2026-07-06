@@ -7,6 +7,7 @@ import { useMakler } from '../lib/maklerContext'
 import { updateMakler, type Makler } from '../lib/makler'
 import { uploadPhoto, photoUrl } from '../lib/photos'
 import { formatCZK } from '../lib/format'
+import { maklerProvize } from '../lib/leadDisplay'
 
 export function MaklerCard(): JSX.Element | null {
   const { leads } = useLeads()
@@ -46,7 +47,7 @@ export function MaklerCard(): JSX.Element | null {
       if (!l.crm_updated_at) return false
       const d = new Date(l.crm_updated_at)
       return d >= from && (to ? d < to : true)
-    }).reduce((s, l) => s + Number(l.provize || 0), 0)
+    }).reduce((s, l) => s + maklerProvize(l), 0)
   const provThis = sumIf(monthStart, null)
   const provLast = sumIf(lastMonthStart, monthStart)
   const delta = provThis - provLast

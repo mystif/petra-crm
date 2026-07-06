@@ -192,9 +192,10 @@ export function Pipeline(): JSX.Element {
         <CommissionModal
           lead={commissionLead}
           onClose={() => setCommissionLead(null)}
-          onSave={async (amount) => {
-            await patch(commissionLead.id, { provize: amount })
-            await addActivity(commissionLead.id, 'system', null, `Obchod uzavřen · provize ${amount != null ? formatCZK(amount) : '—'}`)
+          onSave={async (amount, officePct) => {
+            await patch(commissionLead.id, { provize: amount, provize_kancelar_pct: officePct })
+            const real = amount != null ? amount * (100 - officePct) / 100 : null
+            await addActivity(commissionLead.id, 'system', null, `Obchod uzavřen · provize ${amount != null ? formatCZK(amount) : '—'} (podíl kanceláře ${officePct} %, reálná ${real != null ? formatCZK(real) : '—'})`)
             setCommissionLead(null)
           }}
         />
@@ -203,9 +204,13 @@ export function Pipeline(): JSX.Element {
   )
 }
 
-function CommissionModal({ lead, onClose, onSave }: { lead: Lead; onClose: () => void; onSave: (amount: number | null) => Promise<void> }): JSX.Element {
+function CommissionModal({ lead, onClose, onSave }: { lead: Lead; onClose: () => void; onSave: (amount: number | null, officePct: number) => Promise<void> }): JSX.Element {
   const [val, setVal] = useState(String(lead.provize ?? ''))
+  const [pctVal, setPctVal] = useState(String(lead.provize_kancelar_pct ?? 50))
   const [saving, setSaving] = useState(false)
+  const gross = val ? Number(val.replace(/\s/g, '')) || 0 : 0
+  const pct = Math.max(0, Math.min(100, Number(pctVal.replace(/[^\d]/g, '')) || 0))
+  const real = gross * (100 - pct) / 100
   return (
     <Modal
       open
@@ -219,16 +224,28 @@ function CommissionModal({ lead, onClose, onSave }: { lead: Lead; onClose: () =>
           <button
             className="btn-primary"
             disabled={saving}
-            onClick={async () => { setSaving(true); await onSave(val ? Number(val.replace(/\s/g, '')) : null) }}
+            onClick={async () => { setSaving(true); await onSave(val ? Number(val.replace(/\s/g, '')) : null, pct) }}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Coins className="h-4 w-4" />} Uložit provizi
           </button>
         </>
       }
     >
-      <label className="mb-1 block text-sm font-semibold text-tx-soft">Výše provize (Kč)</label>
-      <input className="input font-mono" inputMode="numeric" placeholder="např. 250000" value={val} onChange={(e) => setVal(e.target.value)} autoFocus />
-      <p className="mt-2 text-xs text-tx-soft">Provize se započítá do dashboardu, KPI a karty makléře za aktuální měsíc.</p>
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="mb-1 block text-sm font-semibold text-tx-soft">Celková provize (Kč)</label>
+          <input className="input w-40 font-mono" inputMode="numeric" placeholder="např. 250000" value={val} onChange={(e) => setVal(e.target.value)} autoFocus />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-semibold text-tx-soft">Podíl kanceláře (%)</label>
+          <input className="input w-24 font-mono" inputMode="numeric" placeholder="50" value={pctVal} onChange={(e) => setPctVal(e.target.value)} />
+        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-soft/60 px-4 py-3">
+        <span className="text-sm font-semibold text-tx-soft">Reálná provize makléře</span>
+        <span className="stat-num text-lg text-emerald">{formatCZK(real)}</span>
+      </div>
+      <p className="mt-2 text-xs text-tx-soft">Do dashboardu, KPI a karty makléře se počítá reálná provize (celková po odečtení podílu kanceláře).</p>
     </Modal>
   )
 }
