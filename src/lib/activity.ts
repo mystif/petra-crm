@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export type ActivityKind = 'email' | 'note' | 'system' | 'call' | 'meeting'
+export type ActivityKind = 'email' | 'note' | 'system' | 'call' | 'meeting' | 'photoshoot' | 'showing' | 'contract'
 
 export interface Activity {
   id: string

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Phone, Mail, MapPin, Send, CalendarClock, Loader2, CheckCircle2, XCircle, MessageSquarePlus,
   Clock, StickyNote, Cog, ImagePlus, Star, X, Trash2, Pencil, ShieldCheck, Cake, Coins,
-  MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift, Building2
+  MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift, Building2,
+  Camera, FileSignature, Handshake, Check
 } from 'lucide-react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
@@ -44,19 +45,27 @@ const ACT_FILTERS: { id: 'all' | ActivityKind; label: string }[] = [
 function ActIcon({ kind }: { kind: ActivityKind }): JSX.Element {
   if (kind === 'email') return <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand-dark"><Mail className="h-3.5 w-3.5" /></span>
   if (kind === 'call') return <span className="grid h-7 w-7 place-items-center rounded-full bg-sky-soft text-sky"><PhoneCall className="h-3.5 w-3.5" /></span>
-  if (kind === 'meeting') return <span className="grid h-7 w-7 place-items-center rounded-full bg-[#F0E7FB] text-[#9333EA]"><CalendarCheckIcon /></span>
+  if (kind === 'meeting') return <span className="grid h-7 w-7 place-items-center rounded-full bg-[#F0E7FB] text-[#9333EA]"><Handshake className="h-3.5 w-3.5" /></span>
+  if (kind === 'photoshoot') return <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-soft text-amber"><Camera className="h-3.5 w-3.5" /></span>
+  if (kind === 'showing') return <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-soft text-emerald"><Home className="h-3.5 w-3.5" /></span>
+  if (kind === 'contract') return <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand-dark"><FileSignature className="h-3.5 w-3.5" /></span>
   if (kind === 'note') return <span className="grid h-7 w-7 place-items-center rounded-full bg-amber-soft text-amber"><StickyNote className="h-3.5 w-3.5" /></span>
   return <span className="grid h-7 w-7 place-items-center rounded-full bg-canvas text-tx-soft"><Cog className="h-3.5 w-3.5" /></span>
 }
-function CalendarCheckIcon(): JSX.Element {
-  return <CalendarClock className="h-3.5 w-3.5" />
-}
+
+/** Milníky obchodu — zdroj pravdy jsou timestamp sloupce na leadu. */
+const MILESTONES = [
+  { key: 'schuzka_done_at', label: 'Schůzka', kind: 'meeting', icon: Handshake },
+  { key: 'foceni_done_at', label: 'Focení', kind: 'photoshoot', icon: Camera },
+  { key: 'prohlidka_done_at', label: 'Prohlídka', kind: 'showing', icon: Home },
+  { key: 'smlouva_done_at', label: 'Smlouva', kind: 'contract', icon: FileSignature }
+] as const
 
 export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose: () => void }): JSX.Element {
   const { leads, moveStage, patch, remove } = useLeads()
   const { makler } = useMakler()
   const { openLead } = useLeadDetail()
-  const { listings } = useListings()
+  const { listings, patch: listingsPatch } = useListings()
   const lead = leads.find((l) => l.id === initialLead.id) ?? initialLead
 
   const [templates, setTemplates] = useState<Template[]>([])
@@ -198,6 +207,32 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const saveProperty = async (val: string): Promise<void> => {
     await patch(lead.id, { property_id: val || null })
   }
+
+  // Prodávaná/pronajímaná nemovitost — zdroj pravdy je nemovitost.seller_lead_id (žádný sloupec na leadu).
+  const isSeller = lead.deal_type === 'prodej' || lead.deal_type === 'pronájem'
+  const sellerListing = listings.find((l) => l.seller_lead_id === lead.id) ?? null
+  const saveSellerListing = async (listingId: string): Promise<void> => {
+    if (sellerListing && sellerListing.id !== listingId) {
+      await listingsPatch(sellerListing.id, { seller_lead_id: null })
+    }
+    if (listingId) await listingsPatch(listingId, { seller_lead_id: lead.id, seller_contact_id: null })
+    await addActivity(lead.id, 'system', null, listingId
+      ? `Prodávaná nemovitost: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`
+      : 'Prodávaná nemovitost odebrána')
+    reloadActivity()
+  }
+
+  // Milník obchodu — set/clear timestampu na leadu + doprovodný append-only záznam do logu.
+  const toggleMilestone = async (m: typeof MILESTONES[number]): Promise<void> => {
+    const done = !!lead[m.key]
+    await patch(lead.id, {
+      [m.key]: done ? null : new Date().toISOString(),
+      ...(done ? {} : { last_contact_at: new Date().toISOString() })
+    })
+    await addActivity(lead.id, done ? 'system' : m.kind, null, done ? `${m.label} — zrušeno` : `${m.label} proběhlo`)
+    reloadActivity()
+  }
+  const nextMilestone = MILESTONES.findIndex((m) => !lead[m.key])
 
   const saveSource = async (val: string): Promise<void> => {
     await patch(lead.id, { source: val || null })
@@ -520,13 +555,23 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 {leads.filter((l) => l.id !== lead.id).map((l) => <option key={l.id} value={l.id}>{l.name || 'Bez jména'}</option>)}
               </select>
             </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Building2 className="h-3.5 w-3.5" /> Nemovitost (zájem)</label>
-              <select className="input" value={lead.property_id ?? ''} onChange={(e) => saveProperty(e.target.value)}>
-                <option value="">— žádná —</option>
-                {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
-            </div>
+            {isSeller ? (
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Building2 className="h-3.5 w-3.5" /> {lead.deal_type === 'pronájem' ? 'Pronajímaná' : 'Prodávaná'} nemovitost</label>
+                <select className="input" value={sellerListing?.id ?? ''} onChange={(e) => saveSellerListing(e.target.value)}>
+                  <option value="">— žádná —</option>
+                  {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Building2 className="h-3.5 w-3.5" /> Nemovitost (zájem)</label>
+                <select className="input" value={lead.property_id ?? ''} onChange={(e) => saveProperty(e.target.value)}>
+                  <option value="">— žádná —</option>
+                  {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Navigation className="h-3.5 w-3.5" /> Odkud přišel</label>
               <select className="input" value={lead.source ?? ''} onChange={(e) => saveSource(e.target.value)}>
@@ -623,9 +668,42 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
           </div>
         </div>
 
-        {/* PRAVÝ SLOUPEC: skóre + timeline */}
+        {/* PRAVÝ SLOUPEC: skóre + milníky + timeline */}
         <div className="lg:col-span-2">
           <div className="mb-5"><ScorePanel lead={lead} /></div>
+
+          {/* milníky obchodu — proběhlé fáze + „co dál" (bez vazby na kalendář, ovlivňuje skóre) */}
+          {!isReferrer(lead) && (
+            <div className="mb-5">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><CheckCircle className="h-3.5 w-3.5" /> Milníky obchodu</div>
+              <div className="flex items-stretch gap-1.5">
+                {MILESTONES.map((m, i) => {
+                  const Icon = m.icon
+                  const done = !!lead[m.key]
+                  const isNext = !done && i === nextMilestone
+                  return (
+                    <button
+                      key={m.key}
+                      onClick={() => toggleMilestone(m)}
+                      title={done ? `${m.label} — proběhlo (klik zruší)` : `Označit „${m.label}" jako proběhlé`}
+                      className={`flex flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition ${
+                        done ? 'border-transparent bg-brand text-ink shadow-card'
+                          : isNext ? 'border-brand/50 bg-brand-soft/40 text-brand-dark ring-2 ring-brand/25'
+                            : 'border-line bg-white text-tx-faint hover:text-tx'
+                      }`}
+                    >
+                      <span className="relative">
+                        <Icon className="h-5 w-5" />
+                        {done && <Check className="absolute -right-2 -top-2 h-3.5 w-3.5 rounded-full bg-emerald p-[1px] text-white" strokeWidth={3} />}
+                      </span>
+                      <span className="text-[11px] font-bold">{m.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {nextMilestone >= 0 && <p className="mt-1.5 text-[11px] text-tx-soft">Další krok: <b className="text-tx">{MILESTONES[nextMilestone].label}</b></p>}
+            </div>
+          )}
 
           <h3 className="mb-3 flex items-center gap-2 font-bold text-tx"><Clock className="h-4 w-4 text-tx-soft" /> Historie a aktivita</h3>
 

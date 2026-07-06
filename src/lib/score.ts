@@ -44,6 +44,12 @@ export function scoreLead(lead: Lead): LeadScore {
   if (lead.crm_status === 'nabidka') add('Ve fázi Nabídka', 10)
   else if (lead.crm_status === 'schuzka') add('Ve fázi Schůzka', 8)
 
+  // Milníky obchodu (proběhlé fáze prodeje) — zdroj pravdy jsou sloupce leadu
+  if (lead.schuzka_done_at) add('Schůzka proběhla', 6)
+  if (lead.foceni_done_at) add('Focení hotové', 6)
+  if (lead.prohlidka_done_at) add('Prohlídka proběhla', 10)
+  if (lead.smlouva_done_at) add('Smlouva podepsána', 18)
+
   // Kvalita kontaktu
   if (lead.phone && lead.email) add('Telefon i e-mail', 5)
   if (lead.gdpr_consent) add('GDPR souhlas', 5)
