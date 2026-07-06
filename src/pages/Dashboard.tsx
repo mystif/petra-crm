@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentType } from 'react'
 import { Users, Briefcase, MessageSquare, CheckCircle2, Coins, TrendingUp, TrendingDown,
   ChevronLeft, ChevronRight, Building2, ClipboardList, Home, Gift,
   FileText, Clock, Percent, Wallet, Banknote, CalendarClock, Handshake, CalendarCheck2,
-  Calendar, ChevronDown } from 'lucide-react'
+  Calendar, ChevronDown, PieChart } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { AnnaBriefing } from '../components/AnnaBriefing'
@@ -215,6 +215,16 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
   const activeProps = listings.filter((l) => l.status === 'available').length
   const referrers = topReferrers(leads)
 
+  // Odkud leady přicházejí — rozpad podle zdroje (kanálu akvizice).
+  const leadSources = (() => {
+    const m = new Map<string, number>()
+    for (const l of dealLeads) {
+      const src = (l.source && l.source.trim()) || 'Neuvedeno'
+      m.set(src, (m.get(src) ?? 0) + 1)
+    }
+    return [...m.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value)
+  })()
+
   return (
     <div className="flex h-full flex-col">
       <Topbar
@@ -372,33 +382,92 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
             <BottomStat icon={ClipboardList} value={String(taskDue)} label="Úkolů k vyřízení" hint={`${todayEvents.length} dnes`} />
           </section>
 
-          {/* Top doporučitelé */}
-          <section className="rounded-2xl bg-[#1A1A1A] p-5 ring-1 ring-white/5 shadow-card">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><Gift className="h-5 w-5" /></span>
-              <div>
-                <h3 className="font-display text-lg font-bold text-white">Top doporučitelé</h3>
-                <p className="text-xs text-white/55">Kdo vám přivádí obchody a kolik už přinesl</p>
+          {/* Top doporučitelé + Zdroje leadů */}
+          <section className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl bg-[#1A1A1A] p-5 ring-1 ring-white/5 shadow-card">
+              <div className="mb-4 flex items-center gap-2">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><Gift className="h-5 w-5" /></span>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-white">Top doporučitelé</h3>
+                  <p className="text-xs text-white/55">Kdo vám přivádí obchody a kolik už přinesl</p>
+                </div>
               </div>
+              {referrers.length === 0 ? (
+                <p className="py-2 text-sm text-white/40">Zatím žádná doporučení. Označte kontakt jako „Doporučitele" nebo vyplňte pole „Doporučil(a)" u leadu.</p>
+              ) : (
+                <ul className="grid grid-cols-1 gap-2">
+                  {referrers.map((r, i) => (
+                    <li key={r.lead.id} className="flex items-center gap-3 rounded-xl bg-white/[.04] p-3">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gold text-[11px] font-bold text-ink">{i + 1}</span>
+                      <Avatar name={r.lead.name || '?'} size={34} />
+                      <div className="min-w-0 flex-1">
+                        <button onClick={() => openLead(r.lead)} className="truncate text-sm font-bold text-white hover:text-gold">{r.lead.name || 'Bez jména'}</button>
+                        <div className="text-xs text-white/55">{r.count} {r.count === 1 ? 'doporučení' : 'doporučení'}</div>
+                      </div>
+                      <span className="shrink-0 font-mono text-sm font-bold text-gold">{formatCZK(r.value, true)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            {referrers.length === 0 ? (
-              <p className="py-2 text-sm text-white/40">Zatím žádná doporučení. Označte kontakt jako „Doporučitele" nebo vyplňte pole „Doporučil(a)" u leadu.</p>
-            ) : (
-              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {referrers.map((r, i) => (
-                  <li key={r.lead.id} className="flex items-center gap-3 rounded-xl bg-white/[.04] p-3">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gold text-[11px] font-bold text-ink">{i + 1}</span>
-                    <Avatar name={r.lead.name || '?'} size={34} />
-                    <div className="min-w-0 flex-1">
-                      <button onClick={() => openLead(r.lead)} className="truncate text-sm font-bold text-white hover:text-gold">{r.lead.name || 'Bez jména'}</button>
-                      <div className="text-xs text-white/55">{r.count} {r.count === 1 ? 'doporučení' : r.count < 5 ? 'doporučení' : 'doporučení'}</div>
-                    </div>
-                    <span className="shrink-0 font-mono text-sm font-bold text-gold">{formatCZK(r.value, true)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+
+            <LeadSourcesCard data={leadSources} />
           </section>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Zdroje leadů — donut graf (moderní SaaS styl) na tmavé kartě. */
+const SOURCE_COLORS = ['#C1A263', '#3B8EF0', '#0FA968', '#E8920C', '#9333EA', '#E5484D', '#5AA6A0', '#D4B26F', '#8A8F98']
+
+function LeadSourcesCard({ data }: { data: { label: string; value: number }[] }): JSX.Element {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  const R = 60, SW = 18, C = 2 * Math.PI * R, cx = 80, cy = 80
+  let acc = 0
+  return (
+    <div className="rounded-2xl bg-[#1A1A1A] p-5 ring-1 ring-white/5 shadow-card">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><PieChart className="h-5 w-5" /></span>
+        <div>
+          <h3 className="font-display text-lg font-bold text-white">Zdroj leadů</h3>
+          <p className="text-xs text-white/55">Odkud vám leady přicházejí</p>
+        </div>
+      </div>
+      {total === 0 ? (
+        <p className="py-2 text-sm text-white/40">Zatím žádné leady k vyhodnocení.</p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-5">
+          <svg viewBox="0 0 160 160" className="h-40 w-40 shrink-0 -rotate-90">
+            <circle cx={cx} cy={cy} r={R} fill="none" stroke="#ffffff12" strokeWidth={SW} />
+            {data.map((d, i) => {
+              const frac = d.value / total
+              const dash = frac * C
+              const seg = (
+                <circle
+                  key={d.label}
+                  cx={cx} cy={cy} r={R} fill="none"
+                  stroke={SOURCE_COLORS[i % SOURCE_COLORS.length]} strokeWidth={SW} strokeLinecap="butt"
+                  strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-acc}
+                />
+              )
+              acc += dash
+              return seg
+            })}
+            <text x={cx} y={cy - 4} textAnchor="middle" className="fill-white" fontSize="26" fontWeight="800" transform={`rotate(90 ${cx} ${cy})`}>{total}</text>
+            <text x={cx} y={cy + 14} textAnchor="middle" className="fill-white/50" fontSize="11" fontWeight="600" transform={`rotate(90 ${cx} ${cy})`}>{total === 1 ? 'lead' : total < 5 ? 'leady' : 'leadů'}</text>
+          </svg>
+          <ul className="min-w-[140px] flex-1 space-y-1.5">
+            {data.map((d, i) => (
+              <li key={d.label} className="flex items-center gap-2 text-sm">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SOURCE_COLORS[i % SOURCE_COLORS.length] }} />
+                <span className="min-w-0 flex-1 truncate text-white/85">{d.label}</span>
+                <span className="shrink-0 font-mono text-xs font-bold text-white">{d.value}</span>
+                <span className="w-9 shrink-0 text-right text-[11px] text-white/45">{Math.round((d.value / total) * 100)} %</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
