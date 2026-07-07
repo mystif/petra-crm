@@ -3,7 +3,7 @@ import {
   Phone, Mail, MapPin, Send, CalendarClock, Loader2, CheckCircle2, XCircle, MessageSquarePlus,
   Clock, StickyNote, Cog, ImagePlus, Star, X, Trash2, Pencil, ShieldCheck, Cake, Coins,
   MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift, Building2,
-  Camera, FileSignature, Handshake, Check, BookmarkCheck
+  Camera, FileSignature, Handshake, Check, BookmarkCheck, Paperclip
 } from 'lucide-react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
@@ -22,7 +22,8 @@ import { referralsBy, referrerOf } from '../lib/referrals'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { useListings } from '../lib/listingsContext'
 import { DocumentsSection } from './DocumentsSection'
-import type { DocTarget } from '../lib/documents'
+import { AttachDocsModal } from './DocumentUpload'
+import { documentBase64, docCategoryMeta, type DocTarget, type DocumentItem } from '../lib/documents'
 
 function dayLabel(iso: string): string {
   const d = new Date(iso); d.setHours(0, 0, 0, 0)
@@ -95,6 +96,8 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
   const [sendMsg, setSendMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [attachDocs, setAttachDocs] = useState<DocumentItem[]>([])
+  const [attachOpen, setAttachOpen] = useState(false)
 
   const [note, setNote] = useState('')
   const [followUp, setFollowUp] = useState(lead.follow_up_at?.slice(0, 10) ?? '')
@@ -161,12 +164,19 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     if (!subject.trim()) return setSendMsg({ ok: false, text: 'Doplňte předmět.' })
     setSending(true)
     setSendMsg(null)
-    const res = await sendEmail({ to, subject, body, signature: signatureHtml(makler) })
+    // přílohy — stáhnout obsah dokumentů jako base64
+    const attachments: { filename: string; content: string }[] = []
+    for (const d of attachDocs) {
+      const content = await documentBase64(d.file_path)
+      if (content) attachments.push({ filename: d.name.includes('.') ? d.name : `${d.name}.pdf`, content })
+    }
+    const res = await sendEmail({ to, subject, body, signature: signatureHtml(makler), attachments: attachments.length ? attachments : undefined })
     setSending(false)
     if (res.ok) {
       setSendMsg({ ok: true, text: 'E-mail byl odeslán.' })
-      await logContact('email', subject, `Odesláno na ${to}`)
-      setSubject(''); setBody('')
+      const attNote = attachDocs.length ? ` · přílohy: ${attachDocs.map((d) => d.name).join(', ')}` : ''
+      await logContact('email', subject, `Odesláno na ${to}${attNote}`)
+      setSubject(''); setBody(''); setAttachDocs([])
     } else {
       setSendMsg({ ok: false, text: res.error || 'Odeslání selhalo.' })
     }
@@ -749,6 +759,24 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
               <input className="input" placeholder="Příjemce" value={to} onChange={(e) => setTo(e.target.value)} />
               <input className="input" placeholder="Předmět" value={subject} onChange={(e) => setSubject(e.target.value)} />
               <textarea className="input min-h-[150px] resize-y" placeholder="Text e-mailu… (oslovení se skloňuje; podpis a fotka makléře se přidají automaticky)" value={body} onChange={(e) => setBody(e.target.value)} />
+
+              {/* přílohy — nahrají se do Dokumentů a k e-mailu se připnou */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {attachDocs.map((d) => {
+                  const meta = docCategoryMeta(d.kategorie)
+                  const Icon = meta.icon
+                  return (
+                    <span key={d.id} className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${meta.cls}`}>
+                      <Icon className="h-3 w-3" /> <span className="max-w-[160px] truncate">{d.name}</span>
+                      <button onClick={() => setAttachDocs((cur) => cur.filter((x) => x.id !== d.id))} className="ml-0.5 hover:opacity-70"><X className="h-3 w-3" /></button>
+                    </span>
+                  )
+                })}
+                <button onClick={() => setAttachOpen(true)} className="flex items-center gap-1 rounded-lg border border-dashed border-line px-2.5 py-1 text-xs font-semibold text-tx-soft transition hover:border-brand/40 hover:text-brand-dark">
+                  <Paperclip className="h-3.5 w-3.5" /> Přiložit dokument
+                </button>
+              </div>
+
               <div className="flex items-center justify-between">
                 {sendMsg ? (
                   <span className={`flex items-center gap-1.5 text-sm font-medium ${sendMsg.ok ? 'text-emerald' : 'text-rose'}`}>
@@ -892,6 +920,15 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             await patch(lead.id, { meeting_at: ev.start_at })
             await logContact('meeting', ev.title, `${eventTypeMeta(ev.type).label} naplánována na ${formatDateTime(ev.start_at)}`)
           }}
+        />
+      )}
+      {attachOpen && (
+        <AttachDocsModal
+          targets={docTargets}
+          defaultTargets={docDefaultTargets}
+          selectedIds={attachDocs.map((d) => d.id)}
+          onClose={() => setAttachOpen(false)}
+          onConfirm={(docs) => { setAttachDocs(docs); setAttachOpen(false) }}
         />
       )}
     </Modal>

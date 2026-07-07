@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react'
-import { Loader2, Upload, X, Building2, Briefcase, UserRound, CalendarClock } from 'lucide-react'
+import { Loader2, Upload, X, Building2, Briefcase, UserRound, CalendarClock, Plus, Check } from 'lucide-react'
 import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
 import { useContacts } from '../lib/contactsContext'
 import { useListings } from '../lib/listingsContext'
 import { useEvents } from '../lib/eventsContext'
-import { DOC_CATEGORIES, uploadDocument, type DocTarget } from '../lib/documents'
+import { useDocuments } from '../lib/documentsContext'
+import { DOC_CATEGORIES, docCategoryMeta, formatBytes, uploadDocument, type DocTarget, type DocumentItem, type DocumentLink } from '../lib/documents'
+
+function linkMatches(l: DocumentLink, t: DocTarget): boolean {
+  return (!!t.lead_id && t.lead_id === l.lead_id) || (!!t.kontakt_id && t.kontakt_id === l.kontakt_id)
+    || (!!t.nemovitost_id && t.nemovitost_id === l.nemovitost_id) || (!!t.udalost_id && t.udalost_id === l.udalost_id)
+}
 
 type TargetKind = 'nemovitost_id' | 'lead_id' | 'kontakt_id' | 'udalost_id'
 const TARGET_META: { kind: TargetKind; label: string; icon: typeof Building2; cls: string }[] = [
@@ -94,14 +100,15 @@ export function TargetPicker({ value, onChange }: { value: DocTarget[]; onChange
 }
 
 /** Modál nahrání dokumentu s předvyplněnými vazbami. */
-export function DocUploadModal({ defaultTargets, onClose, onUploaded }: {
+export function DocUploadModal({ defaultTargets, defaultCategory, onClose, onUploaded }: {
   defaultTargets?: DocTarget[]
+  defaultCategory?: string
   onClose: () => void
   onUploaded?: () => void
 }): JSX.Element {
   const [file, setFile] = useState<File | null>(null)
   const [name, setName] = useState('')
-  const [kategorie, setKategorie] = useState('jine')
+  const [kategorie, setKategorie] = useState(defaultCategory ?? 'jine')
   const [note, setNote] = useState('')
   const [targets, setTargets] = useState<DocTarget[]>(defaultTargets ?? [])
   const [dragOver, setDragOver] = useState(false)
@@ -188,6 +195,73 @@ export function DocUploadModal({ defaultTargets, onClose, onUploaded }: {
 
         {err && <p className="text-sm font-medium text-rose">{err}</p>}
       </div>
+    </Modal>
+  )
+}
+
+/**
+ * Výběr příloh pro e-mail — existující dokumenty navázané na `targets`
+ * + možnost nahrát nový (kategorie „Nabídka spolupráce"). Vrací vybrané dokumenty.
+ */
+export function AttachDocsModal({ targets, defaultTargets, selectedIds, onClose, onConfirm }: {
+  targets: DocTarget[]
+  defaultTargets: DocTarget[]
+  selectedIds: string[]
+  onClose: () => void
+  onConfirm: (docs: DocumentItem[]) => void
+}): JSX.Element {
+  const { docs, links, refetch } = useDocuments()
+  const [sel, setSel] = useState<Set<string>>(new Set(selectedIds))
+  const [uploadOpen, setUploadOpen] = useState(false)
+
+  const items = useMemo(() => {
+    const ids = new Set<string>()
+    for (const l of links) if (targets.some((t) => linkMatches(l, t))) ids.add(l.dokument_id)
+    return docs.filter((d) => ids.has(d.id))
+  }, [docs, links, targets])
+
+  const toggle = (id: string): void => setSel((cur) => { const n = new Set(cur); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  return (
+    <Modal
+      open size="lg"
+      title="Přiložit dokument"
+      subtitle="Vyberte existující dokument nebo nahrajte nový (PDF nabídky spolupráce)"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn-ghost" onClick={onClose}>Zrušit</button>
+          <button className="btn-primary" onClick={() => onConfirm(items.filter((d) => sel.has(d.id)))}>Přiložit ({sel.size})</button>
+        </>
+      }
+    >
+      <button onClick={() => setUploadOpen(true)} className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-line py-3 text-sm font-semibold text-tx-soft transition hover:border-brand/50 hover:text-brand-dark">
+        <Plus className="h-4 w-4" /> Nahrát nový dokument
+      </button>
+      {items.length === 0 ? (
+        <p className="py-4 text-center text-sm text-tx-faint">Žádné navázané dokumenty. Nahrajte nový výše.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map((d) => {
+            const meta = docCategoryMeta(d.kategorie)
+            const Icon = meta.icon
+            const on = sel.has(d.id)
+            return (
+              <li key={d.id}>
+                <button onClick={() => toggle(d.id)} className={`flex w-full items-center gap-2.5 rounded-lg border p-2.5 text-left transition ${on ? 'border-brand/50 bg-brand-soft/40' : 'border-line hover:bg-canvas'}`}>
+                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${meta.cls}`}><Icon className="h-4 w-4" /></span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-tx">{d.name}</div>
+                    <div className="text-[11px] text-tx-faint">{meta.label}{d.size_bytes ? ` · ${formatBytes(d.size_bytes)}` : ''}</div>
+                  </div>
+                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${on ? 'border-transparent bg-brand text-ink' : 'border-line'}`}>{on && <Check className="h-3.5 w-3.5" strokeWidth={3} />}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {uploadOpen && <DocUploadModal defaultTargets={defaultTargets} defaultCategory="nabidka_spoluprace" onClose={() => setUploadOpen(false)} onUploaded={refetch} />}
     </Modal>
   )
 }

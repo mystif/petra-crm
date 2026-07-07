@@ -114,6 +114,7 @@ export async function sendEmail(args: {
   subject: string
   body: string
   signature?: string // HTML podpisu (z signatureHtml)
+  attachments?: { filename: string; content: string }[] // content = base64
 }): Promise<SendResult> {
   const html =
     args.body
@@ -122,7 +123,7 @@ export async function sendEmail(args: {
       .join('<br/>\n') + (args.signature ?? '')
 
   const { data, error } = await supabase.functions.invoke('send-email', {
-    body: { to: args.to, subject: args.subject, text: args.body, html }
+    body: { to: args.to, subject: args.subject, text: args.body, html, attachments: args.attachments }
   })
 
   if (error) {

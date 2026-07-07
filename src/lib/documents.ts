@@ -44,6 +44,7 @@ export const DOC_CATEGORIES: DocCategory[] = [
   { value: 'kupni_smlouva', label: 'Kupní smlouva', cls: 'bg-emerald-soft text-emerald', icon: FileSignature },
   { value: 'rezervacni_smlouva', label: 'Rezervační smlouva', cls: 'bg-sky-soft text-sky', icon: FileCheck },
   { value: 'zprostredkovatelska', label: 'Zprostředkovatelská smlouva', cls: 'bg-brand-soft text-brand-dark', icon: Handshake },
+  { value: 'nabidka_spoluprace', label: 'Nabídka spolupráce', cls: 'bg-[#F0E7FB] text-[#9333EA]', icon: Handshake },
   { value: 'najemni_smlouva', label: 'Nájemní smlouva', cls: 'bg-amber-soft text-amber', icon: KeyRound },
   { value: 'gdpr', label: 'GDPR souhlas', cls: 'bg-canvas text-tx-soft', icon: ShieldCheck },
   { value: 'penb', label: 'Energetický štítek (PENB)', cls: 'bg-emerald-soft text-emerald', icon: Gauge },
@@ -147,6 +148,19 @@ export async function deleteDocument(doc: DocumentItem): Promise<void> {
   await supabase.storage.from(DOCS_BUCKET).remove([doc.file_path]).catch(() => {})
   const { error } = await supabase.from('dokumenty').delete().eq('id', doc.id)
   if (error) throw new Error(error.message)
+}
+
+/** Stáhne soubor z bucketu a vrátí jeho obsah v base64 (pro přílohu e-mailu). */
+export async function documentBase64(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage.from(DOCS_BUCKET).download(path)
+  if (error || !data) return null
+  const bytes = new Uint8Array(await data.arrayBuffer())
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
 }
 
 /** Krátkodobý podepsaný odkaz (300 s). `download` = vynutí stažení s daným názvem. */
