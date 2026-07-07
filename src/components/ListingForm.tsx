@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Loader2, ImagePlus, Star, X, Trash2, ChevronDown, Globe, GripVertical, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Modal } from './Modal'
 import { WebStatusLight } from './WebStatusLight'
+import { DocumentsSection } from './DocumentsSection'
 import { useListings } from '../lib/listingsContext'
 import { useLeads } from '../lib/leadsContext'
 import { useContacts } from '../lib/contactsContext'
@@ -452,6 +453,13 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
           <input className="input w-20 py-1.5" inputMode="numeric" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
         </label>
       </div>
+
+      {/* dokumenty nemovitosti — jen u existující (nová ještě nemá id) */}
+      {editing && listing && (
+        <div className="mt-3 rounded-xl border border-line p-3">
+          <DocumentsSection targets={[{ nemovitost_id: listing.id }]} defaultTargets={[{ nemovitost_id: listing.id }]} />
+        </div>
+      )}
 
       {err && <p className="mt-3 text-sm font-medium text-rose">{err}</p>}
 

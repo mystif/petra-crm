@@ -6,6 +6,7 @@ import {
   CheckSquare,
   CalendarDays,
   Building2,
+  FolderOpen,
   Search,
   Plus,
   Megaphone,
@@ -20,7 +21,7 @@ import { useSearch } from '../lib/searchContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'tasks' | 'calendar' | 'marketing'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'marketing'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -28,6 +29,7 @@ const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'leads', label: 'Poptávky', icon: Inbox },
   { id: 'contacts', label: 'Kontakty', icon: Users },
   { id: 'properties', label: 'Nemovitosti', icon: Building2 },
+  { id: 'documents', label: 'Dokumenty', icon: FolderOpen },
   { id: 'tasks', label: 'Úkoly', icon: CheckSquare },
   { id: 'calendar', label: 'Kalendář', icon: CalendarDays }
 ]

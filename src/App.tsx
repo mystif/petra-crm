@@ -10,6 +10,7 @@ import { LeadsProvider } from './lib/leadsContext'
 import { EventsProvider } from './lib/eventsContext'
 import { ListingsProvider } from './lib/listingsContext'
 import { ContactsProvider } from './lib/contactsContext'
+import { DocumentsProvider } from './lib/documentsContext'
 import { MaklerProvider } from './lib/maklerContext'
 import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
@@ -21,6 +22,7 @@ import { Contacts } from './pages/Contacts'
 import { Tasks } from './pages/Tasks'
 import { Calendar } from './pages/Calendar'
 import { Nemovitosti } from './pages/Nemovitosti'
+import { Documents } from './pages/Documents'
 import { Marketing } from './pages/Marketing'
 
 export default function App(): JSX.Element {
@@ -60,6 +62,7 @@ function CRMApp(): JSX.Element {
       <EventsProvider>
       <ListingsProvider>
       <ContactsProvider>
+      <DocumentsProvider>
       <MaklerProvider>
       <LeadDetailProvider>
       <NewLeadProvider>
@@ -74,6 +77,7 @@ function CRMApp(): JSX.Element {
             {page === 'leads' && <Leads filter={leadsFilter} onFilter={setLeadsFilter} />}
             {page === 'contacts' && <Contacts />}
             {page === 'properties' && <Nemovitosti />}
+            {page === 'documents' && <Documents />}
             {page === 'tasks' && <Tasks />}
             {page === 'calendar' && <Calendar />}
             {page === 'marketing' && <Marketing />}
@@ -86,6 +90,7 @@ function CRMApp(): JSX.Element {
       </NewLeadProvider>
       </LeadDetailProvider>
       </MaklerProvider>
+      </DocumentsProvider>
       </ContactsProvider>
       </ListingsProvider>
       </EventsProvider>

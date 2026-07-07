@@ -21,6 +21,8 @@ import { ScorePanel } from './LeadScore'
 import { referralsBy, referrerOf } from '../lib/referrals'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { useListings } from '../lib/listingsContext'
+import { DocumentsSection } from './DocumentsSection'
+import type { DocTarget } from '../lib/documents'
 
 function dayLabel(iso: string): string {
   const d = new Date(iso); d.setHours(0, 0, 0, 0)
@@ -237,6 +239,20 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   // Nabízená nemovitost (Prodávající/Pronajímatel) — zdroj pravdy je nemovitost.seller_lead_id (žádný sloupec na leadu).
   const isOfferLead = isOffer(lead)
   const sellerListing = listings.find((l) => l.seller_lead_id === lead.id) ?? null
+
+  // Dokumenty: agregovaný pohled (lead + kontakt + nemovitost zájmu i nabízená) + chytré předvyplnění vazeb při uploadu.
+  const primaryPropertyId = isOfferLead ? sellerListing?.id ?? null : lead.property_id
+  const docTargets: DocTarget[] = [
+    { lead_id: lead.id },
+    ...(lead.kontakt_id ? [{ kontakt_id: lead.kontakt_id }] : []),
+    ...(lead.property_id ? [{ nemovitost_id: lead.property_id }] : []),
+    ...(sellerListing ? [{ nemovitost_id: sellerListing.id }] : [])
+  ]
+  const docDefaultTargets: DocTarget[] = [
+    { lead_id: lead.id },
+    ...(lead.kontakt_id ? [{ kontakt_id: lead.kontakt_id }] : []),
+    ...(primaryPropertyId ? [{ nemovitost_id: primaryPropertyId }] : [])
+  ]
   const saveSellerListing = async (listingId: string): Promise<void> => {
     if (sellerListing && sellerListing.id !== listingId) {
       await listingsPatch(sellerListing.id, { seller_lead_id: null })
@@ -660,6 +676,11 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 })()}
               </select>
             </div>
+          </div>
+
+          {/* dokumenty — agregovaně přes lead + kontakt + nemovitost (zájem i nabízená) */}
+          <div className="rounded-xl border border-line p-3">
+            <DocumentsSection targets={docTargets} defaultTargets={docDefaultTargets} />
           </div>
 
           {/* doporučení — kdo přivedl + co tento člověk přinesl */}
