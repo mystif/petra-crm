@@ -9,7 +9,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGES, CLOSED_STAGES, type StageKey, type Lead } from '../lib/supabase'
 import { formatCZK, formatDate, followUpState } from '../lib/format'
-import { propertyLabel, leadValue, hueFromId, mapUrl, priorityMeta, lastContactInfo, isReferrer } from '../lib/leadDisplay'
+import { propertyLabel, leadValue, hueFromId, mapUrl, priorityMeta, lastContactInfo, isReferrer, leadRole, roleLabel } from '../lib/leadDisplay'
 import { photoUrl } from '../lib/photos'
 import { addActivity } from '../lib/activity'
 
@@ -128,7 +128,10 @@ export function Pipeline(): JSX.Element {
                             style={cover ? undefined : { background: `linear-gradient(135deg, hsl(${hue} 58% 52%), hsl(${(hue + 40) % 360} 60% 38%))` }}
                           >
                             {cover && <img src={photoUrl(cover)} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-                            <span className="pill relative bg-black/40 text-white backdrop-blur">{propertyLabel(l.property_type)}</span>
+                            <div className="relative flex flex-wrap items-center gap-1.5">
+                              <span className="pill bg-black/40 text-white backdrop-blur">{propertyLabel(l.property_type)}</span>
+                              {leadRole(l) && <span className="pill bg-ink text-white ring-1 ring-white/20">{roleLabel(leadRole(l)!)}</span>}
+                            </div>
                             {!cover && <Building2 className="absolute right-2.5 top-2.5 h-6 w-6 opacity-40" />}
                           </div>
 
