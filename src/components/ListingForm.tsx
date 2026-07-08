@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Loader2, ImagePlus, Star, X, Trash2, ChevronDown, Globe, GripVertical, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, ImagePlus, Star, X, Trash2, ChevronDown, Globe, GripVertical, BookmarkCheck, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { Modal } from './Modal'
 import { WebStatusLight } from './WebStatusLight'
 import { DocumentsSection } from './DocumentsSection'
@@ -72,6 +72,7 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
   const [area, setArea] = useState(String(listing?.area_m2 ?? ''))
   const [description, setDescription] = useState(listing?.description ?? '')
   const [images, setImages] = useState<string[]>(listing?.images ?? [])
+  const [vizualizace, setVizualizace] = useState<string[]>(listing?.vizualizace ?? [])
   const [featured, setFeatured] = useState(listing?.featured ?? false)
   const [sortOrder, setSortOrder] = useState(String(listing?.sort_order ?? '0'))
 
@@ -156,9 +157,13 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
   const makeCover = (url: string): void => setImages((cur) => [url, ...cur.filter((u) => u !== url)])
   const removeImg = (url: string): void => {
     setImages((cur) => cur.filter((u) => u !== url))
+    setVizualizace((cur) => cur.filter((u) => u !== url))
     const p = pathFromUrl(url)
     if (p) supabase.storage.from(BUCKET).remove([p]).catch(() => {})
   }
+  /** Přepne fotku jako „vizualizace" (na webu dostane štítek). */
+  const toggleViz = (url: string): void =>
+    setVizualizace((cur) => (cur.includes(url) ? cur.filter((u) => u !== url) : [...cur, url]))
   /** Přesun fotky z pozice `from` na `to` (drag & drop pořadí). První = hlavní. */
   const moveImage = (from: number, to: number): void => {
     if (from === to || from < 0 || to < 0) return
@@ -192,6 +197,7 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
       description: description.trim() || null,
       main_image: images[0],
       images,
+      vizualizace: vizualizace.filter((u) => images.includes(u)),
       featured,
       sort_order: num(sortOrder) ?? 0,
       land_area_m2: num(landArea),
@@ -278,8 +284,10 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
             >
               <img src={url} alt="" className="h-full w-full cursor-zoom-in object-cover" onClick={() => setLightbox(i)} />
               {i === 0 && <span className="pointer-events-none absolute left-1 top-1 flex items-center gap-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-ink"><Star className="h-2.5 w-2.5" /> Hlavní</span>}
+              {vizualizace.includes(url) && <span className="pointer-events-none absolute left-1 bottom-1 rounded bg-[#9333EA] px-1.5 py-0.5 text-[10px] font-bold text-white">Vizualizace</span>}
               <span className="pointer-events-none absolute right-1 top-1 rounded bg-black/45 p-0.5 text-white opacity-0 transition group-hover:opacity-100"><GripVertical className="h-3.5 w-3.5" /></span>
               <div className="absolute inset-x-1 bottom-1 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
+                <button onClick={(e) => { e.stopPropagation(); toggleViz(url) }} title={vizualizace.includes(url) ? 'Zrušit označení vizualizace' : 'Označit jako vizualizaci'} className={`grid h-6 w-6 place-items-center rounded bg-white/90 ${vizualizace.includes(url) ? 'text-[#9333EA]' : 'text-tx hover:text-[#9333EA]'}`}><Sparkles className="h-3.5 w-3.5" /></button>
                 {i !== 0 && <button onClick={(e) => { e.stopPropagation(); makeCover(url) }} title="Nastavit jako hlavní" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-tx hover:text-brand-dark"><Star className="h-3.5 w-3.5" /></button>}
                 <button onClick={(e) => { e.stopPropagation(); removeImg(url) }} title="Smazat" className="grid h-6 w-6 place-items-center rounded bg-white/90 text-rose"><X className="h-3.5 w-3.5" /></button>
               </div>
@@ -290,7 +298,7 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
           </button>
           <input ref={fileInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
         </div>
-        <p className="mt-1 text-[11px] text-tx-faint">Přetáhněte fotky sem nebo klikněte. Velké se automaticky zmenší pod 1,5 MB.</p>
+        <p className="mt-1 text-[11px] text-tx-faint">Přetáhněte fotky sem nebo klikněte. Velké se automaticky zmenší pod 1,5 MB. Ikonou <Sparkles className="inline h-3 w-3" /> označíte fotku jako vizualizaci — na webu dostane štítek.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

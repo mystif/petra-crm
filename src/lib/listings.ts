@@ -26,6 +26,7 @@ export interface Listing {
   description: string | null
   main_image: string
   images: string[]
+  vizualizace: string[] // URL fotek označených jako vizualizace (na webu dostanou štítek)
   featured: boolean
   sort_order: number
   address: string | null
