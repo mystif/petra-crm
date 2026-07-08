@@ -63,7 +63,7 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
   const [offer, setOffer] = useState<OfferType>(listing?.offer_type ?? 'sale')
   const [ptype, setPtype] = useState<PropertyType>(listing?.property_type ?? 'apartment')
   const [status, setStatus] = useState<ListingStatus>(listing?.status ?? 'available')
-  const [webStatus, setWebStatus] = useState<WebStatus>(listing?.web_status ?? 'online')
+  const [webStatus, setWebStatus] = useState<WebStatus>(listing?.web_status ?? 'draft')
   const [price, setPrice] = useState(String(listing?.price ?? ''))
   const [priceNote, setPriceNote] = useState(listing?.price_note ?? '')
   const [location, setLocation] = useState(listing?.location ?? '')

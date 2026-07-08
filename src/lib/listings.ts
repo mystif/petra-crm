@@ -7,7 +7,7 @@ export type PropertyType = 'house' | 'apartment' | 'commercial' | 'land'
 export type ListingStatus = 'available' | 'reserved' | 'sold'
 export type OfferType = 'sale' | 'rent'
 /** Viditelnost na webu — semafor: zelená online / oranžová koncept / červená skryto. */
-export type WebStatus = 'online' | 'draft' | 'hidden'
+export type WebStatus = 'online' | 'draft'
 
 export interface Listing {
   id: string
@@ -67,8 +67,7 @@ export const OFFER_TYPES: { value: OfferType; label: string }[] = [
 /** Semafor viditelnosti na webu. `color` = barva svítícího světla. */
 export const WEB_STATUSES: { value: WebStatus; label: string; hint: string; color: string }[] = [
   { value: 'online', label: 'Online', hint: 'Zveřejněno — je vidět na webu', color: '#16A34A' },
-  { value: 'draft', label: 'Koncept', hint: 'Rozpracováno — není na webu', color: '#F59E0B' },
-  { value: 'hidden', label: 'Skryto', hint: 'Není vidět na webu', color: '#EF4444' }
+  { value: 'draft', label: 'Koncept', hint: 'Rozpracováno — není na webu', color: '#F59E0B' }
 ]
 export function webStatusMeta(s: string | null): { value: WebStatus; label: string; hint: string; color: string } {
   return WEB_STATUSES.find((x) => x.value === s) ?? WEB_STATUSES[0]
