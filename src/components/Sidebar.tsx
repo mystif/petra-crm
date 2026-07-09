@@ -10,7 +10,8 @@ import {
   Search,
   Plus,
   Megaphone,
-  LifeBuoy
+  LifeBuoy,
+  Settings
 } from 'lucide-react'
 import { useState } from 'react'
 import { Modal } from './Modal'
@@ -21,7 +22,7 @@ import { useSearch } from '../lib/searchContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'marketing'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'marketing' | 'settings'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -120,6 +121,12 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
             className={`nav-item w-full ${current === 'marketing' ? 'active' : ''}`}
           >
             <Megaphone className="h-[18px] w-[18px]" /> Marketing
+          </button>
+          <button
+            onClick={() => onNavigate('settings')}
+            className={`nav-item w-full ${current === 'settings' ? 'active' : ''}`}
+          >
+            <Settings className="h-[18px] w-[18px]" /> Nastavení
           </button>
           <button onClick={() => setHelpOpen(true)} className="nav-item w-full">
             <LifeBuoy className="h-[18px] w-[18px]" /> Podpora

@@ -41,16 +41,8 @@ export const FLOWS: Flow[] = [
     triggerIcon: 'lead',
     steps: [
       { key: 'novy_lead_kontakt', fallbackLabel: 'Vytvořit kontakt' },
-      { key: 'novy_lead_followup', fallbackLabel: 'Follow-up za 1 den' },
       { key: 'novy_lead_ukol', fallbackLabel: 'Úkol „Uvítací hovor“' },
       { key: 'novy_lead_email', fallbackLabel: 'Uvítací e-mail' }
-    ]
-  },
-  {
-    trigger: 'Po uzavření obchodu',
-    triggerIcon: 'deal',
-    steps: [
-      { key: 'uzavreno_pripomenuti', fallbackLabel: 'Připomenutí za 6 měsíců' }
     ]
   },
   {

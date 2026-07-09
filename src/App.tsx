@@ -24,6 +24,7 @@ import { Calendar } from './pages/Calendar'
 import { Nemovitosti } from './pages/Nemovitosti'
 import { Documents } from './pages/Documents'
 import { Marketing } from './pages/Marketing'
+import { Settings } from './pages/Settings'
 
 export default function App(): JSX.Element {
   return (
@@ -81,6 +82,7 @@ function CRMApp(): JSX.Element {
             {page === 'tasks' && <Tasks />}
             {page === 'calendar' && <Calendar />}
             {page === 'marketing' && <Marketing />}
+            {page === 'settings' && <Settings />}
           </div>
         </main>
         <MobileNav current={page} onNavigate={go} />

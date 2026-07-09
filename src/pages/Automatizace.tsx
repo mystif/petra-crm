@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Zap, Inbox, Trophy, Cake, ArrowDown, Loader2, UserPlus, CalendarClock, PhoneCall, Mail, BellRing } from 'lucide-react'
+import { Zap, Inbox, Trophy, Cake, ArrowDown, Loader2, UserPlus, PhoneCall, Mail } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Loading, ErrorState } from '../components/States'
 import { fetchRules, setRuleEnabled, FLOWS, type Rule } from '../lib/automatizace'
 
 const STEP_ICON: Record<string, typeof UserPlus> = {
   novy_lead_kontakt: UserPlus,
-  novy_lead_followup: CalendarClock,
   novy_lead_ukol: PhoneCall,
   novy_lead_email: Mail,
-  uzavreno_pripomenuti: BellRing,
   narozeniny_email: Cake
 }
 
@@ -118,6 +116,9 @@ export function Automatizace({ embedded = false }: { embedded?: boolean } = {}):
 
             <p className="px-1 text-center text-xs text-tx-faint">
               Uvítací e-mail je ve výchozím stavu vypnutý — zapněte ho, až budete připraveni rozesílat automaticky.
+            </p>
+            <p className="px-1 text-center text-xs text-tx-faint">
+              Za kolik dní se má připomenout follow-up v jednotlivých fázích pipeline nastavíte v Nastavení → Follow-up.
             </p>
           </div>
         </div>
