@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, Camera, Coins, TrendingUp, TrendingDown, User, LogOut, KeyRound, ShieldCheck } from 'lucide-react'
+import { Loader2, Camera, Coins, TrendingUp, TrendingDown, User, LogOut, KeyRound, ShieldCheck, Smartphone, Copy, Check, RefreshCw, ChevronDown } from 'lucide-react'
 import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
 import { useAuth } from '../lib/authContext'
 import { useMakler } from '../lib/maklerContext'
-import { updateMakler, type Makler } from '../lib/makler'
+import { updateMakler, icsFeedUrl, regenerateIcsToken, type Makler } from '../lib/makler'
 import { uploadPhoto, photoUrl } from '../lib/photos'
 import { formatCZK } from '../lib/format'
 import { maklerProvize } from '../lib/leadDisplay'
@@ -23,6 +23,29 @@ export function MaklerCard(): JSX.Element | null {
   const [pw, setPw] = useState('')
   const [pwBusy, setPwBusy] = useState(false)
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const [icsCopied, setIcsCopied] = useState(false)
+  const [icsBusy, setIcsBusy] = useState(false)
+  const [icsHelp, setIcsHelp] = useState(false)
+
+  const copyIcsLink = async (): Promise<void> => {
+    if (!makler?.ics_token) return
+    await navigator.clipboard.writeText(icsFeedUrl(makler.ics_token))
+    setIcsCopied(true)
+    setTimeout(() => setIcsCopied(false), 2000)
+  }
+
+  const regenIcs = async (): Promise<void> => {
+    if (!makler) return
+    if (!confirm('Vygenerovat nový odkaz? Starý přestane fungovat a bude potřeba na iPhonu znovu přidat kalendář.')) return
+    setIcsBusy(true)
+    try {
+      const token = await regenerateIcsToken(makler.id)
+      setMakler({ ...makler, ics_token: token })
+    } finally {
+      setIcsBusy(false)
+    }
+  }
 
   const savePassword = async (): Promise<void> => {
     if (pw.length < 6) return setPwMsg({ ok: false, text: 'Heslo musí mít alespoň 6 znaků.' })
@@ -200,6 +223,53 @@ export function MaklerCard(): JSX.Element | null {
           </div>
         )}
         {pwMsg && <p className={`mt-2 text-sm font-medium ${pwMsg.ok ? 'text-emerald' : 'text-rose'}`}>{pwMsg.text}</p>}
+      </div>
+
+      {/* kalendář na iPhonu */}
+      <div className="mt-5 rounded-2xl border border-line p-4">
+        <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-tx-faint">
+          <Smartphone className="h-3.5 w-3.5" /> Kalendář na iPhonu
+        </div>
+        <p className="mb-3 text-sm text-tx-soft">
+          Odkaz níže přidej v iPhonu jako „přihlášený kalendář" — nové i upravené události z CRM se v něm samy objeví
+          (aktualizace jednou za pár hodin, podle iOS). Úpravy se dělají jen v CRM, telefon je jen zrcadlo.
+        </p>
+        {makler?.ics_token && (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                readOnly
+                className="input flex-1 font-mono text-xs"
+                value={icsFeedUrl(makler.ics_token)}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <button className="btn-soft py-2 text-sm" onClick={copyIcsLink}>
+                {icsCopied ? <Check className="h-4 w-4 text-emerald" /> : <Copy className="h-4 w-4" />}
+                {icsCopied ? 'Zkopírováno' : 'Kopírovat'}
+              </button>
+              <button className="btn-soft py-2 text-sm" onClick={regenIcs} disabled={icsBusy}>
+                {icsBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Nový odkaz
+              </button>
+            </div>
+
+            <button
+              className="mt-3 flex items-center gap-1 text-sm font-medium text-brand"
+              onClick={() => setIcsHelp((v) => !v)}
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${icsHelp ? 'rotate-180' : ''}`} />
+              Jak to nastavit na iPhonu
+            </button>
+            {icsHelp && (
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-tx-soft">
+                <li>Zkopíruj odkaz výše tlačítkem „Kopírovat".</li>
+                <li>Na iPhonu: Nastavení → Kalendář → Účty → Přidat účet → Jiné.</li>
+                <li>Zvol „Přihlásit se ke kalendáři" a do pole Server vlož zkopírovaný odkaz.</li>
+                <li>Potvrď Další → Uložit. Kalendář se objeví v appce Kalendář pod názvem „AUREA CRM".</li>
+              </ol>
+            )}
+          </>
+        )}
       </div>
     </Modal>
   )

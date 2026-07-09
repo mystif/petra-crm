@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Připojení k Supabase. Publishable (anon) klíč je určený do prohlížeče.
 // Hodnoty lze přepsat přes .env (VITE_SUPABASE_URL / VITE_SUPABASE_KEY).
-const SUPABASE_URL =
+export const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL || 'https://rhdxopvennrbkhkqeqvb.supabase.co'
 const SUPABASE_KEY =
   import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_jBA-d9GAB0DeKckQSroAWQ_puCwes1b'
