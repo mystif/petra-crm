@@ -4,6 +4,7 @@ import { Sidebar, type Page } from './components/Sidebar'
 import { MobileNav } from './components/MobileNav'
 import { MobileTopBar } from './components/MobileTopBar'
 import { MaklerCard } from './components/MaklerCard'
+import { HelpModal } from './components/HelpModal'
 import { Login } from './components/Login'
 import { AuthProvider, useAuth } from './lib/authContext'
 import { LeadsProvider } from './lib/leadsContext'
@@ -15,6 +16,7 @@ import { MaklerProvider } from './lib/maklerContext'
 import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
 import { SearchProvider } from './lib/searchContext'
+import { HelpProvider } from './lib/helpContext'
 import { Dashboard } from './pages/Dashboard'
 import { Pipeline } from './pages/Pipeline'
 import { Leads, type LeadsFilter } from './pages/Leads'
@@ -68,6 +70,7 @@ function CRMApp(): JSX.Element {
       <LeadDetailProvider>
       <NewLeadProvider>
       <SearchProvider>
+      <HelpProvider>
       <div className="flex h-[100dvh] overflow-hidden bg-canvas">
         <Sidebar current={page} onNavigate={go} />
         <main className="flex flex-1 flex-col overflow-hidden pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0">
@@ -88,6 +91,8 @@ function CRMApp(): JSX.Element {
         <MobileNav current={page} onNavigate={go} />
       </div>
       <MaklerCard />
+      <HelpModal />
+      </HelpProvider>
       </SearchProvider>
       </NewLeadProvider>
       </LeadDetailProvider>

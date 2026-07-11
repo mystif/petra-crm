@@ -6,6 +6,7 @@ import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
 import { useMakler } from '../lib/maklerContext'
+import { useHelp } from '../lib/helpContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
@@ -30,6 +31,7 @@ export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element 
   const { leads } = useLeads()
   const { events } = useEvents()
   const { makler, avatarUrl, openAgent } = useMakler()
+  const { openHelp } = useHelp()
   const [moreOpen, setMoreOpen] = useState(false)
 
   const fresh = leads.filter((l) => l.crm_status === 'novy' && !isReferrer(l)).length
@@ -87,7 +89,7 @@ export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element 
               <SheetRow icon={FolderOpen} label="Dokumenty" active={current === 'documents'} onClick={() => go('documents')} />
               <SheetRow icon={Megaphone} label="Marketing" active={current === 'marketing'} onClick={() => go('marketing')} />
               <SheetRow icon={Settings} label="Nastavení" active={current === 'settings'} onClick={() => go('settings')} />
-              <SheetRow icon={LifeBuoy} label="Podpora" href="mailto:jirka.zabransky@gmail.com?subject=Petra%20CRM%20%E2%80%93%20podpora" />
+              <SheetRow icon={LifeBuoy} label="Podpora" onClick={() => { setMoreOpen(false); openHelp() }} />
 
               <button
                 onClick={() => { setMoreOpen(false); openAgent() }}

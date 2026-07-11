@@ -13,12 +13,11 @@ import {
   LifeBuoy,
   Settings
 } from 'lucide-react'
-import { useState } from 'react'
-import { Modal } from './Modal'
 import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
 import { useNewLead } from '../lib/newLeadContext'
 import { useSearch } from '../lib/searchContext'
+import { useHelp } from '../lib/helpContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
@@ -45,7 +44,7 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
   const { events } = useEvents()
   const { open: openNewLead } = useNewLead()
   const { openSearch } = useSearch()
-  const [helpOpen, setHelpOpen] = useState(false)
+  const { openHelp } = useHelp()
   // Odznak u Poptávek = počet nových (nezpracovaných) leadů.
   const freshCount = leads.filter((l) => l.crm_status === 'novy' && !isReferrer(l)).length
   // Odznak u Úkolů = dnešní + po termínu (nesplněné).
@@ -128,32 +127,12 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
           >
             <Settings className="h-[18px] w-[18px]" /> Nastavení
           </button>
-          <button onClick={() => setHelpOpen(true)} className="nav-item w-full">
+          <button onClick={openHelp} className="nav-item w-full">
             <LifeBuoy className="h-[18px] w-[18px]" /> Podpora
           </button>
         </nav>
       </div>
     </aside>
-
-    <Modal open={helpOpen} size="md" title="Podpora a nápověda" onClose={() => setHelpOpen(false)}>
-      <div className="space-y-3 text-sm text-tx-soft">
-        <p>
-          Vítej v CRM. Leady z webových formulářů se sbírají automaticky, můžeš je posouvat v pipeline,
-          psát e-maily ze šablon a plánovat follow-up.
-        </p>
-        <ul className="list-inside list-disc space-y-1">
-          <li><b className="text-tx">Nový lead</b> přidáš tlačítkem vlevo nahoře.</li>
-          <li><b className="text-tx">Vyhledávání</b> otevřeš klávesou <kbd className="rounded bg-canvas px-1 text-xs">⌘K</kbd>.</li>
-          <li>Klikni na kartu leadu pro detail, psaní e-mailu a historii.</li>
-        </ul>
-        <p>
-          Potřebuješ pomoc nebo úpravu?{' '}
-          <a className="font-semibold text-brand-dark hover:underline" href="mailto:jirka.zabransky@gmail.com?subject=Petra%20CRM%20%E2%80%93%20podpora">
-            Napiš na podporu
-          </a>.
-        </p>
-      </div>
-    </Modal>
     </>
   )
 }
