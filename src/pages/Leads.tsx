@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Phone, Mail, MapPin, ArrowRight, CalendarClock, MessageCircle, Trash2, Loader2, ShieldCheck, Plus } from 'lucide-react'
+import { Phone, Mail, MapPin, CalendarClock, MessageCircle, Trash2, Loader2, ShieldCheck, Plus } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Avatar } from '../components/Avatar'
 import { Modal } from '../components/Modal'
@@ -9,7 +9,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGE_MAP, CLOSED_STAGES, type Lead } from '../lib/supabase'
 import { formatCZK, relativeDays, formatDate, followUpState } from '../lib/format'
-import { sourceStyle, isEstimate, whatsappUrl, isReferrer } from '../lib/leadDisplay'
+import { sourceStyle, isEstimate, whatsappUrl, isReferrer, isWebLead } from '../lib/leadDisplay'
 
 export type LeadsFilter = 'vse' | 'poptavka' | 'odhad' | 'followup'
 
@@ -92,123 +92,122 @@ export function Leads({ filter, onFilter }: { filter: LeadsFilter; onFilter: (f:
             {list.length === 0 ? (
               <Empty label={filter === 'followup' ? 'Nic k vyřízení — žádné follow-upy dnes ani po termínu.' : 'Žádné poptávky v této kategorii.'} />
             ) : (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-                {list.map((l) => {
-                  const src = sourceStyle(l.source)
-                  const SrcIcon = src.icon
-                  const stage = STAGE_MAP[l.crm_status]
-                  const estimate = isEstimate(l)
-                  const fu = followUpInfo(l)
-                  const isNew = l.crm_status === 'novy'
-                  const wa = whatsappUrl(l.phone)
-                  return (
-                    <article
-                      key={l.id}
-                      onClick={() => openLead(l)}
-                      className="card relative flex cursor-pointer flex-col overflow-hidden p-5 transition hover:shadow-lift"
-                    >
-                      {/* rohový štítek NOVÉ */}
-                      {isNew && (
-                        <div className="pointer-events-none absolute -right-10 top-3.5 rotate-45 bg-brand px-10 py-1 text-center text-[11px] font-bold tracking-wider text-ink shadow-sm">
-                          NOVÉ
-                        </div>
-                      )}
-                      <div className="flex items-start gap-3">
-                        <Avatar name={l.name || '?'} size={44} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="truncate font-bold text-tx">{l.name || 'Bez jména'}</h3>
-                            {stage && (
-                              <span
-                                className="pill"
-                                style={{ background: `${stage.accent}1f`, color: stage.accent }}
+              <>
+                {/* mobil: kompaktní řádky */}
+                <ul className="space-y-2 md:hidden">
+                  {list.map((l) => <LeadRowMobile key={l.id} l={l} onOpen={() => openLead(l)} />)}
+                </ul>
+
+                {/* desktop: tabulka */}
+                <div className="card hidden overflow-x-auto md:block">
+                  <table className="w-full min-w-[980px]">
+                    <thead>
+                      <tr className="border-b border-line text-left text-[11px] font-bold uppercase tracking-wider text-tx-faint">
+                        <th className="px-5 py-3.5">Lead</th>
+                        <th className="px-5 py-3.5">Fáze</th>
+                        <th className="px-5 py-3.5">Zdroj</th>
+                        <th className="px-5 py-3.5">Kontakt</th>
+                        <th className="px-5 py-3.5 text-right">Rozpočet</th>
+                        <th className="px-5 py-3.5">Follow-up</th>
+                        <th className="px-5 py-3.5">Přijato</th>
+                        <th className="px-5 py-3.5"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {list.map((l) => {
+                        const src = sourceStyle(l.source)
+                        const SrcIcon = src.icon
+                        const stage = STAGE_MAP[l.crm_status]
+                        const estimate = isEstimate(l)
+                        const fu = followUpInfo(l)
+                        const isNew = l.crm_status === 'novy'
+                        const wa = whatsappUrl(l.phone)
+                        const web = isWebLead(l)
+                        return (
+                          <tr key={l.id} onClick={() => openLead(l)} className="group cursor-pointer transition hover:bg-canvas">
+                            <td className={`px-5 py-3 ${web ? 'border-l-[3px] border-sky bg-sky-soft/25' : ''}`}>
+                              <div className="flex items-center gap-3">
+                                <Avatar name={l.name || '?'} size={38} />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-bold text-tx">
+                                    {l.name || 'Bez jména'}
+                                    {isNew && <span className="pill bg-brand text-ink">Nové</span>}
+                                    {l.gdpr_consent && <ShieldCheck className="h-3.5 w-3.5 text-emerald" aria-label="GDPR potvrzeno" />}
+                                  </div>
+                                  <div className="flex items-center gap-1 truncate text-xs text-tx-faint">
+                                    <MapPin className="h-3 w-3 shrink-0" /> {l.location || '—'}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3">
+                              {stage && (
+                                <span className="pill whitespace-nowrap" style={{ background: `${stage.accent}1f`, color: stage.accent }}>
+                                  {stage.label}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3">
+                              {l.source ? (
+                                <span className={`pill whitespace-nowrap ${src.cls}`}>
+                                  <SrcIcon className="h-3 w-3" /> {l.source}
+                                </span>
+                              ) : <span className="text-tx-faint">—</span>}
+                            </td>
+                            <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-1.5">
+                                <a
+                                  href={l.phone ? `tel:${l.phone.replace(/\s/g, '')}` : undefined}
+                                  className="grid h-7 w-7 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
+                                  title={l.phone || 'Telefon'}
+                                >
+                                  <Phone className="h-3.5 w-3.5" />
+                                </a>
+                                {wa && (
+                                  <a href={wa} target="_blank" rel="noreferrer" className="grid h-7 w-7 place-items-center rounded-lg border border-line text-emerald transition hover:border-emerald/40" title="WhatsApp">
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                                <a
+                                  href={l.email ? `mailto:${l.email}` : undefined}
+                                  className="grid h-7 w-7 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
+                                  title={l.email || 'E-mail'}
+                                >
+                                  <Mail className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <span className="whitespace-nowrap font-mono text-[13px] font-semibold text-tx">
+                                {estimate && l.price_estimate
+                                  ? `~ ${formatCZK(l.price_estimate, true)}`
+                                  : formatCZK(Number(l.price ?? 0), true)}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3">
+                              {fu ? (
+                                <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-semibold ${fu.cls}`}>
+                                  <CalendarClock className="h-3.5 w-3.5" /> {fu.text}
+                                </span>
+                              ) : <span className="text-tx-faint">—</span>}
+                            </td>
+                            <td className="px-5 py-3 whitespace-nowrap text-sm text-tx-faint">{relativeDays(l.created_at)}</td>
+                            <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                className="grid h-8 w-8 place-items-center rounded-lg text-tx-faint opacity-0 transition hover:bg-rose-soft hover:text-rose group-hover:opacity-100"
+                                title="Smazat poptávku"
+                                onClick={() => setToDelete(l)}
                               >
-                                {stage.label}
-                              </span>
-                            )}
-                            {l.gdpr_consent && (
-                              <span className="pill bg-emerald-soft text-emerald" title="GDPR potvrzeno">
-                                <ShieldCheck className="h-3 w-3" /> GDPR
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-0.5 flex items-center gap-1 text-xs text-tx-soft">
-                            <MapPin className="h-3.5 w-3.5" /> {l.location || '—'}
-                          </div>
-                        </div>
-                        {l.source && (
-                          <span className={`pill ${src.cls}`}>
-                            <SrcIcon className="h-3 w-3" /> {l.source}
-                          </span>
-                        )}
-                      </div>
-
-                      {fu && (
-                        <div className={`mt-3 inline-flex items-center gap-1.5 self-start rounded-lg px-2.5 py-1 text-xs font-semibold ${fu.cls}`}>
-                          <CalendarClock className="h-3.5 w-3.5" /> {fu.text}
-                        </div>
-                      )}
-
-                      {l.message && <p className="mt-3 text-sm text-tx">{l.message}</p>}
-
-                      <div className="mt-4 rounded-xl bg-canvas p-3.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-tx-soft">
-                            {estimate ? 'Odhadovaná cena' : 'Rozpočet klienta'}
-                          </span>
-                          <span className="font-mono text-base font-bold text-tx">
-                            {estimate && l.price_estimate
-                              ? `~ ${formatCZK(l.price_estimate, true)}`
-                              : formatCZK(Number(l.price ?? 0), true)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <a
-                          href={l.phone ? `tel:${l.phone.replace(/\s/g, '')}` : undefined}
-                          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
-                          title={l.phone || 'Telefon'}
-                        >
-                          <Phone className="h-4 w-4" />
-                        </a>
-                        {wa && (
-                          <a
-                            href={wa}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-line text-emerald transition hover:border-emerald/40"
-                            title="WhatsApp"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                          </a>
-                        )}
-                        <a
-                          href={l.email ? `mailto:${l.email}` : undefined}
-                          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark"
-                          title={l.email || 'E-mail'}
-                        >
-                          <Mail className="h-4 w-4" />
-                        </a>
-                        <button
-                          className="ml-auto grid h-9 w-9 place-items-center rounded-lg border border-line text-rose transition hover:border-rose/40 hover:bg-rose-soft"
-                          title="Smazat poptávku"
-                          onClick={() => setToDelete(l)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        <button className="btn-soft py-2 text-sm" onClick={() => openLead(l)}>
-                          Otevřít <ArrowRight className="h-4 w-4" />
-                        </button>
-                      </div>
-
-                      <div className="mt-3 text-right text-[11px] text-tx-faint">
-                        Přijato {relativeDays(l.created_at)}
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </>
         )}
@@ -248,5 +247,55 @@ export function Leads({ filter, onFilter }: { filter: LeadsFilter; onFilter: (f:
         </Modal>
       )}
     </div>
+  )
+}
+
+/** Kompaktní řádek poptávky pro mobil (náhrada za tabulku, která se na malé obrazovce nevejde). */
+function LeadRowMobile({ l, onOpen }: { l: Lead; onOpen: () => void }): JSX.Element {
+  const src = sourceStyle(l.source)
+  const SrcIcon = src.icon
+  const stage = STAGE_MAP[l.crm_status]
+  const estimate = isEstimate(l)
+  const fu = followUpInfo(l)
+  const isNew = l.crm_status === 'novy'
+  const web = isWebLead(l)
+
+  return (
+    <li
+      onClick={onOpen}
+      className={`card flex cursor-pointer items-center gap-3 p-3.5 ${web ? 'border-l-[3px] border-sky bg-sky-soft/25' : ''}`}
+    >
+      <Avatar name={l.name || '?'} size={40} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 text-sm font-bold text-tx">
+          <span className="truncate">{l.name || 'Bez jména'}</span>
+          {isNew && <span className="pill shrink-0 bg-brand text-ink">Nové</span>}
+          {l.gdpr_consent && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald" />}
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+          {stage && (
+            <span className="pill" style={{ background: `${stage.accent}1f`, color: stage.accent }}>
+              {stage.label}
+            </span>
+          )}
+          {l.source && (
+            <span className={`pill ${src.cls}`}>
+              <SrcIcon className="h-3 w-3" /> {l.source}
+            </span>
+          )}
+        </div>
+        {fu && (
+          <div className={`mt-1.5 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold ${fu.cls}`}>
+            <CalendarClock className="h-3 w-3" /> {fu.text}
+          </div>
+        )}
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="whitespace-nowrap font-mono text-sm font-bold text-tx">
+          {estimate && l.price_estimate ? `~ ${formatCZK(l.price_estimate, true)}` : formatCZK(Number(l.price ?? 0), true)}
+        </div>
+        <div className="mt-0.5 text-[11px] text-tx-faint">{relativeDays(l.created_at)}</div>
+      </div>
+    </li>
   )
 }

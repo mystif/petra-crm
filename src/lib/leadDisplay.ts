@@ -40,6 +40,11 @@ export function sourceStyle(source: string | null): { cls: string; icon: typeof 
   }
 }
 
+/** Lead vznikl přímo na webu petrazabranska.com (kontaktní formulář, odhad ceny, doporučení). */
+export function isWebLead(lead: Lead): boolean {
+  return lead.source === 'Webový formulář' || lead.source === 'Odhad ceny' || lead.source === 'Doporučení'
+}
+
 /** Doporučitel = člověk, který jen přivádí klienty (sám o nic nemá zájem). */
 export function isReferrer(lead: Lead): boolean {
   return lead.lead_type === 'doporucitel'
