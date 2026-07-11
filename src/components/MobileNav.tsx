@@ -13,13 +13,13 @@ import { isReferrer } from '../lib/leadDisplay'
 const PRIMARY: { id: Page; icon: ComponentType<{ className?: string }>; label: string }[] = [
   { id: 'dashboard', icon: LayoutGrid, label: 'Přehled' },
   { id: 'pipeline', icon: KanbanSquare, label: 'Pipeline' },
-  { id: 'leads', icon: Inbox, label: 'Poptávky' },
-  { id: 'tasks', icon: CheckSquare, label: 'Úkoly' },
-  { id: 'calendar', icon: CalendarDays, label: 'Kalendář' }
+  { id: 'calendar', icon: CalendarDays, label: 'Kalendář' },
+  { id: 'properties', icon: Building2, label: 'Nemovitosti' },
+  { id: 'leads', icon: Inbox, label: 'Poptávky' }
 ]
 
 // Stránky dostupné přes „Víc".
-const MORE_PAGES: Page[] = ['contacts', 'properties', 'documents', 'marketing', 'settings']
+const MORE_PAGES: Page[] = ['contacts', 'tasks', 'documents', 'marketing', 'settings']
 
 interface MobileNavProps {
   current: Page
@@ -49,7 +49,7 @@ export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element 
         {PRIMARY.map((item) => {
           const Icon = item.icon
           const active = current === item.id
-          const badge = item.id === 'leads' ? fresh : item.id === 'tasks' ? taskDue : 0
+          const badge = item.id === 'leads' ? fresh : 0
           return (
             <NavTab key={item.id} active={active} label={item.label} onClick={() => go(item.id)}>
               <Icon className="h-6 w-6" />
@@ -62,9 +62,14 @@ export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element 
           )
         })}
 
-        {/* Víc */}
+        {/* Víc — odznak = úkoly po termínu/dnes, přesunuté sem z hlavní lišty */}
         <NavTab active={moreActive} label="Víc" onClick={() => setMoreOpen(true)}>
           <MoreHorizontal className="h-6 w-6" />
+          {taskDue > 0 && (
+            <span className="absolute -right-1.5 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-ink ring-2 ring-ink">
+              {taskDue}
+            </span>
+          )}
         </NavTab>
       </nav>
 
@@ -85,7 +90,7 @@ export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element 
 
             <div className="px-3 pb-3">
               <SheetRow icon={Users} label="Kontakty" active={current === 'contacts'} onClick={() => go('contacts')} />
-              <SheetRow icon={Building2} label="Nemovitosti" active={current === 'properties'} onClick={() => go('properties')} />
+              <SheetRow icon={CheckSquare} label="Úkoly" active={current === 'tasks'} onClick={() => go('tasks')} />
               <SheetRow icon={FolderOpen} label="Dokumenty" active={current === 'documents'} onClick={() => go('documents')} />
               <SheetRow icon={Megaphone} label="Marketing" active={current === 'marketing'} onClick={() => go('marketing')} />
               <SheetRow icon={Settings} label="Nastavení" active={current === 'settings'} onClick={() => go('settings')} />
