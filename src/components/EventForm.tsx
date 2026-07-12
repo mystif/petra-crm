@@ -68,7 +68,11 @@ export function EventForm({
     event ? toLocalInput(event.start_at) : initialStart ? toLocalInput(fromLocalInput(initialStart) || initialStart) : ''
   )
   const [end, setEnd] = useState<string>(toLocalInput(event?.end_at ?? null))
-  const [location, setLocation] = useState(event?.location ?? '')
+  // Nová událost z leadu s nemovitostí zájmu → rovnou převezme její adresu.
+  const [location, setLocation] = useState(() => {
+    if (event) return event.location ?? ''
+    return listings.find((x) => x.id === initialPropertyId)?.location ?? ''
+  })
   const [note, setNote] = useState(event?.note ?? '')
   const [reminder, setReminder] = useState<number | null>(event?.reminder_min ?? 30)
   const [result, setResult] = useState<string>(event?.result ?? '')
@@ -187,7 +191,7 @@ export function EventForm({
         <Field label="Začátek *">
           <input className="input" type="datetime-local" value={start} onChange={(e) => {
             setStart(e.target.value)
-            if (!end && e.target.value) setEnd(toLocalInput(plusMinutesIso(e.target.value, 60)))
+            if (!end && e.target.value) setEnd(toLocalInput(plusMinutesIso(e.target.value, 30)))
           }} />
         </Field>
         <Field label="Konec">
