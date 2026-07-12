@@ -4,7 +4,7 @@
 import { supabase } from './supabase'
 
 export type PropertyType = 'house' | 'apartment' | 'commercial' | 'land'
-export type ListingStatus = 'available' | 'reserved' | 'sold'
+export type ListingStatus = 'available' | 'reserved' | 'sold' | 'rented'
 export type OfferType = 'sale' | 'rent'
 /** Viditelnost na webu — semafor: zelená online / oranžová koncept / červená skryto. */
 export type WebStatus = 'online' | 'draft'
@@ -59,7 +59,8 @@ export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
 export const STATUSES: { value: ListingStatus; label: string; cls: string }[] = [
   { value: 'available', label: 'Volné', cls: 'bg-emerald-soft text-emerald' },
   { value: 'reserved', label: 'Rezervováno', cls: 'bg-amber-soft text-amber' },
-  { value: 'sold', label: 'Prodáno', cls: 'bg-canvas text-tx-soft' }
+  { value: 'sold', label: 'Prodáno', cls: 'bg-canvas text-tx-soft' },
+  { value: 'rented', label: 'Pronajato', cls: 'bg-sky-soft text-sky' }
 ]
 export const OFFER_TYPES: { value: OfferType; label: string }[] = [
   { value: 'sale', label: 'Prodej' },
