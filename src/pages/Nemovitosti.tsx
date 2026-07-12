@@ -9,6 +9,7 @@ import { useListings } from '../lib/listingsContext'
 import { useLeads } from '../lib/leadsContext'
 import { useContacts } from '../lib/contactsContext'
 import { personName, samePerson } from '../lib/people'
+import { avatarGradient } from '../lib/format'
 import {
   STATUSES, statusMeta, propertyTypeLabel, offerTypeLabel, formatListingPrice, type Listing, type WebStatus
 } from '../lib/listings'
@@ -136,7 +137,8 @@ export function Nemovitosti(): JSX.Element {
                             <span
                               key={i}
                               title={p.reserved ? 'Rezervováno' : 'Zájemce'}
-                              className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${p.reserved ? 'bg-brand-soft text-brand-dark' : 'bg-canvas text-tx-soft'}`}
+                              className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${p.reserved ? 'bg-brand-soft text-brand-dark' : 'text-white'}`}
+                              style={p.reserved ? undefined : { background: avatarGradient(p.name) }}
                             >
                               {p.reserved && <BookmarkCheck className="h-3 w-3" />}{p.name}
                             </span>
