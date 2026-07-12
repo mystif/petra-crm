@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Modal } from './Modal'
 import { createLead, STAGES, type StageKey } from '../lib/supabase'
-import { PRIORITIES, ROLE_TO_DEAL, LEAD_SOURCES, type LeadRole } from '../lib/leadDisplay'
+import { PRIORITIES, ROLE_TO_DEAL, LEAD_SOURCES, PROPERTY_OPTIONS, type LeadRole } from '../lib/leadDisplay'
 import { useLeads } from '../lib/leadsContext'
 
 interface NewLeadFormProps {
@@ -11,7 +11,6 @@ interface NewLeadFormProps {
   onCreated: () => void
 }
 
-const PROPERTY_OPTIONS = ['byt', 'dům', 'pozemek', 'komerční', 'pronájem']
 const ROLE_OPTIONS: { value: LeadRole; label: string }[] = [
   { value: 'prodavajici', label: 'Prodávající' },
   { value: 'nakupujici', label: 'Nakupující' },

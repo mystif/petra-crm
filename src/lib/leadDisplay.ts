@@ -15,6 +15,9 @@ export function propertyLabel(t: string | null): string {
   return PROPERTY_LABELS[t] ?? t.charAt(0).toUpperCase() + t.slice(1)
 }
 
+/** Typ nemovitosti u leadu — volný výběr (na rozdíl od PROPERTY_LABELS, které popisují hodnoty z webu). */
+export const PROPERTY_OPTIONS = ['byt', 'dům', 'pozemek', 'komerční', 'pronájem']
+
 export function isEstimate(lead: Lead): boolean {
   return lead.lead_type === 'odhad' || (lead.price_estimate != null && lead.price == null)
 }

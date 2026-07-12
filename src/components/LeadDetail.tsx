@@ -3,14 +3,14 @@ import {
   Phone, Mail, MapPin, Send, CalendarClock, Loader2, CheckCircle2, XCircle, MessageSquarePlus,
   Clock, StickyNote, Cog, ImagePlus, Star, X, Trash2, Pencil, ShieldCheck, Cake, Coins,
   MessageCircle, Navigation, Home, FileText, CheckCircle, PhoneCall, CalendarPlus, Share2, Gift, Building2,
-  Camera, FileSignature, Handshake, Check, BookmarkCheck, Paperclip
+  Camera, FileSignature, Handshake, Check, BookmarkCheck, Paperclip, Plus, Layers
 } from 'lucide-react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
 import { useLeads } from '../lib/leadsContext'
 import { STAGES, type Lead, type StageKey } from '../lib/supabase'
 import { formatCZK, formatDateTime, formatDate, followUpState } from '../lib/format'
-import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer, leadRole, isOffer, ROLE_TO_DEAL, LEAD_SOURCES, type LeadRole } from '../lib/leadDisplay'
+import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer, leadRole, isOffer, ROLE_TO_DEAL, LEAD_SOURCES, PROPERTY_OPTIONS, type LeadRole } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
@@ -246,23 +246,32 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     await patch(lead.id, { property_id: val || null })
   }
 
-  // Nabízená nemovitost (Prodávající/Pronajímatel) — zdroj pravdy je nemovitost.seller_lead_id (žádný sloupec na leadu).
-  const isOfferLead = isOffer(lead)
-  const sellerListing = listings.find((l) => l.seller_lead_id === lead.id) ?? null
+  const savePropertyType = async (val: string): Promise<void> => {
+    await patch(lead.id, { property_type: val || null })
+  }
 
-  // Dokumenty: agregovaný pohled (lead + kontakt + nemovitost zájmu i nabízená) + chytré předvyplnění vazeb při uploadu.
+  // Nabízené nemovitosti (Prodávající/Pronajímatel) — zdroj pravdy je nemovitost.seller_lead_id (žádný sloupec na leadu).
+  // Obvykle jedna, ale developerský projekt může mít víc nemovitostí na jednom leadu → viz multiProps.
+  const isOfferLead = isOffer(lead)
+  const sellerListings = listings.filter((l) => l.seller_lead_id === lead.id)
+  const sellerListing = sellerListings[0] ?? null
+  // Rozbalený seznam se ukáže hned, pokud už je nemovitostí víc — jinak zůstane skrytý, ať pole zbytečně nepřekáží.
+  const [multiProps, setMultiProps] = useState(() => sellerListings.length > 1)
+
+  // Dokumenty: agregovaný pohled (lead + kontakt + nemovitost zájmu i všechny nabízené) + chytré předvyplnění vazeb při uploadu.
   const primaryPropertyId = isOfferLead ? sellerListing?.id ?? null : lead.property_id
   const docTargets: DocTarget[] = [
     { lead_id: lead.id },
     ...(lead.kontakt_id ? [{ kontakt_id: lead.kontakt_id }] : []),
     ...(lead.property_id ? [{ nemovitost_id: lead.property_id }] : []),
-    ...(sellerListing ? [{ nemovitost_id: sellerListing.id }] : [])
+    ...sellerListings.map((l) => ({ nemovitost_id: l.id }))
   ]
   const docDefaultTargets: DocTarget[] = [
     { lead_id: lead.id },
     ...(lead.kontakt_id ? [{ kontakt_id: lead.kontakt_id }] : []),
     ...(primaryPropertyId ? [{ nemovitost_id: primaryPropertyId }] : [])
   ]
+  /** Jednoduchý režim (výchozí) — jedna nemovitost, staré napojení nahradí. */
   const saveSellerListing = async (listingId: string): Promise<void> => {
     if (sellerListing && sellerListing.id !== listingId) {
       await listingsPatch(sellerListing.id, { seller_lead_id: null })
@@ -271,6 +280,18 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     await addActivity(lead.id, 'system', null, listingId
       ? `Nabízená nemovitost: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`
       : 'Nabízená nemovitost odebrána')
+    reloadActivity()
+  }
+  /** Režim „víc nemovitostí" (developerský projekt) — přidání/odebrání nikdy neodpojí ostatní. */
+  const addSellerListing = async (listingId: string): Promise<void> => {
+    if (!listingId) return
+    await listingsPatch(listingId, { seller_lead_id: lead.id, seller_contact_id: null })
+    await addActivity(lead.id, 'system', null, `Nabízená nemovitost přidána: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`)
+    reloadActivity()
+  }
+  const removeSellerListing = async (listingId: string): Promise<void> => {
+    await listingsPatch(listingId, { seller_lead_id: null })
+    await addActivity(lead.id, 'system', null, `Nabízená nemovitost odebrána: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`)
     reloadActivity()
   }
 
@@ -658,13 +679,56 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
                 {leads.filter((l) => l.id !== lead.id).map((l) => <option key={l.id} value={l.id}>{l.name || 'Bez jména'}</option>)}
               </select>
             </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Home className="h-3.5 w-3.5" /> Typ nemovitosti</label>
+              <select className="input" value={lead.property_type ?? ''} onChange={(e) => savePropertyType(e.target.value)}>
+                <option value="">— neuvedeno —</option>
+                {PROPERTY_OPTIONS.map((p) => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+              </select>
+            </div>
             {isOfferLead ? (
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-tx-faint"><Building2 className="h-3.5 w-3.5" /> Nabízená nemovitost</label>
-                <select className="input" value={sellerListing?.id ?? ''} onChange={(e) => saveSellerListing(e.target.value)}>
-                  <option value="">— žádná —</option>
-                  {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-                </select>
+                {!multiProps ? (
+                  <>
+                    <select className="input" value={sellerListing?.id ?? ''} onChange={(e) => saveSellerListing(e.target.value)}>
+                      <option value="">— žádná —</option>
+                      {listings.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setMultiProps(true)}
+                      className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-brand-dark hover:underline"
+                    >
+                      <Layers className="h-3 w-3" /> Nabízí víc nemovitostí (developerský projekt)
+                    </button>
+                  </>
+                ) : (
+                  <div className="space-y-1.5">
+                    {sellerListings.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 rounded-lg border border-line bg-white px-2.5 py-1.5">
+                        <span className="min-w-0 flex-1 truncate text-sm text-tx">{p.title}</span>
+                        <button type="button" onClick={() => removeSellerListing(p.id)} className="text-tx-faint hover:text-rose" title="Odebrat">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-1.5">
+                      <Plus className="h-3.5 w-3.5 shrink-0 text-tx-faint" />
+                      <select className="input" value="" onChange={(e) => addSellerListing(e.target.value)}>
+                        <option value="">Přidat další nemovitost…</option>
+                        {listings.filter((p) => !sellerListings.some((s) => s.id === p.id)).map((p) => (
+                          <option key={p.id} value={p.id}>{p.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {sellerListings.length <= 1 && (
+                      <button type="button" onClick={() => setMultiProps(false)} className="text-xs font-semibold text-tx-faint hover:text-tx hover:underline">
+                        Zpět na jeden výběr
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div>
@@ -688,7 +752,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
             </div>
           </div>
 
-          {/* dokumenty — agregovaně přes lead + kontakt + nemovitost (zájem i nabízená) */}
+          {/* dokumenty — agregovaně přes lead + kontakt + nemovitost (zájem i všechny nabízené) */}
           <div className="rounded-xl border border-line p-3">
             <DocumentsSection targets={docTargets} defaultTargets={docDefaultTargets} />
           </div>
