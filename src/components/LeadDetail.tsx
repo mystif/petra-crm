@@ -13,7 +13,7 @@ import { formatCZK, formatDateTime, formatDate, followUpState } from '../lib/for
 import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer, leadRole, isOffer, ROLE_TO_DEAL, LEAD_SOURCES, PROPERTY_OPTIONS, type LeadRole } from '../lib/leadDisplay'
 import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
-import { uploadLeadPhoto, photoUrl, removePhotoFile } from '../lib/photos'
+import { uploadLeadPhoto, photoUrl, removePhotoFile, pathFromPublicUrl } from '../lib/photos'
 import { useMakler } from '../lib/maklerContext'
 import { EventForm } from './EventForm'
 import { eventTypeMeta, type EventType } from '../lib/events'
@@ -271,12 +271,22 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
     ...(lead.kontakt_id ? [{ kontakt_id: lead.kontakt_id }] : []),
     ...(primaryPropertyId ? [{ nemovitost_id: primaryPropertyId }] : [])
   ]
+  /** Úvodní fotka nově přiřazené nemovitosti se převezme jako fotka leadu (jen Prodávající/Pronajímatel). */
+  const assignListingCoverPhoto = async (listingId: string): Promise<void> => {
+    const listing = listings.find((l) => l.id === listingId)
+    const path = listing?.main_image ? pathFromPublicUrl(listing.main_image) : null
+    if (!path) return
+    await patch(lead.id, { fotky: [path, ...fotky.filter((p) => p !== path)] })
+  }
   /** Jednoduchý režim (výchozí) — jedna nemovitost, staré napojení nahradí. */
   const saveSellerListing = async (listingId: string): Promise<void> => {
     if (sellerListing && sellerListing.id !== listingId) {
       await listingsPatch(sellerListing.id, { seller_lead_id: null })
     }
-    if (listingId) await listingsPatch(listingId, { seller_lead_id: lead.id, seller_contact_id: null })
+    if (listingId) {
+      await listingsPatch(listingId, { seller_lead_id: lead.id, seller_contact_id: null })
+      await assignListingCoverPhoto(listingId)
+    }
     await addActivity(lead.id, 'system', null, listingId
       ? `Nabízená nemovitost: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`
       : 'Nabízená nemovitost odebrána')
@@ -286,6 +296,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
   const addSellerListing = async (listingId: string): Promise<void> => {
     if (!listingId) return
     await listingsPatch(listingId, { seller_lead_id: lead.id, seller_contact_id: null })
+    await assignListingCoverPhoto(listingId)
     await addActivity(lead.id, 'system', null, `Nabízená nemovitost přidána: ${listings.find((l) => l.id === listingId)?.title ?? '—'}`)
     reloadActivity()
   }
