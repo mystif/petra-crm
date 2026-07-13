@@ -111,7 +111,10 @@ export function Nemovitosti(): JSX.Element {
                         ? <img src={l.main_image} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" />
                         : <div className="grid h-full w-full place-items-center text-tx-faint"><Building2 className="h-10 w-10" /></div>}
                       <span className={`pill absolute left-2.5 top-2.5 ${sm.cls}`}>{sm.label}</span>
-                      {l.featured && <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-ink"><Star className="h-3 w-3" /> Doporučená</span>}
+                      <div className="absolute right-2.5 top-2.5 flex flex-col items-end gap-1">
+                        {l.featured && <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-ink"><Star className="h-3 w-3" /> Doporučená</span>}
+                        {l.exclusive && <span className="flex items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-gold"><Star className="h-3 w-3" /> Exkluzivní</span>}
+                      </div>
                       <span className="absolute bottom-2.5 left-2.5 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">{offerTypeLabel(l.offer_type)} · {propertyTypeLabel(l.property_type)}</span>
                     </div>
                     <div className="p-4">

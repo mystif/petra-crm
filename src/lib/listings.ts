@@ -28,6 +28,8 @@ export interface Listing {
   images: string[]
   vizualizace: string[] // URL fotek označených jako vizualizace (na webu dostanou štítek)
   featured: boolean
+  exclusive: boolean // exkluzivní nabídka — samostatná sekce na úvodní straně webu
+  exclusive_link: string | null // odkaz na tlačítko „Zjistit více" u exkluzivní nabídky
   sort_order: number
   address: string | null
   energy_class: string | null

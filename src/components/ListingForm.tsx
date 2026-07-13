@@ -75,6 +75,8 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
   const [vizualizace, setVizualizace] = useState<string[]>(listing?.vizualizace ?? [])
   const [featured, setFeatured] = useState(listing?.featured ?? false)
   const [sortOrder, setSortOrder] = useState(String(listing?.sort_order ?? '0'))
+  const [exclusive, setExclusive] = useState(listing?.exclusive ?? false)
+  const [exclusiveLink, setExclusiveLink] = useState(listing?.exclusive_link ?? '')
 
   // detailní parametry
   const [landArea, setLandArea] = useState(String(listing?.land_area_m2 ?? ''))
@@ -199,6 +201,8 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
       images,
       vizualizace: vizualizace.filter((u) => images.includes(u)),
       featured,
+      exclusive,
+      exclusive_link: exclusive ? (exclusiveLink.trim() || null) : null,
       sort_order: num(sortOrder) ?? 0,
       land_area_m2: num(landArea),
       floor: floor.trim() || null,
@@ -460,6 +464,25 @@ export function ListingForm({ open, listing, onClose }: Props): JSX.Element | nu
           Pořadí
           <input className="input w-20 py-1.5" inputMode="numeric" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
         </label>
+      </div>
+
+      {/* exkluzivní nabídka — sekce na hlavní straně webu */}
+      <div className="mt-3 rounded-xl border border-line p-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-tx">
+          <input type="checkbox" className="h-4 w-4 accent-brand-dark" checked={exclusive} onChange={(e) => setExclusive(e.target.checked)} />
+          Exkluzivní nabídka (sekce na úvodní straně webu)
+        </label>
+        <p className="mt-1 text-[11px] text-tx-faint">
+          Zobrazí se jen když je nemovitost zveřejněná Online a ve stavu Volné. Pokud jich takhle označíš víc, web ukáže jen jednu (podle pořadí).
+        </p>
+        {exclusive && (
+          <input
+            className="input mt-2"
+            placeholder="Odkaz na tlačítko „Zjistit více” (nepovinné)"
+            value={exclusiveLink}
+            onChange={(e) => setExclusiveLink(e.target.value)}
+          />
+        )}
       </div>
 
       {/* dokumenty nemovitosti — jen u existující (nová ještě nemá id) */}
