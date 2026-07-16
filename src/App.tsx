@@ -17,6 +17,7 @@ import { LeadDetailProvider } from './lib/leadDetailContext'
 import { NewLeadProvider } from './lib/newLeadContext'
 import { SearchProvider } from './lib/searchContext'
 import { HelpProvider } from './lib/helpContext'
+import { ColdCallsProvider } from './lib/coldCallsContext'
 import { Dashboard } from './pages/Dashboard'
 import { Pipeline } from './pages/Pipeline'
 import { Leads, type LeadsFilter } from './pages/Leads'
@@ -27,6 +28,7 @@ import { Nemovitosti } from './pages/Nemovitosti'
 import { Documents } from './pages/Documents'
 import { Marketing } from './pages/Marketing'
 import { Settings } from './pages/Settings'
+import { ColdCall } from './pages/ColdCall'
 
 export default function App(): JSX.Element {
   return (
@@ -66,6 +68,7 @@ function CRMApp(): JSX.Element {
       <ListingsProvider>
       <ContactsProvider>
       <DocumentsProvider>
+      <ColdCallsProvider>
       <MaklerProvider>
       <LeadDetailProvider>
       <NewLeadProvider>
@@ -84,6 +87,7 @@ function CRMApp(): JSX.Element {
             {page === 'documents' && <Documents />}
             {page === 'tasks' && <Tasks />}
             {page === 'calendar' && <Calendar />}
+            {page === 'coldcall' && <ColdCall />}
             {page === 'marketing' && <Marketing />}
             {page === 'settings' && <Settings />}
           </div>
@@ -97,6 +101,7 @@ function CRMApp(): JSX.Element {
       </NewLeadProvider>
       </LeadDetailProvider>
       </MaklerProvider>
+      </ColdCallsProvider>
       </DocumentsProvider>
       </ContactsProvider>
       </ListingsProvider>

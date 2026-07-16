@@ -11,7 +11,8 @@ import {
   Plus,
   Megaphone,
   LifeBuoy,
-  Settings
+  Settings,
+  PhoneCall
 } from 'lucide-react'
 import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
@@ -21,7 +22,7 @@ import { useHelp } from '../lib/helpContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'marketing' | 'settings'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'coldcall' | 'marketing' | 'settings'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -31,7 +32,8 @@ const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'properties', label: 'Nemovitosti', icon: Building2 },
   { id: 'documents', label: 'Dokumenty', icon: FolderOpen },
   { id: 'tasks', label: 'Úkoly', icon: CheckSquare },
-  { id: 'calendar', label: 'Kalendář', icon: CalendarDays }
+  { id: 'calendar', label: 'Kalendář', icon: CalendarDays },
+  { id: 'coldcall', label: 'Cold Call', icon: PhoneCall }
 ]
 
 interface SidebarProps {

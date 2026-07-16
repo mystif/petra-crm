@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutGrid, KanbanSquare, Inbox, CheckSquare, CalendarDays, MoreHorizontal, Users, Building2, FolderOpen, Megaphone, Settings, LifeBuoy, X } from 'lucide-react'
+import { LayoutGrid, KanbanSquare, Inbox, CheckSquare, CalendarDays, MoreHorizontal, Users, Building2, FolderOpen, Megaphone, Settings, LifeBuoy, PhoneCall, X } from 'lucide-react'
 import type { ComponentType, ReactNode } from 'react'
 import type { Page } from './Sidebar'
 import { Avatar } from './Avatar'
@@ -19,7 +19,7 @@ const PRIMARY: { id: Page; icon: ComponentType<{ className?: string }>; label: s
 ]
 
 // Stránky dostupné přes „Víc".
-const MORE_PAGES: Page[] = ['contacts', 'tasks', 'documents', 'marketing', 'settings']
+const MORE_PAGES: Page[] = ['contacts', 'tasks', 'documents', 'coldcall', 'marketing', 'settings']
 
 interface MobileNavProps {
   current: Page
@@ -92,6 +92,7 @@ export function MobileNav({ current, onNavigate }: MobileNavProps): JSX.Element 
               <SheetRow icon={Users} label="Kontakty" active={current === 'contacts'} onClick={() => go('contacts')} />
               <SheetRow icon={CheckSquare} label="Úkoly" active={current === 'tasks'} onClick={() => go('tasks')} />
               <SheetRow icon={FolderOpen} label="Dokumenty" active={current === 'documents'} onClick={() => go('documents')} />
+              <SheetRow icon={PhoneCall} label="Cold Call" active={current === 'coldcall'} onClick={() => go('coldcall')} />
               <SheetRow icon={Megaphone} label="Marketing" active={current === 'marketing'} onClick={() => go('marketing')} />
               <SheetRow icon={Settings} label="Nastavení" active={current === 'settings'} onClick={() => go('settings')} />
               <SheetRow icon={LifeBuoy} label="Podpora" onClick={() => { setMoreOpen(false); openHelp() }} />
