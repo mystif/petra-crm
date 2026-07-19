@@ -29,6 +29,7 @@ import { Documents } from './pages/Documents'
 import { Marketing } from './pages/Marketing'
 import { Settings } from './pages/Settings'
 import { ColdCall } from './pages/ColdCall'
+import { Recenze } from './pages/Recenze'
 
 export default function App(): JSX.Element {
   return (
@@ -88,6 +89,7 @@ function CRMApp(): JSX.Element {
             {page === 'tasks' && <Tasks />}
             {page === 'calendar' && <Calendar />}
             {page === 'coldcall' && <ColdCall />}
+            {page === 'recenze' && <Recenze />}
             {page === 'marketing' && <Marketing />}
             {page === 'settings' && <Settings />}
           </div>

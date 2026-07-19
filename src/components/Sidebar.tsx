@@ -12,7 +12,8 @@ import {
   Megaphone,
   LifeBuoy,
   Settings,
-  PhoneCall
+  PhoneCall,
+  Star
 } from 'lucide-react'
 import { useLeads } from '../lib/leadsContext'
 import { useEvents } from '../lib/eventsContext'
@@ -22,7 +23,7 @@ import { useHelp } from '../lib/helpContext'
 import { isOverdue, sameDay } from '../lib/events'
 import { isReferrer } from '../lib/leadDisplay'
 
-export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'coldcall' | 'marketing' | 'settings'
+export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'coldcall' | 'recenze' | 'marketing' | 'settings'
 
 const NAV: { id: Page; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -117,6 +118,12 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
           <div className="px-3 pb-1 pt-5 text-[11px] font-bold uppercase tracking-wider text-white/30">
             Ostatní
           </div>
+          <button
+            onClick={() => onNavigate('recenze')}
+            className={`nav-item w-full ${current === 'recenze' ? 'active' : ''}`}
+          >
+            <Star className="h-[18px] w-[18px]" /> Recenze
+          </button>
           <button
             onClick={() => onNavigate('marketing')}
             className={`nav-item w-full ${current === 'marketing' ? 'active' : ''}`}
