@@ -106,9 +106,10 @@ export function ColdCall(): JSX.Element {
                         <td className="px-5 py-3">
                           <select
                             className={`input h-8 w-auto min-w-[120px] py-1 text-xs font-semibold ${coldCallStatusMeta(c.status).cls}`}
-                            value={c.status}
-                            onChange={(e) => patch(c.id, { status: e.target.value as ColdCallStatus })}
+                            value={c.status ?? ''}
+                            onChange={(e) => patch(c.id, { status: (e.target.value || null) as ColdCallStatus | null })}
                           >
+                            <option value="">— nevybráno —</option>
                             {COLD_CALL_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                           </select>
                         </td>
@@ -175,7 +176,7 @@ function AddColdCallModal({ onClose, onCreate }: { onClose: () => void; onCreate
         email: d.email,
         listing_inserted_at: d.listing_inserted_at,
         listing_updated_at: d.listing_updated_at,
-        status: 'novy'
+        status: null
       })
       onClose()
     } catch (e) {

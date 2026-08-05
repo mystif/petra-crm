@@ -18,7 +18,8 @@ export interface ColdCall {
   email: string | null
   listing_inserted_at: string | null
   listing_updated_at: string | null
-  status: ColdCallStatus
+  /** null = zatím nevybráno (výchozí stav u nového Cold Callu). */
+  status: ColdCallStatus | null
   note: string | null
   /** Adresa majitele dle katastru — makléřka doplňuje ručně, slouží k zaslání dopisu. */
   adresa_majitele: string | null
