@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL } from './supabase'
 
-export type ColdCallStatus = 'novy' | 'zavolano' | 'nezajem' | 'domluveno'
+export type ColdCallStatus = 'novy' | 'zavolano' | 'nezajem' | 'domluveno' | 'dopis_odeslan'
 
 export interface ColdCall {
   id: string
@@ -20,11 +20,14 @@ export interface ColdCall {
   listing_updated_at: string | null
   status: ColdCallStatus
   note: string | null
+  /** Adresa majitele dle katastru — makléřka doplňuje ručně, slouží k zaslání dopisu. */
+  adresa_majitele: string | null
 }
 
 export const COLD_CALL_STATUSES: { value: ColdCallStatus; label: string; cls: string }[] = [
   { value: 'novy', label: 'K volání', cls: 'bg-amber-soft text-amber' },
   { value: 'zavolano', label: 'Zavoláno', cls: 'bg-sky-soft text-sky' },
+  { value: 'dopis_odeslan', label: 'Dopis odeslán', cls: 'bg-brand-soft text-brand-dark' },
   { value: 'domluveno', label: 'Domluveno', cls: 'bg-emerald-soft text-emerald' },
   { value: 'nezajem', label: 'Nezájem', cls: 'bg-canvas text-tx-soft' }
 ]

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { PhoneCall, Phone, Mail, MapPin, Trash2, Loader2, Plus, ExternalLink, Building2, MessageCircle, CalendarPlus, RefreshCw, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { PhoneCall, Phone, Mail, MapPin, Trash2, Loader2, Plus, ExternalLink, Building2, MessageCircle, CalendarPlus, RefreshCw, Send, X } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Modal } from '../components/Modal'
 import { Loading, ErrorState, Empty } from '../components/States'
@@ -33,12 +33,20 @@ export function ColdCall(): JSX.Element {
           <>
             {/* mobil: karty */}
             <ul className="space-y-2 md:hidden">
-              {calls.map((c) => <ColdCallCardMobile key={c.id} c={c} onStatus={(s) => patch(c.id, { status: s })} onDelete={() => setToDelete(c)} />)}
+              {calls.map((c) => (
+                <ColdCallCardMobile
+                  key={c.id}
+                  c={c}
+                  onStatus={(s) => patch(c.id, { status: s })}
+                  onDelete={() => setToDelete(c)}
+                  onSaveAddress={(v) => patch(c.id, { adresa_majitele: v || null })}
+                />
+              ))}
             </ul>
 
             {/* desktop: tabulka */}
             <div className="card hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[1180px]">
+              <table className="w-full min-w-[1380px]">
                 <thead>
                   <tr className="border-b border-line text-left text-[11px] font-bold uppercase tracking-wider text-tx-faint">
                     <th className="px-5 py-3.5">Nemovitost</th>
@@ -46,6 +54,7 @@ export function ColdCall(): JSX.Element {
                     <th className="px-5 py-3.5">Nabídka</th>
                     <th className="px-5 py-3.5">Inzerát</th>
                     <th className="px-5 py-3.5">Kontakt</th>
+                    <th className="px-5 py-3.5">Adresa majitele</th>
                     <th className="px-5 py-3.5">Stav</th>
                     <th className="px-5 py-3.5"></th>
                   </tr>
@@ -90,6 +99,9 @@ export function ColdCall(): JSX.Element {
                             {wa && <a href={wa} target="_blank" rel="noreferrer" className="grid h-6 w-6 place-items-center rounded-md border border-line text-emerald transition hover:border-emerald/40" title="WhatsApp"><MessageCircle className="h-3.5 w-3.5" /></a>}
                             {c.email && <a href={`mailto:${c.email}`} className="grid h-6 w-6 place-items-center rounded-md border border-line text-tx-soft transition hover:border-brand/40 hover:text-brand-dark" title={c.email}><Mail className="h-3.5 w-3.5" /></a>}
                           </div>
+                        </td>
+                        <td className="px-5 py-3">
+                          <AddressCell value={c.adresa_majitele} onSave={(v) => patch(c.id, { adresa_majitele: v || null })} />
                         </td>
                         <td className="px-5 py-3">
                           <select
@@ -196,7 +208,22 @@ function AddColdCallModal({ onClose, onCreate }: { onClose: () => void; onCreate
   )
 }
 
-function ColdCallCardMobile({ c, onStatus, onDelete }: { c: ColdCall; onStatus: (s: ColdCallStatus) => void; onDelete: () => void }): JSX.Element {
+/** Ručně vyplňovaná adresa majitele (dle katastru) — ukládá se až při opuštění pole. */
+function AddressCell({ value, onSave }: { value: string | null; onSave: (v: string) => void }): JSX.Element {
+  const [val, setVal] = useState(value ?? '')
+  useEffect(() => setVal(value ?? ''), [value])
+  return (
+    <input
+      className="input h-8 min-w-[200px] py-1 text-xs"
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={() => { if (val !== (value ?? '')) onSave(val) }}
+      placeholder="Dle katastru…"
+    />
+  )
+}
+
+function ColdCallCardMobile({ c, onStatus, onDelete, onSaveAddress }: { c: ColdCall; onStatus: (s: ColdCallStatus) => void; onDelete: () => void; onSaveAddress: (v: string) => void }): JSX.Element {
   const wa = whatsappUrl(c.phone)
   const sm = coldCallStatusMeta(c.status)
   return (
@@ -222,6 +249,10 @@ function ColdCallCardMobile({ c, onStatus, onDelete }: { c: ColdCall; onStatus: 
           {c.listing_updated_at && <span className="flex items-center gap-1"><RefreshCw className="h-3 w-3" /> Aktualizováno {formatDate(c.listing_updated_at)}</span>}
         </div>
       )}
+      <div className="mt-2">
+        <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-tx-faint"><Send className="h-3 w-3" /> Adresa majitele</label>
+        <AddressCell value={c.adresa_majitele} onSave={onSaveAddress} />
+      </div>
       <div className="mt-3 flex items-center gap-1.5 border-t border-line pt-3">
         {c.phone && <a href={`tel:${c.phone.replace(/\s/g, '')}`} className="flex flex-1 items-center gap-1.5 font-mono text-[13px] text-tx-soft"><Phone className="h-3.5 w-3.5 text-tx-faint" /> {c.phone}</a>}
         {wa && <a href={wa} target="_blank" rel="noreferrer" className="grid h-8 w-8 place-items-center rounded-lg border border-line text-emerald" title="WhatsApp"><MessageCircle className="h-4 w-4" /></a>}
