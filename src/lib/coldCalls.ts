@@ -16,6 +16,8 @@ export interface ColdCall {
   company: string | null
   phone: string | null
   email: string | null
+  listing_inserted_at: string | null
+  listing_updated_at: string | null
   status: ColdCallStatus
   note: string | null
 }
@@ -43,6 +45,8 @@ export interface SrealityScrape {
   company: string | null
   phone: string | null
   email: string | null
+  listing_inserted_at: string | null
+  listing_updated_at: string | null
   source_url: string
 }
 

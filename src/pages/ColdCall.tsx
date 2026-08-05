@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { PhoneCall, Phone, Mail, MapPin, Trash2, Loader2, Plus, ExternalLink, Building2, MessageCircle, X } from 'lucide-react'
+import { PhoneCall, Phone, Mail, MapPin, Trash2, Loader2, Plus, ExternalLink, Building2, MessageCircle, CalendarPlus, RefreshCw, X } from 'lucide-react'
 import { Topbar } from '../components/Topbar'
 import { Modal } from '../components/Modal'
 import { Loading, ErrorState, Empty } from '../components/States'
 import { useColdCalls } from '../lib/coldCallsContext'
 import { scrapeSreality, COLD_CALL_STATUSES, coldCallStatusMeta, type ColdCall, type ColdCallStatus } from '../lib/coldCalls'
 import { whatsappUrl } from '../lib/leadDisplay'
-import { formatCZK } from '../lib/format'
+import { formatCZK, formatDate } from '../lib/format'
 
 export function ColdCall(): JSX.Element {
   const { calls, loading, error, refetch, add, patch, remove } = useColdCalls()
@@ -38,12 +38,13 @@ export function ColdCall(): JSX.Element {
 
             {/* desktop: tabulka */}
             <div className="card hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[1040px]">
+              <table className="w-full min-w-[1180px]">
                 <thead>
                   <tr className="border-b border-line text-left text-[11px] font-bold uppercase tracking-wider text-tx-faint">
                     <th className="px-5 py-3.5">Nemovitost</th>
                     <th className="px-5 py-3.5">Lokalita</th>
                     <th className="px-5 py-3.5">Nabídka</th>
+                    <th className="px-5 py-3.5">Inzerát</th>
                     <th className="px-5 py-3.5">Kontakt</th>
                     <th className="px-5 py-3.5">Stav</th>
                     <th className="px-5 py-3.5"></th>
@@ -69,6 +70,15 @@ export function ColdCall(): JSX.Element {
                             <span className={`pill ${c.offer_type === 'Pronájem' ? 'bg-sky-soft text-sky' : 'bg-brand-soft text-brand-dark'}`}>{c.offer_type || '—'}</span>
                           </div>
                           {c.price_czk != null && <div className="mt-0.5 font-mono text-xs text-tx-soft">{formatCZK(c.price_czk, true)}</div>}
+                        </td>
+                        <td className="px-5 py-3 text-xs text-tx-soft">
+                          {c.listing_inserted_at && (
+                            <div className="flex items-center gap-1 whitespace-nowrap"><CalendarPlus className="h-3 w-3 shrink-0 text-tx-faint" /> {formatDate(c.listing_inserted_at)}</div>
+                          )}
+                          {c.listing_updated_at && (
+                            <div className="mt-0.5 flex items-center gap-1 whitespace-nowrap"><RefreshCw className="h-3 w-3 shrink-0 text-tx-faint" /> {formatDate(c.listing_updated_at)}</div>
+                          )}
+                          {!c.listing_inserted_at && !c.listing_updated_at && <span className="text-tx-faint">—</span>}
                         </td>
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-1.5">
@@ -151,6 +161,8 @@ function AddColdCallModal({ onClose, onCreate }: { onClose: () => void; onCreate
         company: d.company,
         phone: d.phone,
         email: d.email,
+        listing_inserted_at: d.listing_inserted_at,
+        listing_updated_at: d.listing_updated_at,
         status: 'novy'
       })
       onClose()
@@ -178,7 +190,7 @@ function AddColdCallModal({ onClose, onCreate }: { onClose: () => void; onCreate
         onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
         placeholder="https://www.sreality.cz/detail/prodej/byt/…"
       />
-      <p className="mt-2 text-xs text-tx-faint">Ze stránky se automaticky načte typ nemovitosti, lokalita, prodej/pronájem a kontakt na majitele.</p>
+      <p className="mt-2 text-xs text-tx-faint">Ze stránky se automaticky načte typ nemovitosti, lokalita, prodej/pronájem, kontakt na majitele a datum vložení/aktualizace inzerátu.</p>
       {err && <p className="mt-3 flex items-start gap-1.5 text-sm font-medium text-rose"><X className="mt-0.5 h-4 w-4 shrink-0" /> {err}</p>}
     </Modal>
   )
@@ -204,6 +216,12 @@ function ColdCallCardMobile({ c, onStatus, onDelete }: { c: ColdCall; onStatus: 
         {c.price_czk != null && <span className="font-mono text-xs text-tx-soft">{formatCZK(c.price_czk, true)}</span>}
         {(c.company || c.seller_name) && <span className="truncate text-xs text-tx-faint">· {c.company || c.seller_name}</span>}
       </div>
+      {(c.listing_inserted_at || c.listing_updated_at) && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-tx-faint">
+          {c.listing_inserted_at && <span className="flex items-center gap-1"><CalendarPlus className="h-3 w-3" /> Vloženo {formatDate(c.listing_inserted_at)}</span>}
+          {c.listing_updated_at && <span className="flex items-center gap-1"><RefreshCw className="h-3 w-3" /> Aktualizováno {formatDate(c.listing_updated_at)}</span>}
+        </div>
+      )}
       <div className="mt-3 flex items-center gap-1.5 border-t border-line pt-3">
         {c.phone && <a href={`tel:${c.phone.replace(/\s/g, '')}`} className="flex flex-1 items-center gap-1.5 font-mono text-[13px] text-tx-soft"><Phone className="h-3.5 w-3.5 text-tx-faint" /> {c.phone}</a>}
         {wa && <a href={wa} target="_blank" rel="noreferrer" className="grid h-8 w-8 place-items-center rounded-lg border border-line text-emerald" title="WhatsApp"><MessageCircle className="h-4 w-4" /></a>}
