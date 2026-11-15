@@ -44,7 +44,7 @@ export function DocumentsSection({ targets, defaultTargets, dark = false }: {
     <div>
       <div className="mb-2 flex items-center justify-between">
         <h4 className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide ${dark ? 'text-white/70' : 'text-tx-faint'}`}><FileText className="h-3.5 w-3.5" /> Dokumenty {items.length > 0 && <span className={faint}>({items.length})</span>}</h4>
-        <button onClick={() => setUploadOpen(true)} className={`flex items-center gap-1 text-xs font-semibold ${dark ? 'text-gold hover:text-[#D4B26F]' : 'text-brand-dark hover:underline'}`}><Plus className="h-3.5 w-3.5" /> Dokument</button>
+        <button onClick={() => setUploadOpen(true)} className={`flex items-center gap-1 text-xs font-semibold ${dark ? 'text-gold hover:text-[#E0A36F]' : 'text-brand-dark hover:underline'}`}><Plus className="h-3.5 w-3.5" /> Dokument</button>
       </div>
 
       {items.length === 0 ? (

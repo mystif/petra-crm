@@ -18,9 +18,9 @@
     margin: 0;
   }
   body {
-    font-family: '"Plus Jakarta Sans"', system-ui, sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     background: #f5f6fa;
-    color: #1a1d2e;
+    color: #0A1B34;
     overscroll-behavior-y: none; /* iOS: bez pull-to-refresh / přetažení celé stránky */
   }
   /* plynulé setrvačné scrollování uvnitř scrollovatelných oblastí */
@@ -58,25 +58,25 @@
       transition active:scale-[.98] disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn text-white shadow-[0_4px_14px_rgba(145,117,60,.40)];
-    background-image: linear-gradient(to right, #91753c, #c1a263);
+    @apply btn text-white shadow-[0_4px_14px_rgba(150,88,31,.40)];
+    background-image: linear-gradient(to right, #96581F, #D08B4F);
   }
   .btn-primary:hover {
-    background-image: linear-gradient(to right, #c1a263, #d4b26f);
+    background-image: linear-gradient(to right, #D08B4F, #E0A36F);
   }
   .btn-ghost {
     @apply btn bg-white text-tx border border-line hover:border-brand/50 hover:text-brand-dark;
   }
   .btn-soft {
-    @apply btn bg-brand-soft text-brand-dark hover:bg-[#efe4cb];
+    @apply btn bg-brand-soft text-brand-dark hover:bg-[#F1DCC8];
   }
   .nav-item {
     @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-gold
-      transition hover:bg-white/[.06] hover:text-[#D4B26F];
+      transition hover:bg-white/[.06] hover:text-[#E0A36F];
   }
   .nav-item.active {
-    @apply bg-white/[.08] text-[#D4B26F];
-    box-shadow: inset 2px 0 0 #c1a263;
+    @apply bg-white/[.08] text-[#E0A36F];
+    box-shadow: inset 2px 0 0 #D08B4F;
   }
   .input {
     @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm outline-none
@@ -88,13 +88,13 @@
 }
 
 @layer utilities {
-  /* Zlaté záře přes tmavou #1E1E1E — jemný profesionální gradient */
+  /* Měděné záře doorSTEP přes tmavě modrou #0A1B34 — jemný profesionální gradient */
   .aurora {
     background:
-      radial-gradient(60% 120% at 15% 10%, rgba(212, 178, 111, 0.28) 0%, transparent 55%),
-      radial-gradient(50% 120% at 90% 0%, rgba(193, 162, 99, 0.16) 0%, transparent 55%),
-      radial-gradient(80% 140% at 60% 120%, rgba(145, 117, 60, 0.12) 0%, transparent 50%),
-      linear-gradient(120deg, #1a1a1a, #0d0d0d);
+      radial-gradient(60% 120% at 15% 10%, rgba(224,163,111, 0.28) 0%, transparent 55%),
+      radial-gradient(50% 120% at 90% 0%, rgba(208,139,79, 0.16) 0%, transparent 55%),
+      radial-gradient(80% 140% at 60% 120%, rgba(150,88,31, 0.12) 0%, transparent 50%),
+      linear-gradient(120deg, #0A1B34, #06111F);
   }
   .grain {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");

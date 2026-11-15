@@ -316,10 +316,10 @@ function DaySummary({ events, leadOf }: { events: EventItem[]; leadOf: (id: stri
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <KpiCard icon={CalendarDays} value={events.length} label={events.length === 1 ? 'událost' : events.length < 5 ? 'události' : 'událostí'} accent="#C1A263" />
+      <KpiCard icon={CalendarDays} value={events.length} label={events.length === 1 ? 'událost' : events.length < 5 ? 'události' : 'událostí'} accent="#D08B4F" />
       <KpiCard icon={PhoneCall} value={calls} label={calls === 1 ? 'hovor' : calls < 5 ? 'hovory' : 'hovorů'} accent="#3B8EF0" />
       <KpiCard icon={HomeIcon} value={showings} label={showings === 1 ? 'prohlídka' : showings < 5 ? 'prohlídky' : 'prohlídek'} accent="#0FA968" />
-      <KpiCard icon={Coins} value={commission} label="Potenciální provize" accent="#91753C" format={formatCZK} />
+      <KpiCard icon={Coins} value={commission} label="Potenciální provize" accent="#96581F" format={formatCZK} />
     </div>
   )
 }
@@ -390,7 +390,7 @@ function CalendarGrid({ gridView, cursor, today, selectedDay, events, onSelect }
                       : inMonth ? 'text-tx hover:scale-105 hover:bg-canvas' : 'text-tx-faint/60 hover:bg-canvas',
                   'cursor-pointer'
                 ].join(' ')}
-                style={isSelected ? { boxShadow: '0 0 0 4px rgba(193,162,99,.18), 0 4px 12px rgba(193,162,99,.25)' } : undefined}
+                style={isSelected ? { boxShadow: '0 0 0 4px rgba(208,139,79,.18), 0 4px 12px rgba(208,139,79,.25)' } : undefined}
               >
                 {day.getDate()}
               </button>
@@ -449,7 +449,7 @@ function EventCard({ event: e, lead, listing, onOpen, onCall, onNavigate, onOpen
 
         {listing && (
           <div className="mt-2 overflow-hidden rounded-lg border border-line">
-            <div className="flex items-center justify-between gap-2 px-2.5 py-2" style={{ background: stage ? `${stage.accent}0d` : undefined, borderLeft: `3px solid ${stage?.accent ?? '#C1A263'}` }}>
+            <div className="flex items-center justify-between gap-2 px-2.5 py-2" style={{ background: stage ? `${stage.accent}0d` : undefined, borderLeft: `3px solid ${stage?.accent ?? '#D08B4F'}` }}>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 truncate text-xs font-semibold text-tx">
                   <MapPin className="h-3 w-3 shrink-0 text-tx-faint" /> {listing.location}

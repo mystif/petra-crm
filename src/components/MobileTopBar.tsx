@@ -5,7 +5,7 @@ import { useMakler } from '../lib/maklerContext'
 export function MobileTopBar(): JSX.Element {
   const { makler, avatarUrl, openAgent } = useMakler()
   return (
-    <header className="bg-[#0D0D0D] md:hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <header className="bg-[#06111F] md:hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div
         className="flex h-14 items-center justify-between"
         style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}

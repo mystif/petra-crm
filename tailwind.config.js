@@ -4,42 +4,42 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Tmavé plochy (sidebar + box s asistentkou): #1A1A1A / #0D0D0D
+        // Tmavé plochy doorSTEP navy (sidebar + box s asistentkou): #0A1B34 / #06111F
         ink: {
-          DEFAULT: '#1A1A1A',
-          soft: '#0D0D0D',
-          line: '#2E2A22'
+          DEFAULT: '#0A1B34',
+          soft: '#06111F',
+          line: '#1E3150'
         },
-        // Zlatá paleta (gradient #91753C → #C1A263, hover #D4B26F)
+        // Měděná paleta doorSTEP (gradient #96581F → #D08B4F, hover #E0A36F)
         gold: {
-          DEFAULT: '#C1A263',
-          soft: '#F4ECDC',
-          dark: '#91753C',
-          hover: '#D4B26F'
+          DEFAULT: '#D08B4F',
+          soft: '#F7EBDF',
+          dark: '#96581F',
+          hover: '#E0A36F'
         },
         canvas: '#F5F6FA',
         surface: '#FFFFFF',
         line: '#E7E9F1',
-        // Akcent aplikace = zlatá; dark = čitelný text na světlém
+        // Akcent aplikace = měděná doorSTEP; dark = čitelný text na světlém
         brand: {
-          DEFAULT: '#C1A263',
-          strong: '#B0925A',
-          soft: '#F4ECDC',
-          dark: '#91753C'
+          DEFAULT: '#D08B4F',
+          strong: '#B8763C',
+          soft: '#F7EBDF',
+          dark: '#96581F'
         },
         emerald: { DEFAULT: '#0FA968', soft: '#E3F6EE' },
         amber: { DEFAULT: '#E8920C', soft: '#FCF1DD' },
         rose: { DEFAULT: '#E5484D', soft: '#FBE5E6' },
         sky: { DEFAULT: '#3B8EF0', soft: '#E5F0FD' },
          tx: {
-          DEFAULT: '#1A1D2E',
+          DEFAULT: '#0A1B34',
           soft: '#6B7180',
           faint: '#9AA0B0'
         }
       },
       fontFamily: {
-        display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        display: ['Poppins', 'system-ui', 'sans-serif'],
+        sans: ['Poppins', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
       },
       boxShadow: {

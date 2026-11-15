@@ -55,7 +55,7 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
 
   return (
     <>
-    <aside className="relative hidden w-[252px] shrink-0 flex-col overflow-hidden bg-[#0D0D0D] text-white md:flex">
+    <aside className="relative hidden w-[252px] shrink-0 flex-col overflow-hidden bg-[#06111F] text-white md:flex">
       <div className="relative flex h-full flex-col scroll-dark">
         {/* logo */}
         <div className="px-4 pb-2 pt-5">

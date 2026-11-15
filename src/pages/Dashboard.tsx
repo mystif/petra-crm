@@ -250,7 +250,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
                   key={k.label}
                   onClick={() => k.nav && onNavigate(k.nav)}
                   disabled={!k.nav}
-                  className={`rounded-2xl bg-[#1A1A1A] p-4 text-left ring-1 ring-white/5 shadow-card transition ${k.nav ? 'cursor-pointer hover:ring-gold/40' : 'cursor-default'}`}
+                  className={`rounded-2xl bg-[#0A1B34] p-4 text-left ring-1 ring-white/5 shadow-card transition ${k.nav ? 'cursor-pointer hover:ring-gold/40' : 'cursor-default'}`}
                 >
                   <div className="flex items-start justify-between">
                     <span className="text-xs font-medium text-white/55">{k.label}</span>
@@ -384,7 +384,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
 
           {/* Top doporučitelé + Zdroje leadů */}
           <section className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl bg-[#1A1A1A] p-5 ring-1 ring-white/5 shadow-card">
+            <div className="rounded-2xl bg-[#0A1B34] p-5 ring-1 ring-white/5 shadow-card">
               <div className="mb-4 flex items-center gap-2">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><Gift className="h-5 w-5" /></span>
                 <div>
@@ -420,14 +420,14 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: Page, focus?: LeadsF
 }
 
 /** Zdroje leadů — donut graf (moderní SaaS styl) na tmavé kartě. */
-const SOURCE_COLORS = ['#C1A263', '#3B8EF0', '#0FA968', '#E8920C', '#9333EA', '#E5484D', '#5AA6A0', '#D4B26F', '#8A8F98']
+const SOURCE_COLORS = ['#D08B4F', '#3B8EF0', '#0FA968', '#E8920C', '#9333EA', '#E5484D', '#5AA6A0', '#E0A36F', '#8A8F98']
 
 function LeadSourcesCard({ data }: { data: { label: string; value: number }[] }): JSX.Element {
   const total = data.reduce((s, d) => s + d.value, 0)
   const R = 60, SW = 18, C = 2 * Math.PI * R, cx = 80, cy = 80
   let acc = 0
   return (
-    <div className="rounded-2xl bg-[#1A1A1A] p-5 ring-1 ring-white/5 shadow-card">
+    <div className="rounded-2xl bg-[#0A1B34] p-5 ring-1 ring-white/5 shadow-card">
       <div className="mb-4 flex items-center gap-2">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><PieChart className="h-5 w-5" /></span>
         <div>
@@ -569,7 +569,7 @@ const PIPELINE_PERIODS: { id: 'dnes' | 'tyden' | 'mesic' | 'rok'; label: string 
   { id: 'rok', label: 'Tento rok' }
 ]
 /** Odstíny zlaté pro jednotlivé stupně pipeline (nejsvětlejší → nejsytější). */
-const STAGE_SHADES = ['#E8CE9C', '#D4B26F', '#A8884E', '#7E6736']
+const STAGE_SHADES = ['#E8CE9C', '#E0A36F', '#A8884E', '#7E6736']
 /** Poměrné šířky horních/dolních hran trapézů (5 hranic pro 4 stupně). */
 const FUNNEL_WIDTHS = [1, 0.82, 0.62, 0.44, 0.28]
 const FUNNEL_ROW_H = 108
@@ -855,7 +855,7 @@ function MiniCalendar({ now, events, todayEvents, leads }: {
 
 function BottomStat({ icon: Icon, value, label, hint }: { icon: typeof Users; value: string; label: string; hint: string }): JSX.Element {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-[#1A1A1A] p-4 ring-1 ring-white/5 shadow-card">
+    <div className="flex items-center gap-3 rounded-2xl bg-[#0A1B34] p-4 ring-1 ring-white/5 shadow-card">
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-gold/40 text-gold"><Icon className="h-5 w-5" /></span>
       <div className="min-w-0">
         <div className="stat-num text-xl text-white">{value}</div>
