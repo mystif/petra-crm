@@ -102,6 +102,13 @@ export function signatureHtml(makler: Makler | null): string {
   )
 }
 
+/** Profesionální HTML podpis (fotka, kontakty) — stejný jako v automatických e-mailech (DB funkce email_podpis_html). */
+export async function fetchSignatureHtml(makler: Makler | null, lang: string = 'cs'): Promise<string> {
+  const { data, error } = await supabase.rpc('email_podpis_html', { p_lang: lang })
+  if (error || typeof data !== 'string' || !data) return signatureHtml(makler)
+  return data
+}
+
 // --- Odeslání e-mailu přes Edge Function (Resend) ---
 
 export interface SendResult {

@@ -11,7 +11,7 @@ import { useLeads } from '../lib/leadsContext'
 import { STAGES, type Lead, type StageKey } from '../lib/supabase'
 import { formatCZK, formatDateTime, formatDate, followUpState } from '../lib/format'
 import { isEstimate, whatsappUrl, mapUrl, PRIORITIES, isReferrer, leadRole, isOffer, ROLE_TO_DEAL, LEAD_SOURCES, PROPERTY_OPTIONS, type LeadRole } from '../lib/leadDisplay'
-import { fetchTemplates, mergeFields, sendEmail, signatureHtml, AGENT_NAME, type Template } from '../lib/email'
+import { fetchTemplates, mergeFields, sendEmail, fetchSignatureHtml, AGENT_NAME, type Template } from '../lib/email'
 import { fetchActivity, addActivity, type Activity, type ActivityKind } from '../lib/activity'
 import { uploadLeadPhoto, photoUrl, removePhotoFile, pathFromPublicUrl } from '../lib/photos'
 import { useMakler } from '../lib/maklerContext'
@@ -170,7 +170,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
       const content = await documentBase64(d.file_path)
       if (content) attachments.push({ filename: d.name.includes('.') ? d.name : `${d.name}.pdf`, content })
     }
-    const res = await sendEmail({ to, subject, body, signature: signatureHtml(makler), attachments: attachments.length ? attachments : undefined })
+    const res = await sendEmail({ to, subject, body, signature: await fetchSignatureHtml(makler, (lead as { lang?: string | null }).lang ?? 'cs'), attachments: attachments.length ? attachments : undefined })
     setSending(false)
     if (res.ok) {
       setSendMsg({ ok: true, text: 'E-mail byl odeslán.' })
