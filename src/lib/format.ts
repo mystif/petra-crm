@@ -71,3 +71,18 @@ export function avatarGradient(name: string): string {
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360
   return `linear-gradient(135deg, hsl(${h} 70% 58%), hsl(${(h + 38) % 360} 72% 46%))`
 }
+
+/** Kdy lead přišel: „dnes 19:18“, „včera 8:05“, „15. 11. 19:18“. */
+export function receivedAt(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  const time = d.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const diff = Math.round((startOf(new Date()) - startOf(d)) / 86_400_000)
+  if (diff === 0) return `dnes ${time}`
+  if (diff === 1) return `včera ${time}`
+  const sameYear = d.getFullYear() === new Date().getFullYear()
+  const date = d.toLocaleDateString('cs-CZ', sameYear ? { day: 'numeric', month: 'numeric' } : { day: 'numeric', month: 'numeric', year: 'numeric' })
+  return `${date} ${time}`
+}

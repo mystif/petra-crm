@@ -8,7 +8,7 @@ import { useLeads } from '../lib/leadsContext'
 import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGE_MAP, CLOSED_STAGES, type Lead } from '../lib/supabase'
-import { formatCZK, relativeDays, formatDate, followUpState } from '../lib/format'
+import { formatCZK, formatDate, followUpState, receivedAt } from '../lib/format'
 import { sourceStyle, isEstimate, whatsappUrl, isReferrer, isWebLead } from '../lib/leadDisplay'
 
 export type LeadsFilter = 'vse' | 'poptavka' | 'odhad' | 'followup'
@@ -191,7 +191,7 @@ export function Leads({ filter, onFilter }: { filter: LeadsFilter; onFilter: (f:
                                 </span>
                               ) : <span className="text-tx-faint">—</span>}
                             </td>
-                            <td className="px-5 py-3 whitespace-nowrap text-sm text-tx-faint">{relativeDays(l.created_at)}</td>
+                            <td className="px-5 py-3 whitespace-nowrap text-sm text-tx-faint">{receivedAt(l.created_at)}</td>
                             <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                               <button
                                 className="grid h-8 w-8 place-items-center rounded-lg text-tx-faint opacity-0 transition hover:bg-rose-soft hover:text-rose group-hover:opacity-100"
@@ -294,7 +294,7 @@ function LeadRowMobile({ l, onOpen }: { l: Lead; onOpen: () => void }): JSX.Elem
         <div className="whitespace-nowrap font-mono text-sm font-bold text-tx">
           {estimate && l.price_estimate ? `~ ${formatCZK(l.price_estimate, true)}` : formatCZK(Number(l.price ?? 0), true)}
         </div>
-        <div className="mt-0.5 text-[11px] text-tx-faint">{relativeDays(l.created_at)}</div>
+        <div className="mt-0.5 text-[11px] text-tx-faint">{receivedAt(l.created_at)}</div>
       </div>
     </li>
   )

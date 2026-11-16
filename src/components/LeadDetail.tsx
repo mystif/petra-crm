@@ -466,7 +466,7 @@ export function LeadDetail({ lead: initialLead, onClose }: { lead: Lead; onClose
       open
       size="xl"
       title={lead.name || 'Lead'}
-      subtitle={`${lead.source ?? 'Lead'} · přijato ${formatDate(lead.created_at)}`}
+      subtitle={`${lead.source ?? 'Lead'} · přijato ${formatDateTime(lead.created_at)}`}
       onClose={onClose}
     >
       {/* AKČNÍ LIŠTA — další krok */}
