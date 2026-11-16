@@ -9,7 +9,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useLeadDetail } from '../lib/leadDetailContext'
 import { STAGE_MAP, CLOSED_STAGES, type Lead } from '../lib/supabase'
 import { formatCZK, formatDate, followUpState, receivedAt } from '../lib/format'
-import { sourceStyle, isEstimate, whatsappUrl, isReferrer, isWebLead } from '../lib/leadDisplay'
+import { sourceStyle, isEstimate, whatsappUrl, isReferrer, isWebLead, isFreshLead } from '../lib/leadDisplay'
 
 export type LeadsFilter = 'vse' | 'poptavka' | 'odhad' | 'followup'
 
@@ -120,7 +120,7 @@ export function Leads({ filter, onFilter }: { filter: LeadsFilter; onFilter: (f:
                         const stage = STAGE_MAP[l.crm_status]
                         const estimate = isEstimate(l)
                         const fu = followUpInfo(l)
-                        const isNew = l.crm_status === 'novy'
+                        const isNew = isFreshLead(l)
                         const wa = whatsappUrl(l.phone)
                         const web = isWebLead(l)
                         return (
@@ -257,7 +257,7 @@ function LeadRowMobile({ l, onOpen }: { l: Lead; onOpen: () => void }): JSX.Elem
   const stage = STAGE_MAP[l.crm_status]
   const estimate = isEstimate(l)
   const fu = followUpInfo(l)
-  const isNew = l.crm_status === 'novy'
+  const isNew = isFreshLead(l)
   const web = isWebLead(l)
 
   return (

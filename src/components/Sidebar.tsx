@@ -21,7 +21,7 @@ import { useNewLead } from '../lib/newLeadContext'
 import { useSearch } from '../lib/searchContext'
 import { useHelp } from '../lib/helpContext'
 import { isOverdue, sameDay } from '../lib/events'
-import { isReferrer } from '../lib/leadDisplay'
+import { isReferrer, isFreshLead } from '../lib/leadDisplay'
 
 export type Page = 'dashboard' | 'pipeline' | 'leads' | 'contacts' | 'properties' | 'documents' | 'tasks' | 'calendar' | 'coldcall' | 'recenze' | 'marketing' | 'settings'
 
@@ -49,7 +49,7 @@ export function Sidebar({ current, onNavigate }: SidebarProps): JSX.Element {
   const { openSearch } = useSearch()
   const { openHelp } = useHelp()
   // Odznak u Poptávek = počet nových (nezpracovaných) leadů.
-  const freshCount = leads.filter((l) => l.crm_status === 'novy' && !isReferrer(l)).length
+  const freshCount = leads.filter((l) => isFreshLead(l) && !isReferrer(l)).length
   // Odznak u Úkolů = dnešní + po termínu (nesplněné).
   const taskCount = events.filter((e) => !e.done && (isOverdue(e) || sameDay(new Date(e.start_at), new Date()))).length
 

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { isFreshLead } from '../lib/leadDisplay'
 import { createPortal } from 'react-dom'
 import { Search, Bell, CalendarClock, Inbox, X, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -68,7 +69,7 @@ export function Topbar({ title, subtitle, actions, titleAside, showSearch = true
   const dueFollowUps = leads.filter(
     (l) => l.follow_up_at && !CLOSED_STAGES.includes(l.crm_status) && new Date(l.follow_up_at) <= endOfToday
   )
-  const newLeads = leads.filter((l) => l.crm_status === 'novy')
+  const newLeads = leads.filter((l) => isFreshLead(l))
   const notifCount = dueFollowUps.length + newLeads.length
 
   const go = (l: Lead): void => {

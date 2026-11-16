@@ -165,3 +165,11 @@ export function officePct(lead: Lead): number {
 export function maklerProvize(lead: Lead): number {
   return Number(lead.provize || 0) * (100 - officePct(lead)) / 100
 }
+
+/** Štítek „Nové“: lead ve fázi Nový, který přišel před méně než 2 dny. */
+export const NEW_BADGE_MS = 2 * 86_400_000
+export function isFreshLead(lead: { crm_status?: string | null; created_at?: string | null }): boolean {
+  if (lead.crm_status !== 'novy' || !lead.created_at) return false
+  const t = new Date(lead.created_at).getTime()
+  return !isNaN(t) && Date.now() - t < NEW_BADGE_MS
+}
