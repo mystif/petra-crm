@@ -36,7 +36,10 @@ export function AnnaBriefing({ onNavigate }: { onNavigate: (p: Page) => void }):
 
   const plan = buildDailyPlan(leads, events)
   const osloveni = vocative(makler?.name) || 'Petro'
-  const steps = plan.steps.filter((s) => !done.has(s.id))
+  const MAX_STEPS = 6
+  const pending = plan.steps.filter((s) => !done.has(s.id) && !(s.eventId && done.has(s.eventId)))
+  const steps = pending.slice(0, MAX_STEPS)
+  const hidden = pending.length - steps.length
 
   const handleStep = (leadId: string | null): void => {
     if (!leadId) { onNavigate('calendar'); return }
@@ -109,6 +112,12 @@ export function AnnaBriefing({ onNavigate }: { onNavigate: (p: Page) => void }):
             </div>
           )
         })}
+
+        {hidden > 0 && (
+          <button onClick={() => onNavigate('calendar')} className="w-full rounded-xl border border-dashed border-line px-3 py-2 text-left text-sm text-tx-soft transition hover:border-brand/40 hover:text-brand-dark">
+            + {hidden} další v kalendáři — až odškrtnete hotové, doplní se sem
+          </button>
+        )}
 
         {steps.length === 0 && !plan.isEmpty && (
           <div className="rounded-xl bg-emerald-soft px-3 py-2.5 text-sm font-semibold text-emerald">Vše odškrtnuté — máte hotovo 👏</div>

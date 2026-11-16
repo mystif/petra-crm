@@ -5,6 +5,7 @@ import type { Lead } from './supabase'
 import { CLOSED_STAGES } from './supabase'
 import { eventTypeMeta, eventTime, type EventItem } from './events'
 import { followUpState } from './format'
+import { isFreshLead } from './leadDisplay'
 
 export interface PlanStep {
   id: string
@@ -51,23 +52,34 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
   const todaysEvents = events
     .filter((e) => !e.done && sameDay(new Date(e.start_at), today))
     .sort((a, b) => a.start_at.localeCompare(b.start_at))
-  const pastDue = events
-    .filter((e) => !e.done && new Date(e.start_at) < todayStart)
-    .sort((a, b) => a.start_at.localeCompare(b.start_at))
+  // Po termínu: jen posledních 7 dní a jen u otevřených leadů; starší se sloučí do jednoho řádku.
+  const closedIds = new Set(leads.filter((l) => CLOSED_STAGES.includes(l.crm_status)).map((l) => l.id))
+  const weekAgo = new Date(todayStart.getTime() - 7 * 86_400_000)
+  const allPastDue = events
+    .filter((e) => !e.done && new Date(e.start_at) < todayStart && !(e.lead_id && closedIds.has(e.lead_id)))
+    .sort((a, b) => b.start_at.localeCompare(a.start_at))
+  const pastDue = allPastDue.filter((e) => new Date(e.start_at) >= weekAgo)
+  const olderPastDue = allPastDue.length - pastDue.length
 
   const openLeads = leads.filter((l) => !CLOSED_STAGES.includes(l.crm_status))
   const followOverdue = openLeads.filter((l) => followUpState(l.follow_up_at) === 'overdue')
   const followToday = openLeads.filter((l) => followUpState(l.follow_up_at) === 'today')
-  const newLeads = leads.filter((l) => l.crm_status === 'novy')
+  const newLeads = leads.filter((l) => isFreshLead(l))
   const birthdays = leads.filter((l) => l.birthdate && isBirthdayToday(l.birthdate, today))
 
   const leadName = (id: string | null): string | null => leads.find((l) => l.id === id)?.name ?? null
   const steps: PlanStep[] = []
+  // Jeden lead = jeden řádek (vyhrává nejnaléhavější), ať se informace nevrství.
+  const seenLeads = new Set<string>()
+  const add = (st: PlanStep): void => {
+    if (st.leadId) { if (seenLeads.has(st.leadId)) return; seenLeads.add(st.leadId) }
+    steps.push(st)
+  }
 
   // 1) Po termínu — události z minulých dní
   for (const e of pastDue) {
     const ln = leadName(e.lead_id)
-    steps.push({
+    add({
       id: 'pe-' + e.id, eventId: e.id, kind: 'overdue', time: null,
       title: e.title, detail: ln, badge: 'Po termínu',
       icon: AlertCircle, color: '#E5484D', leadId: e.lead_id
@@ -75,17 +87,25 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
   }
   // 2) Po termínu — follow-upy
   for (const l of followOverdue) {
-    steps.push({
+    add({
       id: 'fo-' + l.id, kind: 'overdue', time: null,
       title: `Ozvat se: ${l.name ?? 'klient'}`, detail: l.location, badge: 'Follow-up po termínu',
       icon: AlertCircle, color: '#E5484D', leadId: l.id
+    })
+  }
+  if (olderPastDue > 0) {
+    steps.push({
+      id: 'pe-older', kind: 'overdue', time: null,
+      title: `${olderPastDue} ${plural(olderPastDue, ['starší úkol', 'starší úkoly', 'starších úkolů'])} po termínu`,
+      detail: 'Projděte je v kalendáři — splňte, přesuňte, nebo smažte', badge: 'Starší',
+      icon: AlertCircle, color: '#E5484D', leadId: null
     })
   }
   // 3) Dnešní program — události s časem (chronologicky)
   for (const e of todaysEvents) {
     const meta = eventTypeMeta(e.type)
     const ln = leadName(e.lead_id)
-    steps.push({
+    add({
       id: 'ev-' + e.id, eventId: e.id, kind: 'meeting', time: e.all_day ? null : eventTime(e),
       title: e.title, detail: [ln, e.location].filter(Boolean).join(' · ') || null, badge: meta.label,
       icon: meta.icon, color: meta.color, leadId: e.lead_id
@@ -93,7 +113,7 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
   }
   // 4) Follow-upy na dnešek
   for (const l of followToday) {
-    steps.push({
+    add({
       id: 'ft-' + l.id, kind: 'followup', time: null,
       title: `Follow-up: ${l.name ?? 'klient'}`, detail: l.location, badge: 'Dnes',
       icon: BellRing, color: '#C9A14A', leadId: l.id
@@ -101,7 +121,7 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
   }
   // 5) Narozeniny
   for (const l of birthdays) {
-    steps.push({
+    add({
       id: 'bd-' + l.id, kind: 'birthday', time: null,
       title: `${l.name ?? 'Klient'} má dnes narozeniny`, detail: 'Pošlete přání — skvělá příležitost k doporučení', badge: '🎂',
       icon: Cake, color: '#9333EA', leadId: l.id
@@ -109,7 +129,7 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
   }
   // 6) Nové poptávky k vyřízení (max 4)
   for (const l of newLeads.slice(0, 4)) {
-    steps.push({
+    add({
       id: 'nl-' + l.id, kind: 'newlead', time: null,
       title: `Zareagovat na novou poptávku: ${l.name ?? 'lead'}`, detail: l.message || l.location || l.source, badge: 'Nový',
       icon: Inbox, color: '#3B8EF0', leadId: l.id
@@ -117,13 +137,15 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
   }
 
   // Shrnutí (Anna vyhodnotí den)
-  const overdueCount = pastDue.length + followOverdue.length
+  const cnt = (k: PlanStep['kind']): number => steps.filter((x) => x.kind === k && x.id !== 'pe-older').length
+  const overdueCount = cnt('overdue') + olderPastDue
+  const meetCount = cnt('meeting'), fuCount = cnt('followup'), nlCount = cnt('newlead'), bdCount = cnt('birthday')
   const parts: string[] = []
   if (overdueCount > 0) parts.push(`${overdueCount} ${plural(overdueCount, ['věc po termínu', 'věci po termínu', 'věcí po termínu'])}`)
-  if (todaysEvents.length > 0) parts.push(`${todaysEvents.length} ${plural(todaysEvents.length, ['událost', 'události', 'událostí'])} v kalendáři`)
-  if (followToday.length > 0) parts.push(`${followToday.length} ${plural(followToday.length, ['follow-up', 'follow-upy', 'follow-upů'])} na dnešek`)
-  if (newLeads.length > 0) parts.push(`${newLeads.length} ${plural(newLeads.length, ['novou poptávku', 'nové poptávky', 'nových poptávek'])}`)
-  if (birthdays.length > 0) parts.push(`${birthdays.length} ${plural(birthdays.length, ['narozeniny', 'narozeniny', 'narozenin'])}`)
+  if (meetCount > 0) parts.push(`${meetCount} ${plural(meetCount, ['událost', 'události', 'událostí'])} v kalendáři`)
+  if (fuCount > 0) parts.push(`${fuCount} ${plural(fuCount, ['follow-up', 'follow-upy', 'follow-upů'])} na dnešek`)
+  if (nlCount > 0) parts.push(`${nlCount} ${plural(nlCount, ['novou poptávku', 'nové poptávky', 'nových poptávek'])}`)
+  if (bdCount > 0) parts.push(`${bdCount} ${plural(bdCount, ['narozeniny', 'narozeniny', 'narozenin'])}`)
 
   const isEmpty = steps.length === 0
   const summary = isEmpty
@@ -132,8 +154,8 @@ export function buildDailyPlan(leads: Lead[], events: EventItem[]): DailyPlan {
 
   let closing: string
   if (overdueCount > 0) closing = 'Doporučuji začít hned ráno tím, co je po termínu — ať nic dál nečeká.'
-  else if (todaysEvents.length > 0) closing = 'Držte se časů u schůzek a den proběhne hladce. Držím palce!'
-  else if (newLeads.length > 0) closing = 'Nejdřív bych vyřídila nové poptávky, ať žádný zájemce nezůstane bez reakce.'
+  else if (meetCount > 0) closing = 'Držte se časů u schůzek a den proběhne hladce. Držím palce!'
+  else if (nlCount > 0) closing = 'Nejdřív bych vyřídila nové poptávky, ať žádný zájemce nezůstane bez reakce.'
   else closing = 'Dnes nic nehoří — ideální čas oslovit pár klientů nebo posunout leady v pipeline blíž k podpisu.'
 
   // Tipy pro prázdný den (proaktivní doporučení)
